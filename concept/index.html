@@ -45,9 +45,9 @@ footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <body>
 <div class="shell">
 <header>
-  <p class="kicker">Two parts · thirteen and eleven live derivations</p>
+  <p class="kicker">Three parts · fourteen, eleven, and four live derivations</p>
   <h1>Neural networks and <em>transformers</em>, built from scratch</h1>
-  <p class="standfirst">A course in two halves. The first derives every formula from the problem it solves; the second assembles them into a working digit classifier. Nothing is asserted before it is motivated.</p>
+  <p class="standfirst">A course in three parts. The first derives every formula from the problem it solves; the second assembles them into a working digit classifier; the third builds four more models from that same toolkit, easiest first, and trains them in front of you. Nothing is asserted before it is motivated.</p>
   <div class="legend">
     <span><span class="swatch" style="background:var(--fwd)"></span>forward</span>
     <span><span class="swatch" style="background:var(--back)"></span>backward</span>
@@ -61,13 +61,19 @@ footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     <span class="num">Part one</span>
     <h2>The maths</h2>
     <p>Dot products, softmax derived from two failed attempts, cross-entropy forced out of what "surprise" must mean, the chain rule, and then attention built in five steps — ending at the variance argument for √d<sub>k</sub>.</p>
-    <div class="meta">13 interactive figures</div>
+    <div class="meta">14 interactive figures</div>
   </a>
   <a class="card" href="part-2-build.html">
     <span class="num">Part two</span>
     <h2>Actually build one</h2>
     <p>784 → 128 → 64 → 10. Every shape, all 109,386 parameters counted, the permutation test that motivates CNNs, and sixty lines of NumPy with a hand-written backward pass.</p>
     <div class="meta">11 interactive figures</div>
+  </a>
+  <a class="card" href="part-3-examples.html">
+    <span class="num">Part three</span>
+    <h2>See it in code</h2>
+    <p>Four more models, ordered easiest to hardest, each a self-contained hand-derived NumPy implementation you can run: a spiral classifier, a small convolutional network, a minimal attention layer that retrieves by content, and causal self-attention predicting what comes next.</p>
+    <div class="meta">4 interactive figures · 4 Python files</div>
   </a>
 </div>
 
@@ -85,7 +91,7 @@ footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 </ul>
 
 <h3>Running it</h3>
-<p>Both pages are single self-contained HTML files — no build step, no dependencies, no network calls beyond the web font. Open either file directly in a browser, or serve the folder with <code class="mono">python3 -m http.server</code>.</p>
+<p>All three pages are single self-contained HTML files — no build step, no dependencies, no network calls beyond the web font. Open any file directly in a browser, or serve the folder with <code class="mono">python3 -m http.server</code>. Part three's Python files need only NumPy (and scikit-learn, for one bundled dataset) — run any of them directly: <code class="mono">python3 examples/01_mlp_spiral_classifier.py</code>.</p>
 
 <footer>
   <p>Reduced-motion preferences are respected throughout; every animation degrades to its final state.</p>

@@ -1,10 +1,10 @@
-name: Deploy condept to GitHub Pages
+name: Deploy concept to GitHub Pages
 
 on:
   push:
     branches: [main]
     paths:
-      - condept/**
+      - concept/**
       - .github/workflows/pages.yml
   workflow_dispatch:
 
@@ -28,6 +28,6 @@ jobs:
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: condept
+          path: concept
       - id: deployment
         uses: actions/deploy-pages@v4

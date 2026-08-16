@@ -142,7 +142,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <header class="top">
   <p class="kicker">Course · part one of two</p>
   <h1>The maths of neural networks and <em>transformers</em>, built from scratch</h1>
-  <p class="standfirst">Every formula derived from the problem it solves — nothing asserted before it is motivated. Assumes school algebra and a first calculus course. Assumes no machine learning at all. Twelve of the derivations below are live: change them and watch the argument hold.</p>
+  <p class="standfirst">Every formula derived from the problem it solves — nothing asserted before it is motivated. Assumes school algebra and a first calculus course. Assumes no machine learning at all. Thirteen of the derivations below are live: change them and watch the argument hold.</p>
   <div class="legend">
     <span><span class="swatch" style="background:var(--fwd)"></span><b>forward</b></span>
     <span><span class="swatch" style="background:var(--back)"></span><b>backward</b></span>
@@ -183,7 +183,23 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <div class="box">
   <div class="sub">Box A · refresher</div>
   <div class="h">Exponentials and logarithms</div>
-  <p style="margin-top:.7rem">These carry more weight here than anything else, so make sure they are solid.</p>
+  <p style="margin-top:.7rem">These carry more weight here than anything else, so make sure they are solid. <strong>An exponential</strong> answers "what do I get from multiplying e by itself this many times?" — e² = e·e ≈ 7.39, and the curve fills in every value in between, even fractional exponents (e<sup>0.5</sup> ≈ 1.65) and negative ones (e<sup>−1</sup> ≈ 0.37). <strong>A logarithm</strong> asks the reverse question — "e to what power gives me this number?" — so log(7.39) ≈ 2, because e² ≈ 7.39. They undo each other, the same way squaring and square-rooting do.</p>
+
+  <figure class="w" id="explogfig">
+    <div class="head">
+      <span class="title">Exponential and logarithm, undoing each other</span>
+      <div class="ctrls"></div>
+    </div>
+    <div class="body">
+      <div class="slider-row"><label for="el-x">x</label><input type="range" id="el-x" min="-2.5" max="2.5" step="0.1" value="1"><span class="val" id="el-xv">1.0</span></div>
+      <canvas id="explog" width="820" height="360" aria-label="Graph of e to the x and its mirror image, the natural logarithm, with a point and its reflection highlighted"></canvas>
+      <div class="slider-row" style="margin-top:1rem"><label for="el-a">a</label><input type="range" id="el-a" min="0.5" max="8" step="0.5" value="2"><span class="val" id="el-av">2.0</span></div>
+      <div class="slider-row"><label for="el-b">b</label><input type="range" id="el-b" min="0.5" max="8" step="0.5" value="4"><span class="val" id="el-bv">4.0</span></div>
+      <div class="readout" id="el-say"></div>
+    </div>
+    <figcaption>The teal curve is <b>eˣ</b>; the orange curve is <b>log x</b>, its mirror image across the dashed diagonal — a logarithm is defined as "the exponent that produces this number," which is the graph of eˣ read backwards. Drag <b>x</b> and watch the two highlighted points stay mirror images of each other, always. Separately, <b>a</b> and <b>b</b> below make the addition property checkable: whatever numbers they are, <b>log(a) + log(b)</b> and <b>log(a×b)</b> always land on exactly the same value — the fact the whole cross-entropy derivation rests on.</figcaption>
+  </figure>
+
   <table>
     <tr><th>Property</th><th>Why it matters here</th></tr>
     <tr><td class="shape">e<sup>x</sup> &gt; 0 for every real x</td><td>This is what makes softmax possible (§5)</td></tr>
@@ -785,6 +801,67 @@ function softmax(z){ var m=Math.max.apply(null,z); var e=z.map(function(v){retur
     ctx.fillText("distance from start after "+n+" steps", W/2-95, H-12);
   }
   sl.oninput=run; gid("rw-run").onclick=run; run();
+})();
+
+/* ===== EXP / LOG ===== */
+(function(){
+  var cv=gid("explog"); if(!cv) return;
+  var ctx=cv.getContext("2d");
+  var sx=gid("el-x"), sa=gid("el-a"), sb=gid("el-b"), say=gid("el-say");
+  function draw(){
+    var x=parseFloat(sx.value); gid("el-xv").textContent=fmt(x,1);
+    var a=parseFloat(sa.value); gid("el-av").textContent=fmt(a,1);
+    var b=parseFloat(sb.value); gid("el-bv").textContent=fmt(b,1);
+    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
+    var x0=-2.5,x1=12.5,y0=-2.5,y1=12.5;
+    function px(v){ return 46+(v-x0)/(x1-x0)*(W-66); }
+    function py(v){ return H-40-(v-y0)/(y1-y0)*(H-60); }
+    grid(ctx,W,H,15,15,x0,x1,y0,y1,px,py);
+    ctx.strokeStyle="#8399A8"; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(px(x0),py(0)); ctx.lineTo(px(x1),py(0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px(0),py(y0)); ctx.lineTo(px(0),py(y1)); ctx.stroke();
+    ctx.strokeStyle="#CBD8E0"; ctx.setLineDash([4,3]); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(px(x0),py(x0)); ctx.lineTo(px(x1),py(x1)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.strokeStyle="#0B8B8B"; ctx.lineWidth=2.6; ctx.beginPath();
+    var first=true;
+    for(var i=0;i<=300;i++){
+      var xv=x0+(x1-x0)*i/300, yv=Math.exp(xv);
+      if(yv>y1+1){ first=true; continue; }
+      if(first){ ctx.moveTo(px(xv),py(yv)); first=false; } else ctx.lineTo(px(xv),py(yv));
+    }
+    ctx.stroke();
+
+    ctx.strokeStyle="#D8811C"; ctx.lineWidth=2.6; ctx.beginPath();
+    first=true;
+    for(var j=0;j<=300;j++){
+      var xv2=x0+(x1-x0)*j/300;
+      if(xv2<=0.02) continue;
+      var yv2=Math.log(xv2);
+      if(yv2<y0-1) continue;
+      if(first){ ctx.moveTo(px(xv2),py(yv2)); first=false; } else ctx.lineTo(px(xv2),py(yv2));
+    }
+    ctx.stroke();
+
+    var ex=Math.exp(x);
+    ctx.fillStyle="#0B8B8B";
+    ctx.beginPath(); ctx.arc(px(x),py(ex),5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#D8811C";
+    ctx.beginPath(); ctx.arc(px(ex),py(x),5,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle="#5A4A9F"; ctx.setLineDash([3,3]); ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(px(x),py(ex)); ctx.lineTo(px(ex),py(x)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle="#8399A8"; ctx.font="11px 'IBM Plex Mono',monospace";
+    ctx.fillText("eˣ",px(2.2)+6,py(Math.exp(2.2)));
+    ctx.fillText("log x",px(11)+4,py(Math.log(11))-8);
+
+    var logSum=Math.log(a)+Math.log(b), logProd=Math.log(a*b);
+    say.innerHTML="e<sup>"+fmt(x,1)+"</sup> = <b>"+fmt(ex,2)+"</b> &nbsp;·&nbsp; log("+fmt(ex,2)+") = <b>"+fmt(Math.log(ex),1)+"</b> — undoing each other."+
+      "<br>log("+fmt(a,1)+") + log("+fmt(b,1)+") = <b>"+fmt(logSum,3)+"</b> &nbsp;·&nbsp; log("+fmt(a,1)+"×"+fmt(b,1)+") = <b>"+fmt(logProd,3)+"</b> — same number, always.";
+  }
+  sx.oninput=draw; sa.oninput=draw; sb.oninput=draw; draw();
 })();
 
 /* ===== DOT PRODUCT ===== */

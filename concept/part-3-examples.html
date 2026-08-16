@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neural Networks and Transformers — Three Worked Examples</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF2F5;
+  --card:#FFFFFF;
+  --ink:#15222E;
+  --ink-2:#4B5F6E;
+  --ink-3:#8399A8;
+  --rule:#CBD8E0;
+  --fwd:#0B8B8B;
+  --fwd-soft:#D3EDED;
+  --back:#D8811C;
+  --back-soft:#F8E7CE;
+  --loss:#B31E55;
+  --loss-soft:#F7DDE7;
+  --attn:#5A4A9F;
+  --attn-soft:#E6E1F5;
+  --measure:34rem;
+  --wide:52rem;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background-color:var(--paper);
+  background-image:
+    linear-gradient(var(--rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  background-size:28px 28px;
+  background-position:-1px -1px;
+  color:var(--ink);
+  font-family:"Spectral",Georgia,serif;
+  font-size:17px;
+  line-height:1.68;
+}
+body::before{
+  content:"";position:fixed;inset:0;background:var(--paper);opacity:.82;pointer-events:none;z-index:0;
+}
+.shell{position:relative;z-index:1;max-width:var(--wide);margin:0 auto;padding:0 1.25rem 6rem}
+.col{max-width:var(--measure);margin-left:0}
+
+h1,h2,h3,.eyebrow,.ui,button,input,label,table,.tag{font-family:"Space Grotesk",system-ui,sans-serif}
+code,.mono,.eq,.val,.shape{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+
+/* ---------- masthead ---------- */
+header.top{padding:4.5rem 0 2rem;max-width:var(--measure)}
+.kicker{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 1.4rem}
+h1{font-size:clamp(2.1rem,6vw,3.3rem);line-height:1.02;letter-spacing:-.03em;font-weight:700;margin:0 0 1.1rem}
+h1 em{font-style:normal;color:var(--attn)}
+.standfirst{font-size:1.12rem;color:var(--ink-2);margin:0 0 2rem}
+.legend{display:flex;gap:1.5rem;flex-wrap:wrap;font-family:"IBM Plex Mono",monospace;font-size:.76rem;letter-spacing:.04em;color:var(--ink-2);border-top:1px solid var(--rule);padding-top:1rem}
+.legend b{font-weight:500}
+.swatch{display:inline-block;width:.65rem;height:.65rem;border-radius:50%;margin-right:.45rem;vertical-align:baseline}
+
+/* ---------- sections ---------- */
+section{margin:4.5rem 0 0}
+.eyebrow{display:flex;align-items:baseline;gap:.85rem;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.5rem}
+.eyebrow .num{font-family:"IBM Plex Mono",monospace;color:var(--attn);font-weight:600}
+.eyebrow .line{flex:1;height:1px;background:var(--rule)}
+h2{font-size:clamp(1.4rem,3.4vw,1.95rem);line-height:1.15;letter-spacing:-.02em;margin:.1rem 0 1.1rem;font-weight:700;max-width:var(--measure)}
+h3{font-size:1.05rem;letter-spacing:-.01em;margin:2.2rem 0 .6rem;font-weight:600}
+p{margin:0 0 1.1rem;max-width:var(--measure)}
+ul,ol{max-width:var(--measure);padding-left:1.15rem;margin:0 0 1.1rem}
+li{margin-bottom:.4rem}
+strong{font-weight:600}
+a{color:var(--fwd)}
+.lede{font-size:1.06rem;color:var(--ink-2)}
+
+/* ---------- widget frame ---------- */
+figure.w{margin:2.5rem 0;background:var(--card);border:1px solid var(--rule);max-width:var(--wide)}
+figure.w .head{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.7rem 1.1rem;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+figure.w .title{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+figure.w .body{padding:1.2rem 1.1rem}
+figure.w figcaption{padding:.75rem 1.1rem 1rem;font-size:.85rem;color:var(--ink-2);border-top:1px dashed var(--rule)}
+figure.w figcaption b{color:var(--ink);font-weight:600}
+
+.ctrls{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+button{
+  font-size:.78rem;font-weight:500;letter-spacing:.02em;
+  padding:.42rem .85rem;border:1px solid var(--ink);background:var(--card);color:var(--ink);
+  cursor:pointer;border-radius:2px;transition:background .15s,color .15s;
+}
+button:hover{background:var(--ink);color:var(--card)}
+button:focus-visible{outline:2px solid var(--attn);outline-offset:2px}
+button.fwd{border-color:var(--attn);color:var(--attn)}
+button.fwd:hover{background:var(--attn);color:#fff}
+button[disabled]{opacity:.35;cursor:not-allowed}
+button[disabled]:hover{background:var(--card);color:var(--ink)}
+button.on{background:var(--ink);color:var(--card)}
+
+.slider-row{display:grid;grid-template-columns:auto 1fr auto;gap:.7rem;align-items:center;margin-bottom:.5rem;font-family:"IBM Plex Mono",monospace;font-size:.78rem}
+.slider-row label{color:var(--ink-2)}
+.slider-row .val{min-width:3.6rem;text-align:right;font-weight:500}
+input[type=range]{width:100%;accent-color:var(--attn);height:1.5rem}
+canvas{display:block;max-width:100%}
+.readout{font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--ink-2);margin-top:.7rem;line-height:1.6}
+.readout b{color:var(--ink);font-weight:600}
+
+.mlabel{font-family:"IBM Plex Mono",monospace;font-size:.72rem;color:var(--ink-3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.35rem}
+
+/* bars */
+.bars{display:flex;gap:.5rem;align-items:flex-end;height:8rem;margin-top:.4rem}
+.bar-wrap{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%}
+.bar{background:var(--attn);transition:height .3s;min-height:2px}
+.bar.hit{background:var(--fwd)}
+.bar-lbl{font-family:"IBM Plex Mono",monospace;font-size:.7rem;text-align:center;color:var(--ink-2);margin-top:.3rem}
+
+p code,li code,td code{background:#E2EAEF;padding:.08em .35em;font-size:.85em;border-radius:2px}
+
+footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-size:.85rem;color:var(--ink-3);max-width:var(--measure)}
+
+@media (max-width:640px){
+  body{font-size:16px}
+  figure.w .body{padding:1rem .8rem}
+  .shell{padding:0 1rem 4rem}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:.01ms !important;animation-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<header class="top">
+  <p class="kicker">Course · part three of three</p>
+  <h1>Three models, <em>watched while they learn</em></h1>
+  <p class="standfirst">The maths guide derives the formulas. The build guide assembles one model. This page is four more, ordered easiest to hardest — a spiral classifier, a small convolutional network, a minimal attention layer, and causal self-attention predicting what comes next — each a real, hand-derived NumPy implementation you can run yourself, plus a shrunk-down live version below that trains in your browser when you press Run.</p>
+  <div class="legend">
+    <span><span class="swatch" style="background:var(--fwd)"></span><b>forward</b> — signal travelling in</span>
+    <span><span class="swatch" style="background:var(--back)"></span><b>backward</b> — blame travelling out</span>
+    <span><span class="swatch" style="background:var(--attn)"></span><b>attention</b> — content-based retrieval</span>
+  </div>
+</header>
+
+<section>
+  <div class="eyebrow"><span class="num">01</span><span>Classification, applied</span><span class="line"></span></div>
+  <h2>A spiral only a nonlinearity can untangle</h2>
+  <p>Part one §04 argues that without a kink, stacking layers collapses to one big linear function no matter how deep you go — a straight line (or plane) can never separate points that spiral around each other. This is that argument made concrete: a <span class="mono">2 → 32 → 32 → 3</span> ReLU network, trained with the exact backprop formulas from part two §06 (<span class="mono">δ</span>, <span class="mono">∂L/∂W = δxᵀ</span>, <span class="mono">∂L/∂x = Wᵀδ</span>) and the softmax + cross-entropy from part one §05–06, learning to separate three interleaved spiral arms that no straight line ever could.</p>
+
+  <figure class="w" id="spiralfig">
+    <div class="head">
+      <span class="title">Decision boundary · live training</span>
+      <div class="ctrls">
+        <button class="fwd" id="sp-play">Run</button>
+        <button id="sp-step">Step</button>
+        <button id="sp-reset">Reset</button>
+      </div>
+    </div>
+    <div class="body">
+      <canvas id="sp-canvas" width="480" height="480" aria-label="Spiral dataset points with the network's decision regions shaded behind them, updating as the network trains"></canvas>
+      <div class="readout" id="sp-say"></div>
+    </div>
+    <figcaption>Each dot is a training point, colored by its true arm. The shaded regions are the network's current answer for every point in the plane — press <b>Run</b> and watch three straight-edged blobs fold themselves into three interleaved spirals. This is a smaller stand-in (<span class="mono">2→16→16→3</span>) for the real model; the full <span class="mono">2→32→32→3</span> version, gradient-checked against numerical differentiation, is in <code>examples/01_mlp_spiral_classifier.py</code> (<a href="https://github.com/nilesh-salpe/genai/blob/main/concept/code/01_mlp_spiral_classifier.ipynb" target="_blank" rel="noopener">notebook</a>).</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">02</span><span>Why convolutions exist</span><span class="line"></span></div>
+  <h2>One learned filter, doing what a dense layer can't</h2>
+  <p>Part two §08 ("The dense layer never sees a picture") argues that flattening an image throws away which pixels were neighbours, and that a convolution fixes this by sliding one small set of weights over every position instead. Here's that filter actually learning: a single 3×3 kernel, trained to tell vertical stripes from horizontal ones — something a dense layer can only do by memorising pixel positions, and a conv filter does by learning one small, reusable pattern.</p>
+
+  <figure class="w" id="convfig">
+    <div class="head">
+      <span class="title">One 3×3 filter · live training</span>
+      <div class="ctrls">
+        <button class="fwd" id="cv-play">Run</button>
+        <button id="cv-step">Step</button>
+        <button id="cv-reset">Reset</button>
+      </div>
+    </div>
+    <div class="body">
+      <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-start">
+        <div>
+          <div class="mlabel">Learned filter (3×3)</div>
+          <canvas id="cv-filter" width="114" height="114" aria-label="Heatmap of the single 3x3 convolution filter's current weights"></canvas>
+        </div>
+        <div style="flex:1;min-width:280px">
+          <div class="mlabel">Test images · border shows correct / wrong</div>
+          <canvas id="cv-grid" width="480" height="228" aria-label="Grid of small striped test images with borders colored by whether the network currently classifies them correctly"></canvas>
+        </div>
+      </div>
+      <div class="readout" id="cv-say"></div>
+    </div>
+    <figcaption>The heatmap is the filter's own 9 numbers — <span style="color:#0B8B8B"><b>teal</b></span> positive, <span style="color:#D8811C"><b>orange</b></span> negative. Watch it converge into a stripe-shaped pattern: strong along one direction, weak along the other, which is what "detects vertical, not horizontal" looks like as a matrix. The full pipeline — im2col conv forward/backward, max-pool, dense, gradient-checked to <span class="mono">~1e-9</span> — runs on real 8×8 digit images (not just stripes) in <code>examples/02_cnn_digit_classifier.py</code> (<a href="https://github.com/nilesh-salpe/genai/blob/main/concept/code/02_cnn_digit_classifier.ipynb" target="_blank" rel="noopener">notebook</a>), reaching 90% test accuracy.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">03</span><span>Attention, applied</span><span class="line"></span></div>
+  <h2>Retrieval by content, not position</h2>
+  <p>Part one §11 derives attention in five steps: score relevance with a dot product, separate "what I seek" (query) from "what I am" (key) with two projections, turn scores into weights with softmax, retrieve with a value projection and a weighted sum, and divide by <span class="mono">√d_k</span> so the softmax doesn't saturate. Below is exactly that, solving the simplest task attention is built for: given a few key–value pairs and a query key, find the pair whose key matches and return its value — something a network has to learn to do by <em>content</em>, since the matching pair can be anywhere in the sequence.</p>
+
+  <figure class="w" id="attnfig">
+    <div class="head">
+      <span class="title">Key–value retrieval · live training</span>
+      <div class="ctrls">
+        <button class="fwd" id="at-play">Run</button>
+        <button id="at-step">Step</button>
+        <button id="at-reset">Reset</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="readout" id="at-example"></div>
+      <div class="bars" id="at-bars"></div>
+      <div class="readout" id="at-say"></div>
+    </div>
+    <figcaption>Three bars, one per key–value pair in a fixed probe sequence — bar height is the attention weight on that pair, and the pair whose key actually matches the query turns <span style="color:#0B8B8B"><b>teal</b></span> once the model is confident. Untrained, the weights start near ⅓/⅓/⅓ — no basis to prefer any position. Press <b>Run</b> and watch one bar pull almost all the weight to itself, purely because its key matches the query, not because of where it sits in the sequence. Full version (embeddings, Wq/Wk/Wv, output projection, softmax-over-attention-weights backprop, gradient-checked exactly) in <code>examples/03_mini_attention_retrieval.py</code> (<a href="https://github.com/nilesh-salpe/genai/blob/main/concept/code/03_mini_attention_retrieval.ipynb" target="_blank" rel="noopener">notebook</a>).</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">04</span><span>Prediction, at every step</span><span class="line"></span></div>
+  <h2>The next symbol, predicted causally</h2>
+  <p>Part one §11 also derives <strong>causal masking</strong>: a position can only attend to itself and whatever came before it, never the future — otherwise "predict the next token" would just mean copying it. This is the hardest of the four, because it reuses example three's Q/K/V attention but runs it at <em>every</em> position at once, under that mask — the actual loop a language model runs: given tokens[0..i], predict token[i+1], for every i simultaneously.</p>
+
+  <figure class="w" id="causalfig">
+    <div class="head">
+      <span class="title">Next-in-series · live training</span>
+      <div class="ctrls">
+        <button class="fwd" id="ca-play">Run</button>
+        <button id="ca-step">Step</button>
+        <button id="ca-reset">Reset</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="mlabel">Probe sequence — an alternating two-symbol series</div>
+      <div id="ca-seq" style="display:flex;gap:.4rem;margin-bottom:1rem"></div>
+      <div class="mlabel">Predicted next symbol at each position</div>
+      <div id="ca-pred" style="display:flex;gap:.4rem;margin-bottom:1rem"></div>
+      <div class="mlabel">Attention weights for position 5, predicting position 6 (causally masked — only positions 0–5 are visible)</div>
+      <div class="bars" id="ca-bars"></div>
+      <div class="readout" id="ca-say"></div>
+    </div>
+    <figcaption>Position 0 can only see itself — predicting the very next symbol from a single token is genuinely impossible, since that symbol hasn't appeared yet, so it stays wrong forever and that is correct, not a bug (a real cause of confusion if you expected 100%). Every later position has enough history to know the alternating pattern, and once trained, its attention <span style="color:#0B8B8B"><b>concentrates on whichever earlier positions already carry the correct value</b></span> — teal below — not on a fixed distance back. A strict period-2 series only ever has two distinct values, so several earlier positions are equally valid sources; the query is matching by <em>content</em>, the same way example three's retrieval did, not by counting backwards. Full version, gradient-checked, in <code>examples/04_causal_series_predictor.py</code> (<a href="https://github.com/nilesh-salpe/genai/blob/main/concept/code/04_causal_series_predictor.ipynb" target="_blank" rel="noopener">notebook</a>).</figcaption>
+  </figure>
+</section>
+
+<footer>
+  <p>These four are shrunk-down, in-browser stand-ins for the real thing. The full implementations — every gradient hand-derived and numerically verified, no autograd — are in <code>concept/examples/</code>: <code>01_mlp_spiral_classifier.py</code>, <code>02_cnn_digit_classifier.py</code>, <code>03_mini_attention_retrieval.py</code>, <code>04_causal_series_predictor.py</code>. Each trains, saves its weights, and runs inference on new inputs on its own. Cell-by-cell walkthroughs of the same four implementations, as Jupyter notebooks with executed output already in them, are in <a href="https://github.com/nilesh-salpe/genai/tree/main/concept/code" target="_blank" rel="noopener"><code>concept/code/</code></a>.</p>
+</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+var REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function fmt(v, d){ return Number(v).toFixed(d === undefined ? 2 : d); }
+
+/* ============ 1. SPIRAL CLASSIFIER ============ */
+(function(){
+  var cv = document.getElementById("sp-canvas");
+  if (!cv) return;
+  var ctx = cv.getContext("2d"), say = document.getElementById("sp-say");
+  var H1 = 16, H2 = 16, DIN = 2, DOUT = 3;
+  var CLASS_COLOR = ["#0B8B8B", "#D8811C", "#5A4A9F"];
+  var N_PER = 30, data = null, P = null, step = 0, timer = null, running = false;
+  var MAXSTEP = 3000, TICK_MS = 25, STEPS_PER_TICK = 6, LR = 1.0;
+
+  function rnd(a){ return (Math.random() * 2 - 1) * a; }
+  function makeSpiral(nPerClass, nClasses, noise){
+    var X = [], y = [];
+    for (var c = 0; c < nClasses; c++){
+      for (var i = 0; i < nPerClass; i++){
+        var r = i / nPerClass;
+        var t = i / nPerClass * 4 + c * (2 * Math.PI / nClasses) * 2 + rnd(1) * noise;
+        X.push(r * Math.sin(t)); X.push(r * Math.cos(t));
+        y.push(c);
+      }
+    }
+    return { X: X, y: y, N: nPerClass * nClasses };
+  }
+  function initParams(){
+    return {
+      W1: Array.from({ length: DIN * H1 }, function(){ return rnd(0.8); }), b1: new Array(H1).fill(0),
+      W2: Array.from({ length: H1 * H2 }, function(){ return rnd(0.6); }), b2: new Array(H2).fill(0),
+      W3: Array.from({ length: H2 * DOUT }, function(){ return rnd(0.6); }), b3: new Array(DOUT).fill(0)
+    };
+  }
+  function matmul(A, rA, cA, B, cB){
+    var out = new Array(rA * cB).fill(0);
+    for (var i = 0; i < rA; i++) for (var k = 0; k < cA; k++){
+      var a = A[i * cA + k]; if (a === 0) continue;
+      for (var j = 0; j < cB; j++) out[i * cB + j] += a * B[k * cB + j];
+    }
+    return out;
+  }
+  function addBiasRows(A, rA, cA, b){
+    var out = A.slice();
+    for (var i = 0; i < rA; i++) for (var j = 0; j < cA; j++) out[i * cA + j] += b[j];
+    return out;
+  }
+  function transpose(A, rA, cA){
+    var out = new Array(rA * cA);
+    for (var i = 0; i < rA; i++) for (var j = 0; j < cA; j++) out[j * rA + i] = A[i * cA + j];
+    return out;
+  }
+  function reluArr(A){ return A.map(function(v){ return Math.max(0, v); }); }
+  function reluMask(A){ return A.map(function(v){ return v > 0 ? 1 : 0; }); }
+
+  function forward(X, N, params){
+    var z1 = addBiasRows(matmul(X, N, DIN, params.W1, H1), N, H1, params.b1);
+    var h1 = reluArr(z1);
+    var z2 = addBiasRows(matmul(h1, N, H1, params.W2, H2), N, H2, params.b2);
+    var h2 = reluArr(z2);
+    var logits = addBiasRows(matmul(h2, N, H2, params.W3, DOUT), N, DOUT, params.b3);
+    var probs = new Array(N * DOUT);
+    for (var i = 0; i < N; i++){
+      var m = -Infinity; for (var j = 0; j < DOUT; j++) m = Math.max(m, logits[i * DOUT + j]);
+      var sum = 0; for (j = 0; j < DOUT; j++){ var e = Math.exp(logits[i * DOUT + j] - m); probs[i * DOUT + j] = e; sum += e; }
+      for (j = 0; j < DOUT; j++) probs[i * DOUT + j] /= sum;
+    }
+    return { z1: z1, h1: h1, z2: z2, h2: h2, probs: probs };
+  }
+  function trainStep(){
+    var c = forward(data.X, data.N, P);
+    var loss = 0;
+    var dlogits = c.probs.slice();
+    for (var i = 0; i < data.N; i++){
+      loss += -Math.log(Math.max(c.probs[i * DOUT + data.y[i]], 1e-12));
+      dlogits[i * DOUT + data.y[i]] -= 1;
+    }
+    loss /= data.N;
+    for (var k = 0; k < dlogits.length; k++) dlogits[k] /= data.N;
+
+    var dW3 = matmul(transpose(c.h2, data.N, H2), H2, data.N, dlogits, DOUT);
+    var db3 = new Array(DOUT).fill(0);
+    for (i = 0; i < data.N; i++) for (var j = 0; j < DOUT; j++) db3[j] += dlogits[i * DOUT + j];
+
+    var dh2 = matmul(dlogits, data.N, DOUT, transpose(P.W3, H2, DOUT), H2);
+    var mask2 = reluMask(c.z2);
+    var dz2 = dh2.map(function(v, idx){ return v * mask2[idx]; });
+
+    var dW2 = matmul(transpose(c.h1, data.N, H1), H1, data.N, dz2, H2);
+    var db2 = new Array(H2).fill(0);
+    for (i = 0; i < data.N; i++) for (j = 0; j < H2; j++) db2[j] += dz2[i * H2 + j];
+
+    var dh1 = matmul(dz2, data.N, H2, transpose(P.W2, H1, H2), H1);
+    var mask1 = reluMask(c.z1);
+    var dz1 = dh1.map(function(v, idx){ return v * mask1[idx]; });
+
+    var dW1 = matmul(transpose(data.X, data.N, DIN), DIN, data.N, dz1, H1);
+    var db1 = new Array(H1).fill(0);
+    for (i = 0; i < data.N; i++) for (j = 0; j < H1; j++) db1[j] += dz1[i * H1 + j];
+
+    var g = { W1: dW1, b1: db1, W2: dW2, b2: db2, W3: dW3, b3: db3 };
+    for (var name in g) for (var idx = 0; idx < P[name].length; idx++) P[name][idx] -= LR * g[name][idx];
+    step++;
+    return loss;
+  }
+
+  function draw(){
+    var Wd = cv.width, Hd = cv.height;
+    ctx.clearRect(0, 0, Wd, Hd);
+    var lim = 1.25;
+    function px(x){ return (x + lim) / (2 * lim) * Wd; }
+    function py(y){ return Hd - (y + lim) / (2 * lim) * Hd; }
+    var GRID = 44;
+    for (var gi = 0; gi < GRID; gi++){
+      for (var gj = 0; gj < GRID; gj++){
+        var x = -lim + (2 * lim) * gi / (GRID - 1);
+        var y = -lim + (2 * lim) * gj / (GRID - 1);
+        var c = forward([x, y], 1, P);
+        var best = 0, bv = -Infinity;
+        for (var k = 0; k < DOUT; k++) if (c.probs[k] > bv){ bv = c.probs[k]; best = k; }
+        ctx.fillStyle = CLASS_COLOR[best];
+        ctx.globalAlpha = 0.16;
+        var cellW = Wd / GRID, cellH = Hd / GRID;
+        ctx.fillRect(px(x) - cellW / 2, py(y) - cellH / 2, cellW + 1, cellH + 1);
+      }
+    }
+    ctx.globalAlpha = 1;
+    for (var i = 0; i < data.N; i++){
+      ctx.beginPath();
+      ctx.arc(px(data.X[i * 2]), py(data.X[i * 2 + 1]), 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = CLASS_COLOR[data.y[i]];
+      ctx.fill();
+      ctx.lineWidth = 1; ctx.strokeStyle = "#15222E"; ctx.stroke();
+    }
+  }
+  function accuracy(){
+    var c = forward(data.X, data.N, P);
+    var correct = 0;
+    for (var i = 0; i < data.N; i++){
+      var best = 0, bv = -Infinity;
+      for (var j = 0; j < DOUT; j++) if (c.probs[i * DOUT + j] > bv){ bv = c.probs[i * DOUT + j]; best = j; }
+      if (best === data.y[i]) correct++;
+    }
+    return correct / data.N;
+  }
+  function render(loss){
+    draw();
+    var msg;
+    if (step === 0) msg = "Untrained — three straight-edged guesses. Press <b>Run</b>.";
+    else msg = "<b>step " + step + "</b> · loss <b>" + fmt(loss, 4) + "</b> · train accuracy <b>" + fmt(accuracy() * 100, 1) + "%</b>";
+    say.innerHTML = msg;
+  }
+
+  var playBtn = document.getElementById("sp-play");
+  function stopRun(){ running = false; clearInterval(timer); timer = null; playBtn.textContent = "Run"; playBtn.classList.remove("on"); }
+  function tick(){
+    var loss = 0;
+    for (var s = 0; s < STEPS_PER_TICK && step < MAXSTEP; s++) loss = trainStep();
+    render(loss);
+    if (step >= MAXSTEP) stopRun();
+  }
+  function startRun(){
+    running = true; playBtn.textContent = "Pause"; playBtn.classList.add("on");
+    if (REDUCED){
+      var loss = 0;
+      for (var i = 0; i < MAXSTEP; i++) loss = trainStep();
+      render(loss); stopRun(); return;
+    }
+    timer = setInterval(tick, TICK_MS);
+  }
+  playBtn.onclick = function(){ if (running) stopRun(); else startRun(); };
+  document.getElementById("sp-step").onclick = function(){
+    if (running) return;
+    var loss = 0;
+    for (var s = 0; s < 100 && step < MAXSTEP; s++) loss = trainStep();
+    render(loss);
+  };
+  document.getElementById("sp-reset").onclick = function(){
+    stopRun(); data = makeSpiral(N_PER, DOUT, 0.2); P = initParams(); step = 0; render(0);
+  };
+  data = makeSpiral(N_PER, DOUT, 0.2);
+  P = initParams();
+  render(0);
+})();
+
+/* ============ 2. CONV FILTER ============ */
+(function(){
+  var fcv = document.getElementById("cv-filter"), gcv = document.getElementById("cv-grid");
+  if (!fcv || !gcv) return;
+  var fctx = fcv.getContext("2d"), gctx = gcv.getContext("2d"), say = document.getElementById("cv-say");
+  var IMG = 8, FSZ = 3, OUT = IMG - FSZ + 1, N_PER = 4;
+  var P = null, dataset = null, step = 0, timer = null, running = false;
+  var MAXSTEP = 150, TICK_MS = 60, EPOCHS_PER_TICK = 1, LR = 1.0;
+
+  function rnd(a){ return (Math.random() * 2 - 1) * a; }
+  function makeImage(kind, noise){
+    var img = new Array(IMG * IMG).fill(0).map(function(){ return rnd(noise); });
+    if (kind === "v"){ for (var r = 0; r < IMG; r++) for (var c = 3; c < 5; c++) img[r * IMG + c] += 1.0; }
+    else { for (var r2 = 3; r2 < 5; r2++) for (var c2 = 0; c2 < IMG; c2++) img[r2 * IMG + c2] += 1.0; }
+    return img;
+  }
+  function makeDataset(nPer, noise){
+    var imgs = [], labels = [], kinds = [];
+    for (var i = 0; i < nPer; i++){ imgs.push(makeImage("v", noise)); labels.push(0); kinds.push("v"); }
+    for (i = 0; i < nPer; i++){ imgs.push(makeImage("h", noise)); labels.push(1); kinds.push("h"); }
+    return { imgs: imgs, labels: labels, kinds: kinds, N: nPer * 2 };
+  }
+  function initParams(){
+    return {
+      F: Array.from({ length: FSZ * FSZ }, function(){ return rnd(0.5); }), fb: 0,
+      W2: Array.from({ length: OUT * OUT * 2 }, function(){ return rnd(0.3); }), b2: [0, 0]
+    };
+  }
+  function convForward(img, F, fb){
+    var out = new Array(OUT * OUT);
+    for (var oi = 0; oi < OUT; oi++) for (var oj = 0; oj < OUT; oj++){
+      var s = fb;
+      for (var di = 0; di < FSZ; di++) for (var dj = 0; dj < FSZ; dj++) s += F[di * FSZ + dj] * img[(oi + di) * IMG + (oj + dj)];
+      out[oi * OUT + oj] = s;
+    }
+    return out;
+  }
+  function forward(img, params){
+    var conv = convForward(img, params.F, params.fb);
+    var relu = conv.map(function(v){ return Math.max(0, v); });
+    var logits = [params.b2[0], params.b2[1]];
+    for (var k = 0; k < OUT * OUT; k++){ logits[0] += relu[k] * params.W2[k * 2]; logits[1] += relu[k] * params.W2[k * 2 + 1]; }
+    var m = Math.max(logits[0], logits[1]);
+    var e0 = Math.exp(logits[0] - m), e1 = Math.exp(logits[1] - m), sum = e0 + e1;
+    return { conv: conv, relu: relu, probs: [e0 / sum, e1 / sum] };
+  }
+  function trainEpoch(){
+    var gF = new Array(FSZ * FSZ).fill(0), gfb = 0, gW2 = new Array(OUT * OUT * 2).fill(0), gb2 = [0, 0], totalLoss = 0;
+    for (var i = 0; i < dataset.N; i++){
+      var img = dataset.imgs[i], label = dataset.labels[i];
+      var c = forward(img, P);
+      totalLoss += -Math.log(Math.max(c.probs[label], 1e-12));
+      var dlogits = c.probs.slice(); dlogits[label] -= 1;
+      var drelu = new Array(OUT * OUT).fill(0);
+      for (var k = 0; k < OUT * OUT; k++){
+        gW2[k * 2] += c.relu[k] * dlogits[0]; gW2[k * 2 + 1] += c.relu[k] * dlogits[1];
+        drelu[k] = P.W2[k * 2] * dlogits[0] + P.W2[k * 2 + 1] * dlogits[1];
+      }
+      gb2[0] += dlogits[0]; gb2[1] += dlogits[1];
+      var dconv = drelu.map(function(v, idx){ return c.conv[idx] > 0 ? v : 0; });
+      for (var oi = 0; oi < OUT; oi++) for (var oj = 0; oj < OUT; oj++){
+        var g = dconv[oi * OUT + oj]; gfb += g;
+        for (var di = 0; di < FSZ; di++) for (var dj = 0; dj < FSZ; dj++) gF[di * FSZ + dj] += g * img[(oi + di) * IMG + (oj + dj)];
+      }
+    }
+    for (var k2 = 0; k2 < gF.length; k2++) P.F[k2] -= LR * gF[k2] / dataset.N;
+    P.fb -= LR * gfb / dataset.N;
+    for (k2 = 0; k2 < gW2.length; k2++) P.W2[k2] -= LR * gW2[k2] / dataset.N;
+    P.b2[0] -= LR * gb2[0] / dataset.N; P.b2[1] -= LR * gb2[1] / dataset.N;
+    step++;
+    return totalLoss / dataset.N;
+  }
+  function drawFilter(){
+    fctx.clearRect(0, 0, fcv.width, fcv.height);
+    var cell = fcv.width / FSZ;
+    var maxAbs = 0.001;
+    for (var i = 0; i < P.F.length; i++) maxAbs = Math.max(maxAbs, Math.abs(P.F[i]));
+    for (var r = 0; r < FSZ; r++) for (var c = 0; c < FSZ; c++){
+      var v = P.F[r * FSZ + c];
+      var t = Math.min(1, Math.abs(v) / maxAbs);
+      fctx.fillStyle = v >= 0 ? "rgba(11,139,139," + (0.15 + 0.75 * t) + ")" : "rgba(216,129,28," + (0.15 + 0.75 * t) + ")";
+      fctx.fillRect(c * cell, r * cell, cell - 2, cell - 2);
+    }
+  }
+  function drawGrid(){
+    gctx.clearRect(0, 0, gcv.width, gcv.height);
+    var cols = 4, cellSize = 14, pad = 18;
+    for (var i = 0; i < dataset.N; i++){
+      var col = i % cols, row = Math.floor(i / cols);
+      var x0 = col * (cellSize * IMG + pad) + 6, y0 = row * (cellSize * IMG + pad) + 6;
+      var img = dataset.imgs[i];
+      for (var r = 0; r < IMG; r++) for (var c = 0; c < IMG; c++){
+        var v = Math.max(0, Math.min(1, img[r * IMG + c]));
+        var g = Math.round(255 - v * 255);
+        gctx.fillStyle = "rgb(" + g + "," + g + "," + g + ")";
+        gctx.fillRect(x0 + c * cellSize, y0 + r * cellSize, cellSize, cellSize);
+      }
+      var pred = forward(img, P);
+      var predClass = pred.probs[0] > pred.probs[1] ? 0 : 1;
+      var correct = predClass === dataset.labels[i];
+      gctx.strokeStyle = correct ? "#0B8B8B" : "#B31E55";
+      gctx.lineWidth = 3;
+      gctx.strokeRect(x0 - 1, y0 - 1, cellSize * IMG + 2, cellSize * IMG + 2);
+    }
+  }
+  function render(loss){
+    drawFilter(); drawGrid();
+    var correct = 0;
+    for (var i = 0; i < dataset.N; i++){
+      var pred = forward(dataset.imgs[i], P);
+      if ((pred.probs[0] > pred.probs[1] ? 0 : 1) === dataset.labels[i]) correct++;
+    }
+    var msg;
+    if (step === 0) msg = "Untrained filter — random noise, no pattern yet. Press <b>Run</b>.";
+    else msg = "<b>epoch " + step + "</b> · loss <b>" + fmt(loss, 4) + "</b> · accuracy <b>" + fmt(correct / dataset.N * 100, 1) + "%</b>";
+    say.innerHTML = msg;
+  }
+
+  var playBtn = document.getElementById("cv-play");
+  function stopRun(){ running = false; clearInterval(timer); timer = null; playBtn.textContent = "Run"; playBtn.classList.remove("on"); }
+  function tick(){
+    var loss = 0;
+    for (var s = 0; s < EPOCHS_PER_TICK && step < MAXSTEP; s++) loss = trainEpoch();
+    render(loss);
+    if (step >= MAXSTEP) stopRun();
+  }
+  function startRun(){
+    running = true; playBtn.textContent = "Pause"; playBtn.classList.add("on");
+    if (REDUCED){
+      var loss = 0;
+      for (var i = 0; i < MAXSTEP; i++) loss = trainEpoch();
+      render(loss); stopRun(); return;
+    }
+    timer = setInterval(tick, TICK_MS);
+  }
+  playBtn.onclick = function(){ if (running) stopRun(); else startRun(); };
+  document.getElementById("cv-step").onclick = function(){
+    if (running) return;
+    var loss = 0;
+    for (var s = 0; s < 10 && step < MAXSTEP; s++) loss = trainEpoch();
+    render(loss);
+  };
+  document.getElementById("cv-reset").onclick = function(){
+    stopRun(); dataset = makeDataset(N_PER, 0.3); P = initParams(); step = 0; render(0);
+  };
+  dataset = makeDataset(N_PER, 0.3);
+  P = initParams();
+  render(0);
+})();
+
+/* ============ 3. ATTENTION RETRIEVAL ============ */
+(function(){
+  var barsWrap = document.getElementById("at-bars");
+  if (!barsWrap) return;
+  var exampleEl = document.getElementById("at-example"), say = document.getElementById("at-say");
+  var NPAIRS = 3, KVOCAB = 4, VVOCAB = 4, D = 8, DK = 8, DOUT2 = 8;
+  var P = null, step = 0, timer = null, running = false;
+  var MAXSTEP = 800, TICK_MS = 30, STEPS_PER_TICK = 3, BATCH = 16, LR = 0.5;
+  var PROBE = { keys: [1, 3, 0], vals: [2, 0, 1], queryKey: 3, correctPos: 1, target: 0 };
+
+  function rnd(a){ return (Math.random() * 2 - 1) * a; }
+  function zeros(n){ return new Array(n).fill(0); }
+  function randMat(r, c, a){ return Array.from({ length: r * c }, function(){ return rnd(a); }); }
+  function dot(a, b){ var s = 0; for (var i = 0; i < a.length; i++) s += a[i] * b[i]; return s; }
+  function matvec(M, r, c, v){
+    var out = new Array(r).fill(0);
+    for (var i = 0; i < r; i++){ var s = 0; for (var j = 0; j < c; j++) s += M[i * c + j] * v[j]; out[i] = s; }
+    return out;
+  }
+  function vecTmat(v, M, r, c){
+    var out = new Array(c).fill(0);
+    for (var i = 0; i < r; i++){ var vi = v[i]; if (vi === 0) continue; for (var j = 0; j < c; j++) out[j] += vi * M[i * c + j]; }
+    return out;
+  }
+  function outer(a, b){
+    var out = new Array(a.length * b.length);
+    for (var i = 0; i < a.length; i++) for (var j = 0; j < b.length; j++) out[i * b.length + j] = a[i] * b[j];
+    return out;
+  }
+  function addInPlace(A, B){ for (var i = 0; i < A.length; i++) A[i] += B[i]; return A; }
+  function embRow(table, idx){ return table.slice(idx * D, idx * D + D); }
+
+  function initParams(){
+    return {
+      keyEmb: randMat(KVOCAB, D, 0.5), valEmb: randMat(VVOCAB, D, 0.5), queryType: Array.from({ length: D }, function(){ return rnd(0.5); }),
+      Wq: randMat(DK, D, 0.4), Wk: randMat(DK, D, 0.4), Wv: randMat(DOUT2, D, 0.4),
+      Wout: randMat(VVOCAB, DOUT2, 0.4), bout: zeros(VVOCAB)
+    };
+  }
+  function fwd(keys, vals, queryKey, params){
+    var qEmb = embRow(params.keyEmb, queryKey).slice();
+    for (var i = 0; i < D; i++) qEmb[i] += params.queryType[i];
+    var Q = matvec(params.Wq, DK, D, qEmb);
+    var Ks = [], Vs = [], kEmbs = [], vEmbs = [];
+    for (i = 0; i < NPAIRS; i++){
+      var kE = embRow(params.keyEmb, keys[i]), vE = embRow(params.valEmb, vals[i]);
+      kEmbs.push(kE); vEmbs.push(vE);
+      Ks.push(matvec(params.Wk, DK, D, kE)); Vs.push(matvec(params.Wv, DOUT2, D, vE));
+    }
+    var scale = 1 / Math.sqrt(DK);
+    var scores = Ks.map(function(K){ return dot(Q, K) * scale; });
+    var m = Math.max.apply(null, scores);
+    var exps = scores.map(function(s){ return Math.exp(s - m); });
+    var sumExp = exps.reduce(function(a, b){ return a + b; }, 0);
+    var weights = exps.map(function(e){ return e / sumExp; });
+    var context = new Array(DOUT2).fill(0);
+    for (i = 0; i < NPAIRS; i++) for (var j = 0; j < DOUT2; j++) context[j] += weights[i] * Vs[i][j];
+    var logits = matvec(params.Wout, VVOCAB, DOUT2, context).map(function(v, idx){ return v + params.bout[idx]; });
+    var mL = Math.max.apply(null, logits);
+    var eL = logits.map(function(v){ return Math.exp(v - mL); });
+    var sL = eL.reduce(function(a, b){ return a + b; }, 0);
+    var probs = eL.map(function(v){ return v / sL; });
+    return { qEmb: qEmb, Q: Q, Ks: Ks, Vs: Vs, kEmbs: kEmbs, vEmbs: vEmbs, weights: weights, context: context, probs: probs, scale: scale };
+  }
+  function lossAndGrad(keys, vals, queryKey, target){
+    var c = fwd(keys, vals, queryKey, P);
+    var loss = -Math.log(Math.max(c.probs[target], 1e-12));
+    var dlogits = c.probs.slice(); dlogits[target] -= 1;
+    var dWout = outer(dlogits, c.context), dbout = dlogits.slice();
+    var dcontext = vecTmat(dlogits, P.Wout, VVOCAB, DOUT2);
+    var dWv = new Array(DOUT2 * D).fill(0), dWk = new Array(DK * D).fill(0), dWq = new Array(DK * D).fill(0);
+    var dKeyEmb = new Array(KVOCAB * D).fill(0), dValEmb = new Array(VVOCAB * D).fill(0), dQueryType = new Array(D).fill(0);
+    var dWeights = new Array(NPAIRS);
+    for (var i = 0; i < NPAIRS; i++){
+      var dVi = c.context.map(function(_, idx){ return dcontext[idx] * c.weights[i]; });
+      dWeights[i] = dot(dcontext, c.Vs[i]);
+      addInPlace(dWv, outer(dVi, c.vEmbs[i]));
+      var dvEmb = vecTmat(dVi, P.Wv, DOUT2, D);
+      for (var j = 0; j < D; j++) dValEmb[vals[i] * D + j] += dvEmb[j];
+    }
+    var dotWD = 0; for (i = 0; i < NPAIRS; i++) dotWD += c.weights[i] * dWeights[i];
+    var dScores = new Array(NPAIRS);
+    for (i = 0; i < NPAIRS; i++) dScores[i] = c.weights[i] * (dWeights[i] - dotWD);
+    var dQKdot = dScores.map(function(v){ return v * c.scale; });
+    var dQ = new Array(DK).fill(0);
+    for (i = 0; i < NPAIRS; i++){
+      var g = dQKdot[i];
+      for (var j2 = 0; j2 < DK; j2++) dQ[j2] += g * c.Ks[i][j2];
+      var dKi = c.Q.map(function(v){ return v * g; });
+      addInPlace(dWk, outer(dKi, c.kEmbs[i]));
+      var dkEmb = vecTmat(dKi, P.Wk, DK, D);
+      for (j2 = 0; j2 < D; j2++) dKeyEmb[keys[i] * D + j2] += dkEmb[j2];
+    }
+    addInPlace(dWq, outer(dQ, c.qEmb));
+    var dqEmb = vecTmat(dQ, P.Wq, DK, D);
+    for (j2 = 0; j2 < D; j2++){ dKeyEmb[queryKey * D + j2] += dqEmb[j2]; dQueryType[j2] += dqEmb[j2]; }
+    return { loss: loss, grads: { Wout: dWout, bout: dbout, Wv: dWv, Wk: dWk, Wq: dWq, keyEmb: dKeyEmb, valEmb: dValEmb, queryType: dQueryType } };
+  }
+  function randInt(n){ return Math.floor(Math.random() * n); }
+  function sampleTask(){
+    var keys = [];
+    while (keys.length < NPAIRS){ var k = randInt(KVOCAB); if (keys.indexOf(k) === -1) keys.push(k); }
+    var vals = keys.map(function(){ return randInt(VVOCAB); });
+    var qIdx = randInt(NPAIRS);
+    return { keys: keys, vals: vals, queryKey: keys[qIdx], target: vals[qIdx] };
+  }
+  function trainStep(){
+    var acc = { Wout: new Array(VVOCAB * DOUT2).fill(0), bout: new Array(VVOCAB).fill(0), Wv: new Array(DOUT2 * D).fill(0), Wk: new Array(DK * D).fill(0), Wq: new Array(DK * D).fill(0), keyEmb: new Array(KVOCAB * D).fill(0), valEmb: new Array(VVOCAB * D).fill(0), queryType: new Array(D).fill(0) };
+    var totalLoss = 0;
+    for (var b = 0; b < BATCH; b++){
+      var t = sampleTask();
+      var r = lossAndGrad(t.keys, t.vals, t.queryKey, t.target);
+      totalLoss += r.loss;
+      for (var name in acc) for (var idx = 0; idx < acc[name].length; idx++) acc[name][idx] += r.grads[name][idx];
+    }
+    for (var name2 in acc) for (var idx2 = 0; idx2 < acc[name2].length; idx2++) P[name2][idx2] -= LR * acc[name2][idx2] / BATCH;
+    step++;
+    return totalLoss / BATCH;
+  }
+
+  var bars = [], labels = [];
+  for (var i = 0; i < NPAIRS; i++){
+    var wrap = document.createElement("div"); wrap.className = "bar-wrap";
+    var bar = document.createElement("div"); bar.className = "bar"; bar.style.height = "33%";
+    var lbl = document.createElement("div"); lbl.className = "bar-lbl";
+    wrap.appendChild(bar); wrap.appendChild(lbl); barsWrap.appendChild(wrap);
+    bars.push(bar); labels.push(lbl);
+  }
+  exampleEl.innerHTML = "Probe sequence: pairs <b>(" + PROBE.keys.map(function(k, i2){ return "k" + k + "→v" + PROBE.vals[i2]; }).join(", ") + ")</b>, query <b>k" + PROBE.queryKey + "</b> — correct answer <b>v" + PROBE.target + "</b> (pair " + (PROBE.correctPos + 1) + ").";
+
+  function render(loss){
+    var c = fwd(PROBE.keys, PROBE.vals, PROBE.queryKey, P);
+    var predVal = c.probs.indexOf(Math.max.apply(null, c.probs));
+    for (var i2 = 0; i2 < NPAIRS; i2++){
+      bars[i2].style.height = Math.max(2, c.weights[i2] * 100) + "%";
+      var isHit = i2 === PROBE.correctPos && c.weights[i2] > 0.5;
+      bars[i2].classList.toggle("hit", isHit);
+      labels[i2].textContent = "k" + PROBE.keys[i2] + "→v" + PROBE.vals[i2] + " (" + fmt(c.weights[i2] * 100, 0) + "%)";
+    }
+    var msg;
+    if (step === 0) msg = "Untrained — attention spread roughly evenly, no reason to prefer any pair. Press <b>Run</b>.";
+    else msg = "<b>step " + step + "</b> · loss <b>" + fmt(loss, 4) + "</b> · predicts <b>v" + predVal + "</b> for the probe (target v" + PROBE.target + ")" + (predVal === PROBE.target ? " — correct" : "");
+    say.innerHTML = msg;
+  }
+
+  var playBtn = document.getElementById("at-play");
+  function stopRun(){ running = false; clearInterval(timer); timer = null; playBtn.textContent = "Run"; playBtn.classList.remove("on"); }
+  function tick(){
+    var loss = 0;
+    for (var s = 0; s < STEPS_PER_TICK && step < MAXSTEP; s++) loss = trainStep();
+    render(loss);
+    if (step >= MAXSTEP) stopRun();
+  }
+  function startRun(){
+    running = true; playBtn.textContent = "Pause"; playBtn.classList.add("on");
+    if (REDUCED){
+      var loss = 0;
+      for (var i2 = 0; i2 < MAXSTEP; i2++) loss = trainStep();
+      render(loss); stopRun(); return;
+    }
+    timer = setInterval(tick, TICK_MS);
+  }
+  playBtn.onclick = function(){ if (running) stopRun(); else startRun(); };
+  document.getElementById("at-step").onclick = function(){
+    if (running) return;
+    var loss = 0;
+    for (var s = 0; s < 10 && step < MAXSTEP; s++) loss = trainStep();
+    render(loss);
+  };
+  document.getElementById("at-reset").onclick = function(){ stopRun(); P = initParams(); step = 0; render(0); };
+  P = initParams();
+  render(0);
+})();
+
+/* ============ 4. CAUSAL NEXT-IN-SERIES ============ */
+(function(){
+  var seqWrap = document.getElementById("ca-seq");
+  if (!seqWrap) return;
+  var predWrap = document.getElementById("ca-pred"), barsWrap = document.getElementById("ca-bars"), say = document.getElementById("ca-say");
+  var VOCAB = 6, SEQ_LEN = 8, D = 8, DK = 8, DOUT3 = 8;
+  var PALETTE = ["#0B8B8B", "#D8811C", "#5A4A9F", "#B31E55", "#4B5F6E", "#15222E"];
+  var PROBE = [0, 1, 0, 1, 0, 1, 0, 1];
+  var QPOS = 5; // predicts position 6, attends over positions 0..5; positions 0,2,4 all carry the correct value
+  var P = null, step = 0, timer = null, running = false;
+  var MAXSTEP = 900, TICK_MS = 30, STEPS_PER_TICK = 3, BATCH = 16, LR = 0.5;
+
+  function rnd(a){ return (Math.random() * 2 - 1) * a; }
+  function zeros(n){ return new Array(n).fill(0); }
+  function randMat(r, c, a){ return Array.from({ length: r * c }, function(){ return rnd(a); }); }
+  function dot(a, b){ var s = 0; for (var i = 0; i < a.length; i++) s += a[i] * b[i]; return s; }
+  function matvec(M, r, c, v){
+    var out = new Array(r).fill(0);
+    for (var i = 0; i < r; i++){ var s = 0; for (var j = 0; j < c; j++) s += M[i * c + j] * v[j]; out[i] = s; }
+    return out;
+  }
+  function vecTmat(v, M, r, c){
+    var out = new Array(c).fill(0);
+    for (var i = 0; i < r; i++){ var vi = v[i]; if (vi === 0) continue; for (var j = 0; j < c; j++) out[j] += vi * M[i * c + j]; }
+    return out;
+  }
+  function outer(a, b){
+    var out = new Array(a.length * b.length);
+    for (var i = 0; i < a.length; i++) for (var j = 0; j < b.length; j++) out[i * b.length + j] = a[i] * b[j];
+    return out;
+  }
+  function addInPlace(A, B){ for (var i = 0; i < A.length; i++) A[i] += B[i]; return A; }
+  function embRow(table, idx){ return table.slice(idx * D, idx * D + D); }
+
+  function initParams(){
+    return {
+      tokEmb: randMat(VOCAB, D, 0.5), posEmb: randMat(SEQ_LEN, D, 0.5),
+      Wq: randMat(DK, D, 0.4), Wk: randMat(DK, D, 0.4), Wv: randMat(DOUT3, D, 0.4),
+      Wout: randMat(VOCAB, DOUT3, 0.4), bout: zeros(VOCAB)
+    };
+  }
+  function makeSeq(){
+    var a = Math.floor(Math.random() * VOCAB);
+    var b; do { b = Math.floor(Math.random() * VOCAB); } while (b === a);
+    var phase = Math.random() < 0.5 ? 0 : 1;
+    var toks = [];
+    for (var i = 0; i < SEQ_LEN; i++) toks.push((i + phase) % 2 === 0 ? a : b);
+    return toks;
+  }
+  function fwd(toks, params){
+    var emb = [];
+    for (var i = 0; i < SEQ_LEN; i++){
+      var e = embRow(params.tokEmb, toks[i]).slice();
+      var pe = embRow(params.posEmb, i);
+      for (var d = 0; d < D; d++) e[d] += pe[d];
+      emb.push(e);
+    }
+    var Q = emb.map(function(e){ return matvec(params.Wq, DK, D, e); });
+    var K = emb.map(function(e){ return matvec(params.Wk, DK, D, e); });
+    var V = emb.map(function(e){ return matvec(params.Wv, DOUT3, D, e); });
+    var scale = 1 / Math.sqrt(DK);
+    var weights = [], context = [], probs = [];
+    for (var i2 = 0; i2 < SEQ_LEN; i2++){
+      var scores = [];
+      for (var j = 0; j <= i2; j++) scores.push(dot(Q[i2], K[j]) * scale);
+      var m = Math.max.apply(null, scores);
+      var exps = scores.map(function(s){ return Math.exp(s - m); });
+      var sum = exps.reduce(function(a, b){ return a + b; }, 0);
+      var w = exps.map(function(e){ return e / sum; });
+      weights.push(w);
+      var ctx = new Array(DOUT3).fill(0);
+      for (j = 0; j <= i2; j++) for (var d2 = 0; d2 < DOUT3; d2++) ctx[d2] += w[j] * V[j][d2];
+      context.push(ctx);
+      var lg = matvec(params.Wout, VOCAB, DOUT3, ctx).map(function(v, idx){ return v + params.bout[idx]; });
+      var mL = Math.max.apply(null, lg);
+      var eL = lg.map(function(v){ return Math.exp(v - mL); });
+      var sL = eL.reduce(function(a, b){ return a + b; }, 0);
+      probs.push(eL.map(function(v){ return v / sL; }));
+    }
+    return { emb: emb, Q: Q, K: K, V: V, weights: weights, context: context, probs: probs, scale: scale };
+  }
+  function lossAndGrad(toks){
+    var c = fwd(toks, P);
+    var loss = 0;
+    var dWout = new Array(VOCAB * DOUT3).fill(0), dbout = new Array(VOCAB).fill(0);
+    var dQ = Array.from({ length: SEQ_LEN }, function(){ return new Array(DK).fill(0); });
+    var dK = Array.from({ length: SEQ_LEN }, function(){ return new Array(DK).fill(0); });
+    var dV = Array.from({ length: SEQ_LEN }, function(){ return new Array(DOUT3).fill(0); });
+    var nPred = SEQ_LEN - 1;
+    for (var i = 0; i < SEQ_LEN - 1; i++){
+      var target = toks[i + 1];
+      loss += -Math.log(Math.max(c.probs[i][target], 1e-12));
+      var dlogits = c.probs[i].slice(); dlogits[target] -= 1;
+      for (var k = 0; k < dlogits.length; k++) dlogits[k] /= nPred;
+      addInPlace(dWout, outer(dlogits, c.context[i]));
+      addInPlace(dbout, dlogits);
+      var dcontext = vecTmat(dlogits, P.Wout, VOCAB, DOUT3);
+      var dWeights = [];
+      for (var j = 0; j <= i; j++){
+        var dVj = dcontext.map(function(v){ return v * c.weights[i][j]; });
+        addInPlace(dV[j], dVj);
+        dWeights.push(dot(dcontext, c.V[j]));
+      }
+      var dotWD = 0; for (j = 0; j <= i; j++) dotWD += c.weights[i][j] * dWeights[j];
+      var dScores = [];
+      for (j = 0; j <= i; j++) dScores.push(c.weights[i][j] * (dWeights[j] - dotWD));
+      var dQKdot = dScores.map(function(v){ return v * c.scale; });
+      for (j = 0; j <= i; j++){
+        var g = dQKdot[j];
+        for (var d = 0; d < DK; d++) dQ[i][d] += g * c.K[j][d];
+        for (d = 0; d < DK; d++) dK[j][d] += g * c.Q[i][d];
+      }
+    }
+    var dWq = new Array(DK * D).fill(0), dWk = new Array(DK * D).fill(0), dWv = new Array(DOUT3 * D).fill(0);
+    var dTokEmb = new Array(VOCAB * D).fill(0), dPosEmb = new Array(SEQ_LEN * D).fill(0);
+    for (var t = 0; t < SEQ_LEN; t++){
+      addInPlace(dWq, outer(dQ[t], c.emb[t]));
+      addInPlace(dWk, outer(dK[t], c.emb[t]));
+      addInPlace(dWv, outer(dV[t], c.emb[t]));
+      var dEmb = vecTmat(dQ[t], P.Wq, DK, D);
+      addInPlace(dEmb, vecTmat(dK[t], P.Wk, DK, D));
+      addInPlace(dEmb, vecTmat(dV[t], P.Wv, DOUT3, D));
+      for (var d3 = 0; d3 < D; d3++){ dTokEmb[toks[t] * D + d3] += dEmb[d3]; dPosEmb[t * D + d3] += dEmb[d3]; }
+    }
+    return { loss: loss / nPred, grads: { Wout: dWout, bout: dbout, Wq: dWq, Wk: dWk, Wv: dWv, tokEmb: dTokEmb, posEmb: dPosEmb } };
+  }
+  function trainStep(){
+    var acc = { Wout: new Array(VOCAB * DOUT3).fill(0), bout: new Array(VOCAB).fill(0), Wq: new Array(DK * D).fill(0), Wk: new Array(DK * D).fill(0), Wv: new Array(DOUT3 * D).fill(0), tokEmb: new Array(VOCAB * D).fill(0), posEmb: new Array(SEQ_LEN * D).fill(0) };
+    var totalLoss = 0;
+    for (var b = 0; b < BATCH; b++){
+      var toks = makeSeq();
+      var r = lossAndGrad(toks);
+      totalLoss += r.loss;
+      for (var name in acc) for (var idx = 0; idx < acc[name].length; idx++) acc[name][idx] += r.grads[name][idx];
+    }
+    for (var name2 in acc) for (var idx2 = 0; idx2 < acc[name2].length; idx2++) P[name2][idx2] -= LR * acc[name2][idx2] / BATCH;
+    step++;
+    return totalLoss / BATCH;
+  }
+
+  var seqChips = [], predChips = [], bars = [], barLbls = [];
+  for (var i3 = 0; i3 < SEQ_LEN; i3++){
+    var chip = document.createElement("div");
+    chip.style.cssText = "width:2.2rem;height:2.2rem;border-radius:2px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:.85rem;color:#fff;font-weight:600";
+    chip.style.background = PALETTE[PROBE[i3]];
+    chip.textContent = PROBE[i3];
+    seqWrap.appendChild(chip);
+    seqChips.push(chip);
+  }
+  for (var i4 = 0; i4 < SEQ_LEN - 1; i4++){
+    var pchip = document.createElement("div");
+    pchip.style.cssText = "width:2.2rem;height:2.2rem;border-radius:2px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:.85rem;font-weight:600;border:2px solid var(--rule);color:var(--ink-3)";
+    predWrap.appendChild(pchip);
+    predChips.push(pchip);
+  }
+  for (var i5 = 0; i5 <= QPOS; i5++){
+    var wrap2 = document.createElement("div"); wrap2.className = "bar-wrap";
+    var bar2 = document.createElement("div"); bar2.className = "bar"; bar2.style.height = "16%"; bar2.style.background = "var(--attn)";
+    var lbl2 = document.createElement("div"); lbl2.className = "bar-lbl"; lbl2.textContent = "pos " + i5;
+    wrap2.appendChild(bar2); wrap2.appendChild(lbl2); barsWrap.appendChild(wrap2);
+    bars.push(bar2); barLbls.push(lbl2);
+  }
+
+  function render(loss){
+    var c = fwd(PROBE, P);
+    for (var i6 = 0; i6 < SEQ_LEN - 1; i6++){
+      var pred = c.probs[i6].indexOf(Math.max.apply(null, c.probs[i6]));
+      var pchip = predChips[i6];
+      pchip.textContent = pred;
+      pchip.style.color = "#fff";
+      pchip.style.background = PALETTE[pred];
+      if (i6 === 0){ pchip.style.opacity = 0.4; pchip.title = "unguessable from one token"; }
+      else pchip.style.borderColor = pred === PROBE[i6 + 1] ? "#0B8B8B" : "#B31E55";
+    }
+    var qw = c.weights[QPOS];
+    var correctVal = PROBE[QPOS + 1];
+    for (var i7 = 0; i7 <= QPOS; i7++){
+      bars[i7].style.height = Math.max(2, qw[i7] * 100) + "%";
+      bars[i7].style.background = PROBE[i7] === correctVal ? "#0B8B8B" : "#5A4A9F";
+      barLbls[i7].textContent = "pos " + i7 + " (" + Math.round(qw[i7] * 100) + "%)";
+    }
+    var msg;
+    if (step === 0) msg = "Untrained — predictions are noise, attention spread evenly. Press <b>Run</b>.";
+    else msg = "<b>step " + step + "</b> · loss <b>" + Number(loss).toFixed(4) + "</b> — positions 1–6 should all be correct once trained; position 0 stays wrong on purpose.";
+    say.innerHTML = msg;
+  }
+
+  var playBtn = document.getElementById("ca-play");
+  function stopRun(){ running = false; clearInterval(timer); timer = null; playBtn.textContent = "Run"; playBtn.classList.remove("on"); }
+  function tick(){
+    var loss = 0;
+    for (var s = 0; s < STEPS_PER_TICK && step < MAXSTEP; s++) loss = trainStep();
+    render(loss);
+    if (step >= MAXSTEP) stopRun();
+  }
+  function startRun(){
+    running = true; playBtn.textContent = "Pause"; playBtn.classList.add("on");
+    if (REDUCED){
+      var loss = 0;
+      for (var i8 = 0; i8 < MAXSTEP; i8++) loss = trainStep();
+      render(loss); stopRun(); return;
+    }
+    timer = setInterval(tick, TICK_MS);
+  }
+  playBtn.onclick = function(){ if (running) stopRun(); else startRun(); };
+  document.getElementById("ca-step").onclick = function(){
+    if (running) return;
+    var loss = 0;
+    for (var s = 0; s < 10 && step < MAXSTEP; s++) loss = trainStep();
+    render(loss);
+  };
+  document.getElementById("ca-reset").onclick = function(){ stopRun(); P = initParams(); step = 0; render(0); };
+  P = initParams();
+  render(0);
+})();
+
+})();
+</script>
+</body>
+</html>
