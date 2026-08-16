@@ -194,7 +194,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <header class="top">
   <p class="kicker">Course · part two of two</p>
   <h1>Fundamentals of neural networks: <em>actually</em> build one</h1>
-  <p class="standfirst">The companion guide derives the formulas. This one assembles them into a working digit classifier — every shape, every parameter, and a complete implementation in about sixty lines of NumPy. Ten of the ideas below are live: change them and watch what happens.</p>
+  <p class="standfirst">The companion guide derives the formulas. This one assembles them into a working digit classifier — every shape, every parameter, and a complete implementation in about sixty lines of NumPy. Eleven of the ideas below are live: change them and watch what happens.</p>
   <div class="legend">
     <span><span class="swatch" style="background:var(--fwd)"></span><b>forward</b> — signal travelling in</span>
     <span><span class="swatch" style="background:var(--back)"></span><b>backward</b> — blame travelling out</span>
@@ -437,7 +437,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 
   <span class="eq wide"><span class="frac"><span class="num">∂L</span><span class="den">∂W</span></span> = δ xᵀ &nbsp;&nbsp;&nbsp; <span class="frac"><span class="num">∂L</span><span class="den">∂b</span></span> = δ &nbsp;&nbsp;&nbsp; <span class="frac"><span class="num">∂L</span><span class="den">∂x</span></span> = Wᵀ δ</span>
 
-  <p>Read the first one in words: <strong>a weight's blame is (how wrong its output was) × (how active its input was).</strong> A weight can only be at fault if it was carrying signal. The third says blame flows back to the inputs through the same wires it came forward on — that is all the transpose is doing. You will see all three appear literally in the code in section 10.</p>
+  <p>Read the first one in words: <strong>a weight's blame is (how wrong its output was) × (how active its input was).</strong> A weight can only be at fault if it was carrying signal. The third says blame flows back to the inputs through the same wires it came forward on — that is all the transpose is doing. You will see all three at work in the code in section 10 — though the code stores each example as a <em>row</em>, not a column, so multiplying by Wᵀ from the left becomes multiplying by W from the right; same operation, flipped layout.</p>
 
   <h3>Gradient descent</h3>
   <p>Once you know the blame, act on it:</p>
@@ -584,6 +584,34 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 
   <p class="note">Parameters are the ~109k weights and biases the loop <em>learns</em>. Hyperparameters are learning rate, batch size, epochs, and layer widths — a handful of numbers <em>you</em> choose before training starts.</p>
 
+  <p>That loop in words is abstract. Here it is happening, on a network small enough that every parameter is a wire you can watch move — the same 784→128→64→10 idea shrunk to 1→6→6→1, so the layers and neurons stay visible while it learns.</p>
+
+  <figure class="w" id="fitfig">
+    <div class="head">
+      <span class="title">Watch it learn · fitting a curve</span>
+      <div class="ctrls">
+        <button class="fwd" id="fit-play">Run</button>
+        <button id="fit-step">Step</button>
+        <button id="fit-reset">Reset</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="slider-row"><label for="fit-lr">learning rate η</label><input type="range" id="fit-lr" min="0.05" max="0.6" step="0.05" value="0.2"><span class="val" id="fit-lrv">0.20</span></div>
+      <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-start">
+        <div style="flex:0 0 240px">
+          <div class="mlabel">The network &nbsp;(1→6→6→1, 61 parameters)</div>
+          <svg id="fit-net" viewBox="0 0 240 260" role="img" aria-label="Diagram of a small network's weights changing as it trains, wires colored by sign and weighted by magnitude"></svg>
+        </div>
+        <div style="flex:1;min-width:280px">
+          <div class="mlabel">The fit</div>
+          <canvas id="fit-plot" width="520" height="260" aria-label="Plot of a target curve and the network's current output curve as it trains"></canvas>
+        </div>
+      </div>
+      <div class="readout" id="fit-say"></div>
+    </div>
+    <figcaption>One input, one output, two hidden layers of six neurons each — 61 wires and biases in total, the same knobs as the 109,386 in the real model, just few enough to see. Every wire is a weight: <b style="color:#0B8B8B">teal</b> is positive, <b style="color:#D8811C">orange</b> is negative, thickness is magnitude. Press <b>Run</b> and watch the dashed target curve get traced by the solid one, while the wires sort themselves into the pattern that draws it. <b>Reset</b> scrambles the 61 numbers back to random — the fit collapses to noise, because nothing has been learned yet.</figcaption>
+  </figure>
+
   <h3>Overfitting and the three splits</h3>
   <p><strong>Overfitting is when the model memorizes the training examples instead of learning the pattern.</strong> With 109,386 parameters and 60,000 images there is ample capacity to just remember answers — which gives perfect training accuracy and useless real-world accuracy.</p>
 
@@ -609,14 +637,14 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <p>If you tune hyperparameters against a set, you have indirectly fitted to it and its score is no longer honest. The test set is the one you do not get to iterate against.</p>
 
   <h3>Choosing the architecture</h3>
-  <p>Start small, and only grow when the model underfits. <strong>If training accuracy itself is poor, the model is too small. If training accuracy is excellent but validation accuracy is poor, it is too large</strong> (or needs regularization). Those two symptoms point in opposite directions, and diagnosing which one you have is most of the skill. For MNIST, 784→128→64→10 gets you 97–98%; beyond that, architecture tweaks stop helping and you need convolutions.</p>
+  <p>Start small, and only grow when the model underfits. <strong>If training accuracy itself is poor, the model is too small. If training accuracy is excellent but validation accuracy is poor, it is too large</strong> (or needs <strong>regularization</strong> — a penalty added to the loss for large weights, discouraging the model from memorizing). Those two symptoms point in opposite directions, and diagnosing which one you have is most of the skill. For MNIST, 784→128→64→10 gets you 97–98%; beyond that, architecture tweaks stop helping and you need convolutions.</p>
 </section>
 
 <section>
   <div class="eyebrow"><span class="num">10</span><span>The implementation</span><span class="line"></span></div>
   <h2>Sixty lines, no autograd</h2>
 
-  <p>No frameworks. Every gradient from section 6 appears explicitly.</p>
+  <p>No frameworks. Every gradient from section 6 appears explicitly. Section 6 gave those formulas for one example; below, every array has an extra leading dimension for the <span class="mono">B</span> examples in a batch, and a single matrix multiply computes and adds up all <span class="mono">B</span> examples' gradients at once — that sum is what makes a batch update one step rather than <span class="mono">B</span> of them.</p>
 
 <pre><span class="k">import</span> numpy <span class="k">as</span> np
 
@@ -658,29 +686,34 @@ SIZES = [<span class="s">784</span>, <span class="s">128</span>, <span class="s"
 
 <span class="k">def</span> cross_entropy(Y_hat, y):
     B = y.shape[<span class="s">0</span>]
-    <span class="k">return</span> -np.mean(np.log(Y_hat[np.arange(B), y] + <span class="s">1e-12</span>))
+    <span class="c"># Y_hat[np.arange(B), y] pairs row i with column y[i]: the predicted</span>
+    <span class="c"># probability of the true class, read out for all B examples at once.</span>
+    <span class="k">return</span> -np.mean(np.log(Y_hat[np.arange(B), y] + <span class="s">1e-12</span>))   <span class="c"># +1e-12: never log(0)</span>
 
 <span class="c"># ---------- backward ----------</span>
 
 <span class="k">def</span> backward(params, acts, pres, y):
     B, L = y.shape[<span class="s">0</span>], len(params)
     Y = np.zeros_like(acts[-<span class="s">1</span>])
-    Y[np.arange(B), y] = <span class="s">1</span>                 <span class="c"># one-hot the labels</span>
+    Y[np.arange(B), y] = <span class="s">1</span>                 <span class="c"># one-hot: 1 in the true-class column, 0 elsewhere, per row</span>
 
     <span class="c"># softmax + cross-entropy collapse to exactly (predicted - actual)</span>
     delta = (acts[-<span class="s">1</span>] - Y) / B             <span class="c"># /B averages over the batch</span>
 
     grads = [<span class="k">None</span>] * L
     <span class="k">for</span> i <span class="k">in</span> range(L - <span class="s">1</span>, -<span class="s">1</span>, -<span class="s">1</span>):
-        grads[i] = [delta.T @ acts[i],     <span class="c"># dL/dW = delta x^T  (outer product)</span>
-                    delta.sum(axis=<span class="s">0</span>)]     <span class="c"># dL/db = delta</span>
+        grads[i] = [delta.T @ acts[i],     <span class="c"># dL/dW = delta x^T, summed over the batch</span>
+                    delta.sum(axis=<span class="s">0</span>)]     <span class="c"># dL/db = delta, summed over the batch</span>
         <span class="k">if</span> i &gt; <span class="s">0</span>:
             delta = (delta @ params[i][<span class="s">0</span>]) * (pres[i-<span class="s">1</span>] &gt; <span class="s">0</span>)
-            <span class="c">#        ^ W^T delta, batched    ^ ReLU blocks blame where it was off</span>
+            <span class="c">#        ^ = W^T delta per example; delta is a row here, so it's W</span>
+            <span class="c">#          on the right instead of W^T on the left      ^ ReLU blocks blame where it was off</span>
 
     <span class="k">return</span> grads
 
 <span class="c"># ---------- update ----------</span>
+<span class="c"># "stochastic" gradient descent: each step uses one random mini-batch,</span>
+<span class="c"># not the full dataset — the same downhill step from section 6.</span>
 
 <span class="k">def</span> sgd(params, grads, lr):
     <span class="k">for</span> (W, b), (dW, db) <span class="k">in</span> zip(params, grads):
@@ -700,7 +733,7 @@ SIZES = [<span class="s">784</span>, <span class="s">128</span>, <span class="s"
             grads = backward(params, acts, pres, y[idx])
             sgd(params, grads, lr)
 
-        val_probs = forward(params, X_val)[<span class="s">0</span>][-<span class="s">1</span>]
+        val_probs = forward(params, X_val)[<span class="s">0</span>][-<span class="s">1</span>]   <span class="c"># [0]=acts list, [-1]=final softmax output</span>
         acc = (val_probs.argmax(axis=<span class="s">1</span>) == y_val).mean()
         print(<span class="s">f"epoch {ep+1:2d}   val acc {acc:.4f}"</span>)
     <span class="k">return</span> params</pre>
@@ -1480,7 +1513,7 @@ function fmt(v, d){ return Number(v).toFixed(d === undefined ? 2 : d); }
     }
     target = order;
     animate();
-    say.innerHTML = "<b>Shuffled.</b> Unreadable to you — but the strip below is unchanged as a multiset, and a dense layer would score it identically.";
+    say.innerHTML = "<b>Shuffled.</b> Unreadable to you — but the strip below has exactly the same 784 numbers, just reordered, and a dense layer would score it identically.";
   };
   document.getElementById("px-restore").onclick = function(){
     var back = [];
@@ -1652,6 +1685,271 @@ function fmt(v, d){ return Number(v).toFixed(d === undefined ? 2 : d); }
     anim = requestAnimationFrame(frame);
   };
   draw(0);
+})();
+
+/* ============ 11. CURVE FITTING ============ */
+(function(){
+  var svg = document.getElementById("fit-net");
+  var cv = document.getElementById("fit-plot");
+  if (!svg || !cv) return;
+  var ctx = cv.getContext("2d"), say = document.getElementById("fit-say");
+  var lrSl = document.getElementById("fit-lr");
+  var H1 = 6, H2 = 6, N = 41;
+  var xs = [], ts = [];
+  function target(x){ return 0.6 * Math.sin(2 * Math.PI * x); }
+  for (var n0 = 0; n0 < N; n0++){
+    var xv = -1 + 2 * n0 / (N - 1);
+    xs.push(xv);
+    ts.push(target(xv));
+  }
+  var w1, b1, w2, b2, w3, b3, step = 0, timer = null, running = false, diverged = false;
+  var MAXSTEP = 6000, TICK_MS = 25, STEPS_PER_TICK = 12;
+
+  function rnd(a){ return (Math.random() * 2 - 1) * a; }
+  function initW(){
+    w1 = []; b1 = [];
+    for (var j = 0; j < H1; j++){ w1.push(rnd(1.2)); b1.push(rnd(0.5)); }
+    w2 = []; b2 = [];
+    for (var k = 0; k < H2; k++){
+      var row = [];
+      for (var j2 = 0; j2 < H1; j2++) row.push(rnd(0.7));
+      w2.push(row); b2.push(rnd(0.3));
+    }
+    w3 = [];
+    for (var k2 = 0; k2 < H2; k2++) w3.push(rnd(0.7));
+    b3 = rnd(0.2);
+    step = 0;
+  }
+
+  function forward(x){
+    var z1 = [], h1 = [];
+    for (var j = 0; j < H1; j++){ z1.push(w1[j] * x + b1[j]); h1.push(Math.tanh(z1[j])); }
+    var h2 = [];
+    for (var k = 0; k < H2; k++){
+      var s = b2[k];
+      for (var j2 = 0; j2 < H1; j2++) s += w2[k][j2] * h1[j2];
+      h2.push(Math.tanh(s));
+    }
+    var y = b3;
+    for (var k2 = 0; k2 < H2; k2++) y += w3[k2] * h2[k2];
+    return { y: y, h1: h1, h2: h2 };
+  }
+
+  function trainStep(){
+    var lr = parseFloat(lrSl.value);
+    var gw1 = new Array(H1).fill(0), gb1 = new Array(H1).fill(0);
+    var gw2 = []; for (var k = 0; k < H2; k++) gw2.push(new Array(H1).fill(0));
+    var gb2 = new Array(H2).fill(0);
+    var gw3 = new Array(H2).fill(0), gb3 = 0, lossSum = 0;
+
+    for (var n = 0; n < N; n++){
+      var x = xs[n], t = ts[n];
+      var f = forward(x);
+      var err = f.y - t;
+      lossSum += err * err;
+      var dLdy = 2 * err / N;
+
+      for (var k1 = 0; k1 < H2; k1++) gw3[k1] += dLdy * f.h2[k1];
+      gb3 += dLdy;
+
+      var dLdz2 = [];
+      for (var k2 = 0; k2 < H2; k2++){
+        var dLdh2 = dLdy * w3[k2];
+        dLdz2.push(dLdh2 * (1 - f.h2[k2] * f.h2[k2]));
+      }
+      for (var k3 = 0; k3 < H2; k3++){
+        gb2[k3] += dLdz2[k3];
+        for (var j = 0; j < H1; j++) gw2[k3][j] += dLdz2[k3] * f.h1[j];
+      }
+
+      var dLdz1 = [];
+      for (var j2 = 0; j2 < H1; j2++){
+        var dLdh1 = 0;
+        for (var k4 = 0; k4 < H2; k4++) dLdh1 += dLdz2[k4] * w2[k4][j2];
+        dLdz1.push(dLdh1 * (1 - f.h1[j2] * f.h1[j2]));
+      }
+      for (var j3 = 0; j3 < H1; j3++){
+        gw1[j3] += dLdz1[j3] * x;
+        gb1[j3] += dLdz1[j3];
+      }
+    }
+
+    for (var j4 = 0; j4 < H1; j4++){ w1[j4] -= lr * gw1[j4]; b1[j4] -= lr * gb1[j4]; }
+    for (var k5 = 0; k5 < H2; k5++){
+      b2[k5] -= lr * gb2[k5];
+      for (var j5 = 0; j5 < H1; j5++) w2[k5][j5] -= lr * gw2[k5][j5];
+      w3[k5] -= lr * gw3[k5];
+    }
+    b3 -= lr * gb3;
+    step++;
+    return lossSum / N;
+  }
+
+  var Wd = 240, Hd = 260, colX = [26, 92, 158, 224];
+  function layout(cnt, cx){
+    var arr = [], top = 28, bot = Hd - 34, span = bot - top;
+    for (var i = 0; i < cnt; i++) arr.push({ x: cx, y: cnt === 1 ? Hd / 2 : top + span * i / (cnt - 1) });
+    return arr;
+  }
+  var pos1 = layout(1, colX[0]), pos2 = layout(H1, colX[1]), pos3 = layout(H2, colX[2]), pos4 = layout(1, colX[3]);
+  var edgesA = [], edgesB = [], edgesC = [];
+
+  function connect(fromArr, toArr, store){
+    fromArr.forEach(function(p, i){
+      toArr.forEach(function(q, j){
+        var line = el("line", { x1: p.x, y1: p.y, x2: q.x, y2: q.y });
+        line.setAttribute("class", "edge");
+        svg.appendChild(line);
+        store.push({ el: line, i: i, j: j });
+      });
+    });
+  }
+  function buildSvg(){
+    svg.innerHTML = "";
+    edgesA = []; edgesB = []; edgesC = [];
+    connect(pos1, pos2, edgesA);
+    connect(pos2, pos3, edgesB);
+    connect(pos3, pos4, edgesC);
+    [pos1, pos2, pos3, pos4].forEach(function(arr){
+      arr.forEach(function(p){
+        var c = el("circle", { cx: p.x, cy: p.y, r: 6 });
+        c.setAttribute("class", "node");
+        svg.appendChild(c);
+      });
+    });
+    ["in", "6", "6", "out"].forEach(function(txt, i){
+      var t = el("text", { x: colX[i], y: Hd - 12, "text-anchor": "middle" });
+      t.setAttribute("class", "lbl");
+      t.textContent = txt;
+      svg.appendChild(t);
+    });
+  }
+  function wireStyle(v){
+    return {
+      stroke: v >= 0 ? "#0B8B8B" : "#D8811C",
+      width: Math.min(4, 0.5 + Math.abs(v) * 2.2),
+      op: Math.min(0.85, 0.18 + Math.abs(v) * 0.35)
+    };
+  }
+  function setEdge(e, v){
+    var s = wireStyle(v);
+    e.el.style.stroke = s.stroke; e.el.style.strokeWidth = s.width; e.el.style.strokeOpacity = s.op;
+  }
+  function drawNet(){
+    edgesA.forEach(function(e){ setEdge(e, w1[e.j]); });
+    edgesB.forEach(function(e){ setEdge(e, w2[e.j][e.i]); });
+    edgesC.forEach(function(e){ setEdge(e, w3[e.i]); });
+  }
+
+  function drawPlot(){
+    var Wp = cv.width, Hp = cv.height;
+    ctx.clearRect(0, 0, Wp, Hp);
+    var x0 = -1.15, x1v = 1.15, y0 = -1.3, y1 = 1.3;
+    function px(x){ return 40 + (x - x0) / (x1v - x0) * (Wp - 60); }
+    function py(y){ return Hp - 30 - (y - y0) / (y1 - y0) * (Hp - 50); }
+
+    ctx.strokeStyle = "#E2EAEF"; ctx.lineWidth = 1;
+    for (var gx = -1; gx <= 1; gx += 0.5){ ctx.beginPath(); ctx.moveTo(px(gx), py(y0)); ctx.lineTo(px(gx), py(y1)); ctx.stroke(); }
+    for (var gy = -1; gy <= 1; gy += 0.5){ ctx.beginPath(); ctx.moveTo(px(x0), py(gy)); ctx.lineTo(px(x1v), py(gy)); ctx.stroke(); }
+    ctx.strokeStyle = "#8399A8";
+    ctx.beginPath(); ctx.moveTo(px(x0), py(0)); ctx.lineTo(px(x1v), py(0)); ctx.stroke();
+
+    ctx.fillStyle = "#8399A8";
+    for (var n1 = 0; n1 < N; n1++){ ctx.beginPath(); ctx.arc(px(xs[n1]), py(ts[n1]), 2, 0, Math.PI * 2); ctx.fill(); }
+
+    ctx.strokeStyle = "#15222E"; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.6; ctx.beginPath();
+    for (var i = 0; i <= 200; i++){
+      var xg = x0 + (x1v - x0) * i / 200;
+      var tg = target(xg);
+      if (i === 0) ctx.moveTo(px(xg), py(tg)); else ctx.lineTo(px(xg), py(tg));
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.strokeStyle = "#0B8B8B"; ctx.lineWidth = 2.6; ctx.beginPath();
+    for (var i2 = 0; i2 <= 200; i2++){
+      var xn = x0 + (x1v - x0) * i2 / 200;
+      var yn = Math.max(y0 - 0.3, Math.min(y1 + 0.3, forward(xn).y));
+      if (i2 === 0) ctx.moveTo(px(xn), py(yn)); else ctx.lineTo(px(xn), py(yn));
+    }
+    ctx.stroke();
+
+    ctx.fillStyle = "#8399A8"; ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.fillText("f(x)", 8, 20);
+    ctx.fillText("x", Wp - 16, py(0) - 8);
+    ctx.fillStyle = "#15222E"; ctx.fillText("target", Wp - 150, 20);
+    ctx.fillStyle = "#0B8B8B"; ctx.fillText("network", Wp - 150, 34);
+  }
+
+  function render(lossVal){
+    drawNet();
+    drawPlot();
+    var msg;
+    if (diverged){
+      msg = "<b style='color:#B31E55'>Diverged.</b> η = " + fmt(parseFloat(lrSl.value), 2) + " was too large a step — press <b>Reset</b> to try again, at a lower learning rate if it keeps happening.";
+    } else if (step === 0){
+      msg = "Wires start random — the curve is noise. Press <b>Run</b>.";
+    } else if (lossVal > 0.1){
+      msg = "<b>step " + step + "</b> · loss (MSE) <b>" + fmt(lossVal, 4) + "</b> — stuck near the flat start. This plateau is normal; it breaks suddenly, not gradually.";
+    } else if (lossVal > 0.01){
+      msg = "<b>step " + step + "</b> · loss (MSE) <b>" + fmt(lossVal, 4) + "</b> — converging. Watch the wires sort into teal and orange as the curve locks on.";
+    } else {
+      msg = "<b>step " + step + "</b> · loss (MSE) <b>" + fmt(lossVal, 4) + "</b> — close fit. Press <b>Reset</b> to scramble the wires and watch it start over.";
+    }
+    say.innerHTML = msg;
+  }
+
+  var playBtn = document.getElementById("fit-play");
+  function stopRun(){
+    running = false; clearInterval(timer); timer = null;
+    playBtn.textContent = "Run"; playBtn.classList.remove("on");
+  }
+  function tick(){
+    var lossVal = 0;
+    for (var s = 0; s < STEPS_PER_TICK && step < MAXSTEP; s++){
+      lossVal = trainStep();
+      if (!isFinite(lossVal)){ diverged = true; break; }
+    }
+    render(lossVal);
+    if (diverged || step >= MAXSTEP) stopRun();
+  }
+  function startRun(){
+    if (diverged) return;
+    running = true;
+    playBtn.textContent = "Pause"; playBtn.classList.add("on");
+    if (REDUCED){
+      var lossVal = 0;
+      for (var i = 0; i < 1500 && step < MAXSTEP; i++){
+        lossVal = trainStep();
+        if (!isFinite(lossVal)){ diverged = true; break; }
+      }
+      render(lossVal);
+      stopRun();
+      return;
+    }
+    timer = setInterval(tick, TICK_MS);
+  }
+  playBtn.onclick = function(){ if (running) stopRun(); else startRun(); };
+  document.getElementById("fit-step").onclick = function(){
+    if (running || diverged) return;
+    var lossVal = 0;
+    for (var s = 0; s < 150 && step < MAXSTEP; s++){
+      lossVal = trainStep();
+      if (!isFinite(lossVal)){ diverged = true; break; }
+    }
+    render(lossVal);
+  };
+  document.getElementById("fit-reset").onclick = function(){
+    stopRun();
+    diverged = false;
+    initW();
+    render(0);
+  };
+  lrSl.oninput = function(){ document.getElementById("fit-lrv").textContent = fmt(this.value, 2); };
+
+  initW();
+  buildSvg();
+  render(0);
 })();
 
 })();

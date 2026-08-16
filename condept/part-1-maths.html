@@ -186,10 +186,10 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <p style="margin-top:.7rem">These carry more weight here than anything else, so make sure they are solid.</p>
   <table>
     <tr><th>Property</th><th>Why it matters here</th></tr>
-    <tr><td class="shape">e<sup>x</sup> &gt; 0 for every real x</td><td>This is what makes softmax possible (§4)</td></tr>
+    <tr><td class="shape">e<sup>x</sup> &gt; 0 for every real x</td><td>This is what makes softmax possible (§5)</td></tr>
     <tr><td class="shape">strictly increasing</td><td>Bigger score always means bigger probability</td></tr>
     <tr><td class="shape">e<sup>a</sup>·e<sup>b</sup> = e<sup>a+b</sup>, so e<sup>a</sup>/e<sup>b</sup> = e<sup>a−b</sup></td><td>Gives softmax its shift-invariance</td></tr>
-    <tr><td class="shape">log(ab) = log a + log b</td><td><b>The defining property.</b> The entire reason cross-entropy looks as it does (§5)</td></tr>
+    <tr><td class="shape">log(ab) = log a + log b</td><td><b>The defining property.</b> The entire reason cross-entropy looks as it does (§6)</td></tr>
     <tr><td class="shape">log 1 = 0</td><td>Zero surprise at a certainty</td></tr>
     <tr><td class="shape">log x → −∞ as x → 0</td><td>Infinite penalty for being certain and wrong</td></tr>
     <tr><td class="shape">d/dx log x = 1/x</td><td>Used in the cross-entropy gradient</td></tr>
@@ -200,7 +200,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <div class="box">
   <div class="sub">Box B · refresher</div>
   <div class="h">The only two probability facts you need</div>
-  <p style="margin-top:.7rem">Skip if you have done a stats course. Otherwise this box unlocks §9 and §12, which are otherwise the two hardest parts of the document.</p>
+  <p style="margin-top:.7rem">Skip if you have done a stats course. Otherwise this box unlocks §9 and §11, which are otherwise the two hardest parts of the document.</p>
   <p><strong>Variance</strong> measures spread: the average squared distance from the mean. Its square root, the standard deviation, is the typical size of a deviation.</p>
   <p><strong>Fact 1 — for independent quantities, variances add.</strong> Note it is <em>variances</em> that add, not standard deviations. So adding up n independent things each with variance 1 gives variance n, and typical size <strong>√n</strong> — not n.</p>
   <span class="eq">Var(X + Y) = Var(X) + Var(Y)</span>
@@ -212,7 +212,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
       <div class="ctrls"><button class="fwd" id="rw-run">Resample</button></div>
     </div>
     <div class="body">
-      <div class="slider-row"><label>n steps</label><input type="range" id="rw-n" min="1" max="400" step="1" value="64"><span class="val" id="rw-nv">64</span></div>
+      <div class="slider-row"><label for="rw-n">n steps</label><input type="range" id="rw-n" min="1" max="400" step="1" value="64"><span class="val" id="rw-nv">64</span></div>
       <canvas id="rw" width="820" height="230" aria-label="Histogram of random walk endpoints after n steps"></canvas>
       <div class="readout" id="rw-say"></div>
     </div>
@@ -220,7 +220,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   </figure>
 
   <p><strong>Fact 2 — for independent quantities with mean zero, variances multiply:</strong> Var(XY) = Var(X)·Var(Y). With zero means, Var(XY) = E[X²Y²], and independence splits that into E[X²]E[Y²].</p>
-  <p style="margin-bottom:0">These two facts appear at exactly two places: the √d<sub>k</sub> scaling (§12) and weight initialization (§9). Both times the reasoning is identical — <em>we are summing n independent products, so the spread grows like √n, so divide by √n to undo it.</em></p>
+  <p style="margin-bottom:0">These two facts appear at exactly two places: the √d<sub>k</sub> scaling (§11) and weight initialization (§9). Both times the reasoning is identical — <em>we are summing n independent products, so the spread grows like √n, so divide by √n to undo it.</em></p>
 </div>
 
 <!-- ============ PART 1 ============ -->
@@ -290,14 +290,14 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <section>
   <div class="eyebrow"><span class="num">05</span><span>Scores into beliefs</span><span class="line"></span></div>
   <h2>Deriving softmax, badly first</h2>
-  <p>The last layer emits raw scores called <strong>logits</strong>: unbounded, possibly negative, meaningless alone. We want probabilities — all positive, summing to 1. Let us try and fail twice.</p>
+  <p><strong>The problem.</strong> Take any list of real numbers — any sign, any scale — and turn it into a probability distribution: every entry positive, the whole list summing to 1. In a network, that list is the <strong>last layer's</strong> raw output, called <strong>logits</strong>: unbounded, possibly negative, meaningless alone. Let us try and fail twice.</p>
 
   <figure class="w" id="smdfig">
-    <div class="head"><span class="title">Three attempts at making probabilities</span><div class="ctrls"><button id="smd-neg">Make one logit negative</button></div></div>
+    <div class="head"><span class="title">Three attempts at making probabilities</span><div class="ctrls"><button id="smd-neg">Try +1 and −1</button></div></div>
     <div class="body">
-      <div class="slider-row"><label>logit A</label><input type="range" id="sd0" min="-4" max="4" step="0.1" value="2"><span class="val" id="sdv0">2.0</span></div>
-      <div class="slider-row"><label>logit B</label><input type="range" id="sd1" min="-4" max="4" step="0.1" value="1"><span class="val" id="sdv1">1.0</span></div>
-      <div class="slider-row"><label>logit C</label><input type="range" id="sd2" min="-4" max="4" step="0.1" value="-1"><span class="val" id="sdv2">-1.0</span></div>
+      <div class="slider-row"><label for="sd0">logit A</label><input type="range" id="sd0" min="-4" max="4" step="0.1" value="2"><span class="val" id="sdv0">2.0</span></div>
+      <div class="slider-row"><label for="sd1">logit B</label><input type="range" id="sd1" min="-4" max="4" step="0.1" value="1"><span class="val" id="sdv1">1.0</span></div>
+      <div class="slider-row"><label for="sd2">logit C</label><input type="range" id="sd2" min="-4" max="4" step="0.1" value="-1"><span class="val" id="sdv2">-1.0</span></div>
       <div class="tri" style="margin-top:1rem">
         <div class="pane bad"><div class="ph">1 · divide by the sum</div><div class="bars" id="p1"></div><div class="verdict" id="v1"></div></div>
         <div class="pane bad"><div class="ph">2 · square, then normalise</div><div class="bars" id="p2"></div><div class="verdict" id="v2"></div></div>
@@ -312,17 +312,17 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <p><strong>Two properties come free.</strong> Since e<sup>a</sup>/e<sup>b</sup> = e<sup>a−b</sup>, only the <em>differences</em> between logits matter — so softmax(z + c) = softmax(z). That is not a curiosity: e<sup>1000</sup> overflows to infinity, so every real implementation computes softmax(z − max z), which changes nothing mathematically but forces the largest exponent to be e⁰ = 1. This is the <strong>log-sum-exp trick</strong>. Second, dividing logits by a constant T before softmax controls decisiveness — that is the <strong>temperature</strong> dial in every LLM API.</p>
 
   <h3>Softmax's derivative, and the fact that explains everything downstream</h3>
-  <p>Write S = Σⱼ e<sup>zⱼ</sup> and sᵢ = e<sup>zᵢ</sup>/S. Two cases, both by the quotient rule. Same index: z<sub>i</sub> appears in numerator and sum, giving <span class="mono">sᵢ − sᵢ² = sᵢ(1−sᵢ)</span>. Different index: z<sub>k</sub> appears only in the sum, giving <span class="mono">−sᵢs<sub>k</sub></span>.</p>
+  <p>Write S = Σⱼ e<sup>zⱼ</sup> and sᵢ = e<sup>zᵢ</sup>/S. Two cases, both by the quotient rule. Same index: z<sub>i</sub> appears in numerator and sum, giving <span class="mono">sᵢ − sᵢ² = sᵢ(1−sᵢ)</span>. Different index: z<sub>k</sub> appears only in the sum, giving <span class="mono">−sᵢs<sub>k</sub></span>. One line covers both cases using the <strong>Kronecker delta</strong> δᵢ<sub>k</sub> — shorthand for "1 if i = k, else 0" — which just picks out the same-index case automatically:</p>
   <span class="eq">∂sᵢ ⁄ ∂z<sub>k</sub> = sᵢ(δᵢ<sub>k</sub> − s<sub>k</sub>)</span>
 
   <figure class="w" id="satfig">
     <div class="head"><span class="title">Saturation · s(1−s) as confidence grows</span><div class="ctrls"><span class="tag loss">gradient death</span></div></div>
     <div class="body">
-      <div class="slider-row"><label>logit gap Δ</label><input type="range" id="sat-d" min="0" max="18" step="0.1" value="2"><span class="val" id="sat-dv">2.0</span></div>
+      <div class="slider-row"><label for="sat-d">logit gap Δ</label><input type="range" id="sat-d" min="0" max="18" step="0.1" value="2"><span class="val" id="sat-dv">2.0</span></div>
       <canvas id="sat" width="820" height="260" aria-label="Curves of softmax probability and its derivative as the logit gap grows"></canvas>
       <div class="readout" id="sat-say"></div>
     </div>
-    <figcaption><b>A confident softmax has almost no gradient.</b> Push the gap to 16 and the winning probability is 0.9999999 while the derivative is around 10⁻⁷ — the layer has stopped learning entirely. Remember this number: §12 shows that unscaled attention scores land at exactly this gap, which is the whole reason for the √d<sub>k</sub>.</figcaption>
+    <figcaption><b>A confident softmax has almost no gradient.</b> Push the gap to 16 and the winning probability is 0.9999999 while the derivative is around 10⁻⁷ — the layer has stopped learning entirely. Remember this number: §11 shows that unscaled attention scores land at exactly this gap, which is the whole reason for the √d<sub>k</sub>.</figcaption>
   </figure>
 </section>
 
@@ -330,7 +330,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <section>
   <div class="eyebrow"><span class="num">06</span><span>Beliefs into blame</span><span class="line"></span></div>
   <h2>Deriving cross-entropy from "surprise"</h2>
-  <p>The model says 70% cat; the truth is cat. How wrong is that? Measure the model's <em>surprise</em> at the correct answer. So what must a surprise function S(p) satisfy?</p>
+  <p><strong>The problem.</strong> Assign probability p to an outcome, then watch whether it happens. If it does, how wrong were you to have doubted it? Measure it as <em>surprise</em>: low if you assigned high probability, high if you assigned low. A model that says "70% cat" when the truth is cat should be scored on its surprise at p = 0.70. So what must a surprise function S(p) satisfy?</p>
   <ol>
     <li><strong>S(1) = 0.</strong> Predicting something with certainty and being right teaches you nothing.</li>
     <li><strong>S decreases as p increases.</strong> Rarer is more surprising.</li>
@@ -341,14 +341,15 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <figure class="w" id="surfig">
     <div class="head"><span class="title">Only one function passes condition 3</span><div class="ctrls"><span class="tag loss">S(pq) = S(p) + S(q)</span></div></div>
     <div class="body">
-      <div class="slider-row"><label>p</label><input type="range" id="su-p" min="0.05" max="0.95" step="0.01" value="0.5"><span class="val" id="su-pv">0.50</span></div>
-      <div class="slider-row"><label>q</label><input type="range" id="su-q" min="0.05" max="0.95" step="0.01" value="0.4"><span class="val" id="su-qv">0.40</span></div>
+      <div class="slider-row"><label for="su-p">p</label><input type="range" id="su-p" min="0.05" max="0.95" step="0.01" value="0.5"><span class="val" id="su-pv">0.50</span></div>
+      <div class="slider-row"><label for="su-q">q</label><input type="range" id="su-q" min="0.05" max="0.95" step="0.01" value="0.4"><span class="val" id="su-qv">0.40</span></div>
       <table id="su-tab" style="margin-top:.6rem"></table>
       <div class="readout" id="su-say"></div>
     </div>
     <figcaption>Three candidate surprise functions, tested against the requirement that independent surprises add. Drag p and q anywhere you like: <b>1 − p</b> and <b>1/p − 1</b> never line up, while <b>−log p</b> matches to the last decimal at every single setting. The loss function was not chosen — it was forced.</figcaption>
   </figure>
 
+  <p>Write the true label as a <strong>one-hot</strong> vector y — 1 for the correct class, 0 for every other — and the model's predicted probabilities as ŷ. Summing surprise over classes, only the correct one contributes:</p>
   <span class="eq">L = −Σ<sub>k</sub> y<sub>k</sub> log ŷ<sub>k</sub> &nbsp;&nbsp;which for a one-hot label is just&nbsp;&nbsp; L = −log ŷ<sub>correct</sub></span>
 
   <h3>Why not squared error?</h3>
@@ -383,8 +384,8 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
       <div class="ctrls"><button class="fwd on" id="gear-run">Pause</button></div>
     </div>
     <div class="body">
-      <div class="slider-row"><label>du/dx</label><input type="range" id="g1" min="0.3" max="3" step="0.1" value="3"><span class="val" id="g1v">3.0</span></div>
-      <div class="slider-row"><label>dy/du</label><input type="range" id="g2" min="0.3" max="3" step="0.1" value="2"><span class="val" id="g2v">2.0</span></div>
+      <div class="slider-row"><label for="g1">du/dx</label><input type="range" id="g1" min="0.3" max="3" step="0.1" value="3"><span class="val" id="g1v">3.0</span></div>
+      <div class="slider-row"><label for="g2">dy/du</label><input type="range" id="g2" min="0.3" max="3" step="0.1" value="2"><span class="val" id="g2v">2.0</span></div>
       <svg id="gear" viewBox="0 0 640 210" role="img" aria-label="Three connected gears turning at multiplied rates"></svg>
       <div class="readout" id="gear-say"></div>
     </div>
@@ -438,7 +439,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
       </div>
     </div>
     <div class="body">
-      <div class="slider-row"><label>depth L</label><input type="range" id="van-d" min="1" max="40" step="1" value="10"><span class="val" id="van-dv">10</span></div>
+      <div class="slider-row"><label for="van-d">depth L</label><input type="range" id="van-d" min="1" max="40" step="1" value="10"><span class="val" id="van-dv">10</span></div>
       <canvas id="van" width="820" height="250" aria-label="Log-scale plot of gradient magnitude against network depth"></canvas>
       <div class="readout" id="van-say"></div>
     </div>
@@ -460,7 +461,8 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <p>The mechanism we are about to build computes, for each token, a weighted sum over all the others. But addition does not care about order: a + b + c = c + b + a. Shuffle the input rows and the outputs shuffle identically, contents unchanged.</p>
   <blockquote class="a"><p><strong>"Dog bites man" and "man bites dog" would be literally indistinguishable to the architecture.</strong> Order is not weakened; it is absent.</p></blockquote>
   <p>Since the machinery sees only the vectors, position must be written <em>into</em> the vectors. What do we need? Every position distinct; values bounded (so appending the raw index is out); and "ten apart" looking similar whether you are at position 20 or 2000.</p>
-  <p><strong>The picture: clock hands.</strong> A clock encodes time in a bounded way using several hands at different speeds — the second hand distinguishes nearby moments, the hour hand distinguishes broad ranges, and every hand stays on the same circle forever. So: many sine waves at wildly different wavelengths.</p>
+  <p><strong>The picture: clock hands.</strong> A clock encodes time in a bounded way using several hands at different speeds — the second hand distinguishes nearby moments, the hour hand distinguishes broad ranges, and every hand stays on the same circle forever. So: many sine waves at wildly different wavelengths, one pair per two coordinates of the embedding.</p>
+  <p>Below, <span class="mono">pos</span> is the token's position, <span class="mono">d</span> is the embedding dimension (coordinates per token vector, fixed for the whole model), and <span class="mono">i</span> indexes which pair of coordinates — each pair is one "hand," and larger i means a slower hand:</p>
   <span class="eq">PE(pos, 2i) = sin( pos ⁄ 10000<sup>2i/d</sup> ) &nbsp;&nbsp;&nbsp; PE(pos, 2i+1) = cos( pos ⁄ 10000<sup>2i/d</sup> )</span>
 
   <figure class="w" id="pefig">
@@ -469,7 +471,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
       <div class="ctrls"><span class="tag att">d = 64</span></div>
     </div>
     <div class="body">
-      <div class="slider-row"><label>position</label><input type="range" class="a" id="pe-p" min="0" max="63" step="1" value="12"><span class="val" id="pe-pv">12</span></div>
+      <div class="slider-row"><label for="pe-p">position</label><input type="range" class="a" id="pe-p" min="0" max="63" step="1" value="12"><span class="val" id="pe-pv">12</span></div>
       <canvas id="pe" width="820" height="300" aria-label="Heatmap of sinusoidal positional encodings with a similarity curve"></canvas>
       <div class="readout" id="pe-say"></div>
     </div>
@@ -508,7 +510,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
       <div class="ctrls"><button class="att on" id="dk-scale">Scaling: on</button><button id="dk-run">Resample</button></div>
     </div>
     <div class="body">
-      <div class="slider-row"><label>d<sub>k</sub></label><input type="range" class="a" id="dk-d" min="1" max="256" step="1" value="64"><span class="val" id="dk-dv">64</span></div>
+      <div class="slider-row"><label for="dk-d">d<sub>k</sub></label><input type="range" class="a" id="dk-d" min="1" max="256" step="1" value="64"><span class="val" id="dk-dv">64</span></div>
       <canvas id="dk" width="820" height="200" aria-label="Distribution of dot products at varying dimension, with resulting attention weights"></canvas>
       <div id="dk-rows" style="margin-top:.9rem"></div>
       <div class="readout" id="dk-say"></div>
@@ -549,8 +551,8 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
       <div class="ctrls"><span class="tag att">log scale</span></div>
     </div>
     <div class="body">
-      <div class="slider-row"><label>context n</label><input type="range" class="a" id="cx-n" min="7" max="17" step="0.02" value="11"><span class="val" id="cx-nv">2048</span></div>
-      <div class="slider-row"><label>model width d</label><input type="range" class="a" id="cx-d" min="8" max="13" step="1" value="12"><span class="val" id="cx-dv">4096</span></div>
+      <div class="slider-row"><label for="cx-n">context n</label><input type="range" class="a" id="cx-n" min="7" max="17" step="0.02" value="11"><span class="val" id="cx-nv">2048</span></div>
+      <div class="slider-row"><label for="cx-d">model width d</label><input type="range" class="a" id="cx-d" min="8" max="13" step="1" value="12"><span class="val" id="cx-dv">4096</span></div>
       <canvas id="cx" width="820" height="270" aria-label="Log-log plot comparing attention and feed-forward cost against context length"></canvas>
       <div class="readout" id="cx-say"></div>
     </div>
@@ -893,7 +895,7 @@ function softmax(z){ var m=Math.max.apply(null,z); var e=z.map(function(v){retur
   }
   [0,1,2].forEach(function(i){ gid("sd"+i).oninput=update; });
   gid("smd-neg").onclick=function(){
-    gid("sd0").value=1.5; gid("sd1").value=0.5; gid("sd2").value=-1.5; update();
+    gid("sd0").value=1; gid("sd1").value=0.5; gid("sd2").value=-1; update();
   };
   update();
 })();
