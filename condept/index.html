@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neural Networks and Transformers — an interactive course</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#EDF2F5;--card:#FFF;--ink:#15222E;--ink-2:#4B5F6E;--ink-3:#8399A8;--rule:#CBD8E0;
+--fwd:#0B8B8B;--back:#D8811C;--loss:#B31E55;--attn:#5A4A9F;--measure:34rem;--wide:52rem}
+*{box-sizing:border-box}
+body{margin:0;background-color:var(--paper);
+background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);
+background-size:28px 28px;background-position:-1px -1px;
+color:var(--ink);font-family:"Spectral",Georgia,serif;font-size:17px;line-height:1.68}
+body::before{content:"";position:fixed;inset:0;background:var(--paper);opacity:.82;pointer-events:none;z-index:0}
+.shell{position:relative;z-index:1;max-width:var(--wide);margin:0 auto;padding:0 1.25rem 5rem}
+h1,h2,h3,.kicker,.num,.tag,.meta{font-family:"Space Grotesk",system-ui,sans-serif}
+.mono,code{font-family:"IBM Plex Mono",ui-monospace,monospace}
+header{padding:5rem 0 2.5rem;max-width:var(--measure)}
+.kicker{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 1.4rem}
+h1{font-size:clamp(2rem,5.6vw,3.2rem);line-height:1.03;letter-spacing:-.03em;font-weight:700;margin:0 0 1.1rem}
+h1 em{font-style:normal;color:var(--attn)}
+.standfirst{font-size:1.12rem;color:var(--ink-2);margin:0 0 1.5rem}
+p{max-width:var(--measure);margin:0 0 1.1rem}
+.legend{display:flex;gap:1.4rem;flex-wrap:wrap;font-family:"IBM Plex Mono",monospace;font-size:.75rem;color:var(--ink-2);border-top:1px solid var(--rule);padding-top:1rem;max-width:var(--measure)}
+.swatch{display:inline-block;width:.65rem;height:.65rem;border-radius:50%;margin-right:.45rem}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem;margin:2.5rem 0}
+a.card{display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--rule);padding:1.4rem;transition:border-color .18s,transform .18s}
+a.card:hover{border-color:var(--attn);transform:translateY(-2px)}
+a.card:focus-visible{outline:2px solid var(--attn);outline-offset:3px}
+a.card .num{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--attn);font-weight:600}
+a.card h2{font-size:1.25rem;letter-spacing:-.02em;margin:.5rem 0 .6rem;font-weight:700;line-height:1.2}
+a.card p{font-size:.92rem;color:var(--ink-2);margin:0 0 .9rem;max-width:100%}
+a.card .meta{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);border-top:1px dashed var(--rule);padding-top:.7rem}
+ul{max-width:var(--measure);padding-left:1.15rem}
+li{margin-bottom:.35rem}
+h3{font-size:1.02rem;margin:2.4rem 0 .7rem;font-weight:600;letter-spacing:-.01em}
+footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-size:.85rem;color:var(--ink-3);max-width:var(--measure)}
+@media (prefers-reduced-motion:reduce){a.card{transition:none}a.card:hover{transform:none}}
+</style>
+</head>
+<body>
+<div class="shell">
+<header>
+  <p class="kicker">Two parts · thirteen and ten live derivations</p>
+  <h1>Neural networks and <em>transformers</em>, built from scratch</h1>
+  <p class="standfirst">A course in two halves. The first derives every formula from the problem it solves; the second assembles them into a working digit classifier. Nothing is asserted before it is motivated.</p>
+  <div class="legend">
+    <span><span class="swatch" style="background:var(--fwd)"></span>forward</span>
+    <span><span class="swatch" style="background:var(--back)"></span>backward</span>
+    <span><span class="swatch" style="background:var(--loss)"></span>loss</span>
+    <span><span class="swatch" style="background:var(--attn)"></span>attention</span>
+  </div>
+</header>
+
+<div class="cards">
+  <a class="card" href="part-1-maths.html">
+    <span class="num">Part one</span>
+    <h2>The maths</h2>
+    <p>Dot products, softmax derived from two failed attempts, cross-entropy forced out of what "surprise" must mean, the chain rule, and then attention built in five steps — ending at the variance argument for √d<sub>k</sub>.</p>
+    <div class="meta">13 interactive figures</div>
+  </a>
+  <a class="card" href="part-2-build.html">
+    <span class="num">Part two</span>
+    <h2>Actually build one</h2>
+    <p>784 → 128 → 64 → 10. Every shape, all 109,386 parameters counted, the permutation test that motivates CNNs, and sixty lines of NumPy with a hand-written backward pass.</p>
+    <div class="meta">10 interactive figures</div>
+  </a>
+</div>
+
+<h3>Who this is for</h3>
+<p>Anyone with school algebra and a first calculus course, and no machine learning background. Linear algebra and the two required probability facts are built from scratch inside part one.</p>
+
+<h3>What the widgets are for</h3>
+<p>Each one exists to make an argument checkable rather than to decorate the page:</p>
+<ul>
+  <li>Add 100 to every logit and watch softmax not move — shift-invariance, and why real code subtracts the max</li>
+  <li>Test three candidate loss functions against "independent surprises add" — only −log p survives, at every setting</li>
+  <li>Turn off the ÷√d<sub>k</sub> and watch attention's gradient collapse</li>
+  <li>Set all weights to zero and watch a network fail to move at all</li>
+  <li>Shuffle an image's pixels and see why a dense layer does not care</li>
+</ul>
+
+<h3>Running it</h3>
+<p>Both pages are single self-contained HTML files — no build step, no dependencies, no network calls beyond the web font. Open either file directly in a browser, or serve the folder with <code class="mono">python3 -m http.server</code>.</p>
+
+<footer>
+  <p>Reduced-motion preferences are respected throughout; every animation degrades to its final state.</p>
+</footer>
+</div>
+</body>
+</html>
