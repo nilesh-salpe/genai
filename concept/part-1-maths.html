@@ -415,6 +415,20 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <span class="eq wide"><span class="frac"><span class="num">∂L</span><span class="den">∂W</span></span> = δ xᵀ &nbsp;&nbsp;&nbsp; <span class="frac"><span class="num">∂L</span><span class="den">∂b</span></span> = δ &nbsp;&nbsp;&nbsp; <span class="frac"><span class="num">∂L</span><span class="den">∂x</span></span> = Wᵀ δ</span>
   <blockquote><p>The transpose is not a trick to memorise. It is what "run the same wiring backwards" looks like in symbols. Forward, W carries signal from inputs to outputs; backward, Wᵀ carries blame back along the identical wires.</p></blockquote>
   <p><em>Why walk backwards at all?</em> Because there is one loss and millions of parameters. Backwards from the single output gets every gradient in one sweep; forwards would need one sweep per parameter. That asymmetry is the entire reason deep learning is computationally feasible.</p>
+
+  <h3>Using the blame: gradient descent</h3>
+  <p>Every parameter now has a number attached — its share of the blame, ∂L/∂w. The direction was already decided two paragraphs up: the gradient points toward steepest <em>increase</em>, and we want the loss to go down, so move every parameter a small step the <em>other</em> way.</p>
+  <span class="eq">w ← w − η ∂L/∂w</span>
+  <p>That is the whole algorithm, applied to every parameter, over and over. <span class="mono">η</span> (eta) is the <strong>learning rate</strong> — how big a step to take. Too small and training crawls; too large and each step overshoots the minimum and the loss climbs instead of falling. The build guide's §6 has a live version of this you can push past that point yourself.</p>
+
+  <h3>Discouraging large weights: regularization</h3>
+  <p><strong>The problem.</strong> Nothing said so far stops a weight from growing arbitrarily large to fit the training data exactly, memorising it rather than learning the underlying pattern. Gradient descent minimises the loss <em>and only the loss</em> — if a huge weight lowers it, gradient descent will happily produce one.</p>
+  <p><strong>The fix.</strong> Add a second term to the loss that charges a price for large weights: <span class="mono">L₂</span> regularization adds λΣw² across every weight in the model, for some small constant λ.</p>
+  <span class="eq">L = L<sub>data</sub> + λ Σ w²</span>
+  <p>Nothing new is needed to use it — differentiate the new term the same way as everything else. Since d/dw(λw²) = 2λw, it adds exactly one extra term to every weight's gradient:</p>
+  <span class="eq">w ← w − η (∂L<sub>data</sub>/∂w + 2λw)</span>
+  <p>Read the two pieces separately: the first term still pulls w toward whatever reduces prediction error; the new second term pulls w toward <strong>zero</strong>, in direct proportion to its own size — a small, constant tax on every weight, every step. This is also called <strong>weight decay</strong>: with no data gradient at all, this update alone would shrink w geometrically toward zero. λ trades the two pressures against each other — too small and it does nothing, too large and every weight gets taxed to zero regardless of what the data says.</p>
+  <p class="note"><strong>Dropout</strong> attacks the same problem differently: during training, randomly zero out a fraction of a layer's activations on every forward pass, chosen fresh each time. A unit cannot come to rely on any one other unit always being present, so the network is pushed toward redundant, robust features instead of fragile, memorised ones. Nothing to differentiate — it changes the forward pass, not the loss.</p>
 </section>
 
 <section>
@@ -442,7 +456,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <section>
   <div class="eyebrow"><span class="num">09</span><span>What goes wrong</span><span class="line"></span></div>
   <h2>Vanishing gradients, and the three defences</h2>
-  <p>Gradient descent itself is simple — <span class="mono">w ← w − η∇L</span>, a hillside in fog, step downhill, repeat. <strong>Adam</strong> adds two refinements: a running average of the gradient (momentum) and of its square, so each parameter gets its own effective step size; the bias-correction terms 1/(1−β<sup>t</sup>) exist because both averages start at zero and would otherwise be biased low early on.</p>
+  <p>Plain gradient descent has one weakness worth naming before the deeper problem below: it treats every parameter identically, taking the same-size step regardless of how noisy or reliable that parameter's gradient has been. <strong>Adam</strong> fixes this with two refinements: a running average of the gradient (momentum) and of its square, so each parameter gets its own effective step size; the bias-correction terms 1/(1−β<sup>t</sup>) exist because both averages start at zero and would otherwise be biased low early on.</p>
   <p>The real difficulty is depth. Backprop multiplies a long chain of numbers. If each is slightly under 1 the product shrinks exponentially and early layers never learn. If each is over 1 it explodes to NaN.</p>
 
   <figure class="w" id="vanfig">
@@ -465,6 +479,22 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <p><strong>Initialization.</strong> Too large and activations grow layer over layer; too small and they collapse. Using Box B: a neuron sums n<sub>in</sub> independent products, variances of independent things add (Fact 1) and variances of independent products multiply (Fact 2), so the output variance is n<sub>in</sub> × Var(W) × Var(x). Setting Var(W) = 1/n<sub>in</sub> makes that factor exactly 1. <strong>He initialization</strong> uses 2/n<sub>in</sub>, the extra 2 compensating for ReLU zeroing roughly half the inputs.</p>
   <p><strong>Normalization.</strong> LayerNorm rescales a vector to mean 0 and variance 1, then learns its own scale γ and shift β. The statistics are computed <em>across the features of one vector</em>, not across the batch — which is why transformers use it rather than BatchNorm. BatchNorm's statistics come from the other examples in the batch, making an example's output depend on its neighbours, breaking with variable-length sequences, and unusable when generating one token at a time with batch size 1.</p>
 </section>
+
+<div class="box">
+  <div class="sub">Checkpoint</div>
+  <div class="h">Everything above is one loop</div>
+  <p style="margin-top:.7rem">Sections 1 through 9 built a complete, trainable network — every arrow below is something derived above, and the loop is the entire training algorithm:</p>
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;font-family:'IBM Plex Mono',monospace;font-size:.78rem;margin:1rem 0">
+    <span class="tag" style="background:var(--paper);color:var(--ink-2);border:1px solid var(--rule)">input vector</span><span style="color:var(--ink-3)">→</span>
+    <span class="tag fwd">weighted sum (Wx+b)</span><span style="color:var(--ink-3)">→</span>
+    <span class="tag fwd">activation</span><span style="color:var(--ink-3)">→</span>
+    <span class="tag fwd">output</span><span style="color:var(--ink-3)">→</span>
+    <span class="tag loss">loss</span><span style="color:var(--ink-3)">→</span>
+    <span class="tag back">gradient</span><span style="color:var(--ink-3)">→</span>
+    <span class="tag back">update</span><span style="color:var(--ink-3)">↻ back to weighted sum</span>
+  </div>
+  <p style="margin-bottom:0">Represent (§1) → combine (§2–3) → bend (§4) → score and grade (§5–6) → assign blame and nudge downhill (§7–9). From here, one new idea gets added on top of this exact loop: letting each position dynamically choose what to read from the others. That is attention, and it is the whole of what is left.</p>
+</div>
 
 <!-- ============ TRANSFORMERS ============ -->
 <section>

@@ -194,7 +194,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <header class="top">
   <p class="kicker">Course · part two of two</p>
   <h1>Fundamentals of neural networks: <em>actually</em> build one</h1>
-  <p class="standfirst">The companion guide derives the formulas. This one assembles them into a working digit classifier — every shape, every parameter, and a complete implementation in about sixty lines of NumPy. Eleven of the ideas below are live: change them and watch what happens.</p>
+  <p class="standfirst">The companion guide derives the formulas. This one assembles them into a working digit classifier — every shape, every parameter, and a complete implementation in about sixty lines of NumPy. Twelve of the ideas below are live: change them and watch what happens.</p>
   <div class="legend">
     <span><span class="swatch" style="background:var(--fwd)"></span><b>forward</b> — signal travelling in</span>
     <span><span class="swatch" style="background:var(--back)"></span><b>backward</b> — blame travelling out</span>
@@ -636,8 +636,27 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 
   <p>If you tune hyperparameters against a set, you have indirectly fitted to it and its score is no longer honest. The test set is the one you do not get to iterate against.</p>
 
+  <h3>Regularization: taxing large weights</h3>
+  <p>One direct treatment for overfitting, alongside "get more data" and "shrink the model": add a penalty for large weights straight into the loss, so memorising the training set costs something. The build guide's part-1 companion derives it in full — the short version is <span class="mono">L = L<sub>data</sub> + λΣw²</span>, and because that new term differentiates to <span class="mono">2λw</span>, every update step becomes <span class="mono">w ← w − η(∂L<sub>data</sub>/∂w + 2λw)</span>: the usual data-driven nudge, plus a constant small pull toward zero on every weight, every step.</p>
+
+  <figure class="w" id="l2fig">
+    <div class="head">
+      <span class="title">L2 regularization · same noisy fit, weights taxed or not</span>
+      <div class="ctrls">
+        <button id="l2-off" class="on">λ = 0</button>
+        <button id="l2-on">λ = 0.0015</button>
+        <button class="fwd" id="l2-train">Train 2500 steps</button>
+      </div>
+    </div>
+    <div class="body">
+      <canvas id="l2-plot" width="820" height="260" aria-label="Plot of a noisy training set with the network's fitted curve, trained with or without L2 regularization"></canvas>
+      <div class="readout" id="l2-say"></div>
+    </div>
+    <figcaption>The dots are noisy training data — the network has enough capacity (61 weights) to chase every wiggle exactly. With <b>λ = 0</b> it does: the fitted curve visibly bends toward individual noisy points, and the weights driving those bends grow large. Switch to <b>λ = 0.0015</b> and retrain: the fit stays smoother and the weight-magnitude readout drops — some accuracy against the noisy training points is traded for a curve that generalises better. Push λ far higher and every weight gets taxed to zero regardless of what the data says; this λ was chosen to make the shrinkage visible without collapsing the fit.</figcaption>
+  </figure>
+
   <h3>Choosing the architecture</h3>
-  <p>Start small, and only grow when the model underfits. <strong>If training accuracy itself is poor, the model is too small. If training accuracy is excellent but validation accuracy is poor, it is too large</strong> (or needs <strong>regularization</strong> — a penalty added to the loss for large weights, discouraging the model from memorizing). Those two symptoms point in opposite directions, and diagnosing which one you have is most of the skill. For MNIST, 784→128→64→10 gets you 97–98%; beyond that, architecture tweaks stop helping and you need convolutions.</p>
+  <p>Start small, and only grow when the model underfits. <strong>If training accuracy itself is poor, the model is too small. If training accuracy is excellent but validation accuracy is poor, it is too large</strong> — or needs the regularization above. Those two symptoms point in opposite directions, and diagnosing which one you have is most of the skill. For MNIST, 784→128→64→10 gets you 97–98%; beyond that, architecture tweaks stop helping and you need convolutions.</p>
 </section>
 
 <section>
@@ -1949,6 +1968,205 @@ function fmt(v, d){ return Number(v).toFixed(d === undefined ? 2 : d); }
 
   initW();
   buildSvg();
+  render(0);
+})();
+
+/* ============ 12. L2 REGULARIZATION ============ */
+(function(){
+  var cv = document.getElementById("l2-plot");
+  if (!cv) return;
+  var ctx = cv.getContext("2d"), say = document.getElementById("l2-say");
+  var H1 = 6, H2 = 6, N = 25;
+  var xs = [], targetsNoisy = [];
+  function target(x){ return 0.6 * Math.sin(2 * Math.PI * x); }
+  function rnd(a){ return (Math.random() * 2 - 1) * a; }
+  var noiseRng = (function(){
+    var seed = 7;
+    return function(){ seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  })();
+  for (var n0 = 0; n0 < N; n0++){
+    var xv = -1 + 2 * n0 / (N - 1);
+    xs.push(xv);
+    targetsNoisy.push(target(xv) + (noiseRng() * 2 - 1) * 0.35);
+  }
+
+  var w1, b1, w2, b2, w3, b3, step = 0, timer = null, running = false, lambda = 0;
+  var MAXSTEP = 2500, TICK_MS = 20, STEPS_PER_TICK = 15, LR = 0.15;
+
+  function seededRnd(seedState){
+    return function(a){ seedState.v = (seedState.v * 1103515245 + 12345) & 0x7fffffff; return ((seedState.v / 0x7fffffff) * 2 - 1) * a; };
+  }
+  function initW(){
+    var s = { v: 7 };
+    var r = seededRnd(s);
+    w1 = []; b1 = [];
+    for (var j = 0; j < H1; j++){ w1.push(r(1.2)); b1.push(r(0.5)); }
+    w2 = []; b2 = [];
+    for (var k = 0; k < H2; k++){
+      var row = [];
+      for (var j2 = 0; j2 < H1; j2++) row.push(r(0.7));
+      w2.push(row); b2.push(r(0.3));
+    }
+    w3 = [];
+    for (var k2 = 0; k2 < H2; k2++) w3.push(r(0.7));
+    b3 = r(0.2);
+    step = 0;
+  }
+
+  function forward(x){
+    var z1 = [], h1 = [];
+    for (var j = 0; j < H1; j++){ z1.push(w1[j] * x + b1[j]); h1.push(Math.tanh(z1[j])); }
+    var h2 = [];
+    for (var k = 0; k < H2; k++){
+      var s = b2[k];
+      for (var j2 = 0; j2 < H1; j2++) s += w2[k][j2] * h1[j2];
+      h2.push(Math.tanh(s));
+    }
+    var y = b3;
+    for (var k2 = 0; k2 < H2; k2++) y += w3[k2] * h2[k2];
+    return { y: y, h1: h1, h2: h2 };
+  }
+
+  function weightRMS(){
+    var sumSq = 0, cnt = 0;
+    for (var j = 0; j < H1; j++){ sumSq += w1[j] * w1[j]; cnt++; }
+    for (var k = 0; k < H2; k++) for (var j2 = 0; j2 < H1; j2++){ sumSq += w2[k][j2] * w2[k][j2]; cnt++; }
+    for (var k2 = 0; k2 < H2; k2++){ sumSq += w3[k2] * w3[k2]; cnt++; }
+    return Math.sqrt(sumSq / cnt);
+  }
+
+  function trainStep(){
+    var gw1 = new Array(H1).fill(0), gb1 = new Array(H1).fill(0);
+    var gw2 = []; for (var k = 0; k < H2; k++) gw2.push(new Array(H1).fill(0));
+    var gb2 = new Array(H2).fill(0);
+    var gw3 = new Array(H2).fill(0), gb3 = 0, lossSum = 0;
+
+    for (var n = 0; n < N; n++){
+      var x = xs[n], t = targetsNoisy[n];
+      var f = forward(x);
+      var err = f.y - t;
+      lossSum += err * err;
+      var dLdy = 2 * err / N;
+
+      for (var k1 = 0; k1 < H2; k1++) gw3[k1] += dLdy * f.h2[k1];
+      gb3 += dLdy;
+
+      var dLdz2 = [];
+      for (var k2 = 0; k2 < H2; k2++){
+        var dLdh2 = dLdy * w3[k2];
+        dLdz2.push(dLdh2 * (1 - f.h2[k2] * f.h2[k2]));
+      }
+      for (var k3 = 0; k3 < H2; k3++){
+        gb2[k3] += dLdz2[k3];
+        for (var j = 0; j < H1; j++) gw2[k3][j] += dLdz2[k3] * f.h1[j];
+      }
+
+      var dLdz1 = [];
+      for (var j2 = 0; j2 < H1; j2++){
+        var dLdh1 = 0;
+        for (var k4 = 0; k4 < H2; k4++) dLdh1 += dLdz2[k4] * w2[k4][j2];
+        dLdz1.push(dLdh1 * (1 - f.h1[j2] * f.h1[j2]));
+      }
+      for (var j3 = 0; j3 < H1; j3++){
+        gw1[j3] += dLdz1[j3] * x;
+        gb1[j3] += dLdz1[j3];
+      }
+    }
+
+    // d/dw(lambda * w^2) = 2*lambda*w, added to every weight's gradient (not biases)
+    for (var j4 = 0; j4 < H1; j4++){ w1[j4] -= LR * (gw1[j4] + 2 * lambda * w1[j4]); b1[j4] -= LR * gb1[j4]; }
+    for (var k5 = 0; k5 < H2; k5++){
+      b2[k5] -= LR * gb2[k5];
+      for (var j5 = 0; j5 < H1; j5++) w2[k5][j5] -= LR * (gw2[k5][j5] + 2 * lambda * w2[k5][j5]);
+      w3[k5] -= LR * (gw3[k5] + 2 * lambda * w3[k5]);
+    }
+    b3 -= LR * gb3;
+    step++;
+    return lossSum / N;
+  }
+
+  function drawPlot(){
+    var Wp = cv.width, Hp = cv.height;
+    ctx.clearRect(0, 0, Wp, Hp);
+    var x0 = -1.15, x1v = 1.15, y0 = -1.5, y1 = 1.5;
+    function px(x){ return 40 + (x - x0) / (x1v - x0) * (Wp - 60); }
+    function py(y){ return Hp - 30 - (y - y0) / (y1 - y0) * (Hp - 50); }
+
+    ctx.strokeStyle = "#E2EAEF"; ctx.lineWidth = 1;
+    for (var gx = -1; gx <= 1; gx += 0.5){ ctx.beginPath(); ctx.moveTo(px(gx), py(y0)); ctx.lineTo(px(gx), py(y1)); ctx.stroke(); }
+    for (var gy = -1; gy <= 1; gy += 0.5){ ctx.beginPath(); ctx.moveTo(px(x0), py(gy)); ctx.lineTo(px(x1v), py(gy)); ctx.stroke(); }
+    ctx.strokeStyle = "#8399A8";
+    ctx.beginPath(); ctx.moveTo(px(x0), py(0)); ctx.lineTo(px(x1v), py(0)); ctx.stroke();
+
+    ctx.fillStyle = "#8399A8";
+    for (var n1 = 0; n1 < N; n1++){ ctx.beginPath(); ctx.arc(px(xs[n1]), py(targetsNoisy[n1]), 2.6, 0, Math.PI * 2); ctx.fill(); }
+
+    ctx.strokeStyle = "#15222E"; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2; ctx.beginPath();
+    for (var i = 0; i <= 200; i++){
+      var xg = x0 + (x1v - x0) * i / 200;
+      var tg = target(xg);
+      if (i === 0) ctx.moveTo(px(xg), py(tg)); else ctx.lineTo(px(xg), py(tg));
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.strokeStyle = "#0B8B8B"; ctx.lineWidth = 2.6; ctx.beginPath();
+    for (var i2 = 0; i2 <= 200; i2++){
+      var xn = x0 + (x1v - x0) * i2 / 200;
+      var yn = Math.max(y0 - 0.3, Math.min(y1 + 0.3, forward(xn).y));
+      if (i2 === 0) ctx.moveTo(px(xn), py(yn)); else ctx.lineTo(px(xn), py(yn));
+    }
+    ctx.stroke();
+
+    ctx.fillStyle = "#8399A8"; ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.fillText("f(x)", 8, 20);
+    ctx.fillText("x", Wp - 16, py(0) - 8);
+    ctx.fillStyle = "#15222E"; ctx.fillText("target (clean)", Wp - 170, 20);
+    ctx.fillStyle = "#0B8B8B"; ctx.fillText("network fit", Wp - 170, 34);
+  }
+
+  function render(lossVal){
+    drawPlot();
+    var msg;
+    if (step === 0) msg = "Wires start random. Press <b>Train 2500 steps</b> to fit the noisy points shown as dots.";
+    else msg = "λ = <b>" + lambda + "</b> · step " + step + " · train MSE <b>" + fmt(lossVal, 4) + "</b> · weight RMS <b>" + fmt(weightRMS(), 3) + "</b>";
+    say.innerHTML = msg;
+  }
+
+  function stopRun(){ running = false; clearInterval(timer); }
+
+  var offBtn = document.getElementById("l2-off"), onBtn = document.getElementById("l2-on");
+  function setLambda(v, btn){
+    stopRun();
+    lambda = v;
+    offBtn.classList.toggle("on", btn === offBtn);
+    onBtn.classList.toggle("on", btn === onBtn);
+    initW();
+    render(0);
+  }
+  offBtn.onclick = function(){ setLambda(0, offBtn); };
+  onBtn.onclick = function(){ setLambda(0.0015, onBtn); };
+  document.getElementById("l2-train").onclick = function(){
+    if (running) return;
+    stopRun();
+    initW();
+    running = true;
+    if (REDUCED){
+      var lossVal = 0;
+      for (var i = 0; i < MAXSTEP; i++) lossVal = trainStep();
+      render(lossVal);
+      running = false;
+      return;
+    }
+    timer = setInterval(function(){
+      var lossVal = 0;
+      for (var s = 0; s < STEPS_PER_TICK && step < MAXSTEP; s++) lossVal = trainStep();
+      render(lossVal);
+      if (step >= MAXSTEP){ clearInterval(timer); running = false; }
+    }, TICK_MS);
+  };
+
+  initW();
   render(0);
 })();
 
