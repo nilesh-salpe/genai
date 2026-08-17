@@ -75,6 +75,12 @@ footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     <p>Four more models, ordered easiest to hardest, each a self-contained hand-derived NumPy implementation you can run: a spiral classifier, a small convolutional network, a minimal attention layer that retrieves by content, and causal self-attention predicting what comes next.</p>
     <div class="meta">4 interactive figures · 4 Python files</div>
   </a>
+  <a class="card" href="bonus-curve-fitting.html">
+    <span class="num">Bonus</span>
+    <h2>Play with it yourself</h2>
+    <p>A standalone sandbox: train a small network live against a target function of 1 to 4 input features, with layer count, width, activation, and learning rate all exposed as sliders. Four features don't mean four curves — one function of a higher-dimensional input, viewed one slice at a time.</p>
+    <div class="meta">Live in-browser training</div>
+  </a>
 </div>
 
 <h3>Who this is for</h3>
@@ -92,9 +98,6 @@ footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 
 <h3>Running it</h3>
 <p>All three pages are single self-contained HTML files — no build step, no dependencies, no network calls beyond the web font. Open any file directly in a browser, or serve the folder with <code class="mono">python3 -m http.server</code>. Part three's Python files need only NumPy (and scikit-learn, for one bundled dataset) — run any of them directly: <code class="mono">python3 examples/01_mlp_spiral_classifier.py</code>.</p>
-
-<h3>A sandbox to play with afterward</h3>
-<p><a href="bonus-curve-fitting.html">This standalone demo</a> trains a small network live in your browser to fit a target function of 1 to 4 input features, with hidden-layer count, width, activation, and learning rate all exposed as sliders. Since only one feature can be plotted against the output at a time, it holds the rest fixed and sweeps one — the point being that four features don't mean four separate curves, but one function of a higher-dimensional input.</p>
 
 <footer>
   <p>Reduced-motion preferences are respected throughout; every animation degrades to its final state.</p>
