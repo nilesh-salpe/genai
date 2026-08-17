@@ -59,6 +59,11 @@ h1 em{font-style:normal;color:var(--attn)}
 .legend{display:flex;gap:1.5rem;flex-wrap:wrap;font-family:"IBM Plex Mono",monospace;font-size:.76rem;letter-spacing:.04em;color:var(--ink-2);border-top:1px solid var(--rule);padding-top:1rem}
 .legend b{font-weight:500}
 .swatch{display:inline-block;width:.65rem;height:.65rem;border-radius:50%;margin-right:.45rem;vertical-align:baseline}
+.progress{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin:0 0 3rem;padding:.85rem .95rem;background:var(--card);border:1px solid var(--rule);font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.02em;max-width:var(--wide)}
+.progress a{color:var(--ink-2);text-decoration:none;padding:.28rem .6rem;border:1px solid var(--rule);border-radius:2px;white-space:nowrap;transition:border-color .15s,background .15s,color .15s}
+.progress a:hover{border-color:var(--ink);color:var(--ink)}
+.progress a.here{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+.progress .sep{color:var(--ink-3);padding:0 .1rem}
 
 /* ---------- sections ---------- */
 section{margin:4.5rem 0 0}
@@ -131,7 +136,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <div class="shell">
 
 <header class="top">
-  <p class="kicker">Course · part three of three</p>
+  <p class="kicker">Course · part three of six</p>
   <h1>Three models, <em>watched while they learn</em></h1>
   <p class="standfirst">The maths guide derives the formulas. The build guide assembles one model. This page is four more, ordered easiest to hardest — a spiral classifier, a small convolutional network, a minimal attention layer, and causal self-attention predicting what comes next — each a real, hand-derived NumPy implementation you can run yourself, plus a shrunk-down live version below that trains in your browser when you press Run.</p>
   <div class="legend">
@@ -141,10 +146,40 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   </div>
 </header>
 
+<nav class="progress" aria-label="Course progress">
+  <a href="part-1-maths.html">1 · Maths</a>
+  <a href="part-2-build.html">2 · Build</a>
+  <a href="part-3-examples.html" class="here">3 · Examples</a>
+  <a href="bonus-curve-fitting.html">Bonus · Sandbox</a>
+  <span class="sep">│</span>
+  <a href="part-4-pytorch.html">4 · PyTorch</a>
+  <a href="part-5-architecture.html">5 · Architecture</a>
+  <a href="part-6-build-gpt.html">6 · Build a GPT</a>
+</nav>
+
+<figure class="w" id="mapfig">
+  <div class="head">
+    <span class="title">Where these four sit · easiest to hardest</span>
+  </div>
+  <div class="body">
+    <div class="ctrls" id="map-row" style="margin-bottom:.9rem">
+      <button class="on" data-i="0">01 · Spiral</button>
+      <span style="color:var(--ink-3)">→</span>
+      <button data-i="1">02 · Filter</button>
+      <span style="color:var(--ink-3)">→</span>
+      <button data-i="2">03 · Retrieval</button>
+      <span style="color:var(--ink-3)">→</span>
+      <button data-i="3">04 · Causal</button>
+    </div>
+    <div class="readout" id="map-say"></div>
+  </div>
+  <figcaption>Click through each one. Every example reuses the previous one's machinery and adds exactly one new idea — nothing below is a fresh mechanism arriving from nowhere.</figcaption>
+</figure>
+
 <section>
   <div class="eyebrow"><span class="num">01</span><span>Classification, applied</span><span class="line"></span></div>
   <h2>A spiral only a nonlinearity can untangle</h2>
-  <p>Part one §04 argues that without a kink, stacking layers collapses to one big linear function no matter how deep you go — a straight line (or plane) can never separate points that spiral around each other. This is that argument made concrete: a <span class="mono">2 → 32 → 32 → 3</span> ReLU network, trained with the exact backprop formulas from part two §06 (<span class="mono">δ</span>, <span class="mono">∂L/∂W = δxᵀ</span>, <span class="mono">∂L/∂x = Wᵀδ</span>) and the softmax + cross-entropy from part one §05–06, learning to separate three interleaved spiral arms that no straight line ever could.</p>
+  <p>Picture three tangled spiral arms on a page, each a different color. No matter how you angle a single straight line, it can separate at most a sliver of one arm from the rest — the arms wind around each other, so any straight cut you draw is wrong somewhere along its length. Part one §04 argues that without a kink, stacking layers collapses to one big linear function no matter how deep you go — a straight line (or plane) can never separate points that spiral around each other. This is that argument made concrete: a <span class="mono">2 → 32 → 32 → 3</span> ReLU network, trained with the exact backprop formulas from part two §06 (<span class="mono">δ</span>, <span class="mono">∂L/∂W = δxᵀ</span>, <span class="mono">∂L/∂x = Wᵀδ</span>) and the softmax + cross-entropy from part one §05–06, learning to separate three interleaved spiral arms that no straight line ever could.</p>
 
   <figure class="w" id="spiralfig">
     <div class="head">
@@ -166,7 +201,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <section>
   <div class="eyebrow"><span class="num">02</span><span>Why convolutions exist</span><span class="line"></span></div>
   <h2>One learned filter, doing what a dense layer can't</h2>
-  <p>Part two §08 ("The dense layer never sees a picture") argues that flattening an image throws away which pixels were neighbours, and that a convolution fixes this by sliding one small set of weights over every position instead. Here's that filter actually learning: a single 3×3 kernel, trained to tell vertical stripes from horizontal ones — something a dense layer can only do by memorising pixel positions, and a conv filter does by learning one small, reusable pattern.</p>
+  <p>A vertical stripe and a horizontal stripe are the same pattern, just rotated — obvious to an eye, because an eye looks at the whole 2D shape at once. A model that flattened the image first never got that view; it sees 64 numbers in a row, with no notion that some of them used to be stacked in a column. Part two §08 ("The dense layer never sees a picture") argues that flattening an image throws away which pixels were neighbours, and that a convolution fixes this by sliding one small set of weights over every position instead. Here's that filter actually learning: a single 3×3 kernel, trained to tell vertical stripes from horizontal ones — something a dense layer can only do by memorising pixel positions, and a conv filter does by learning one small, reusable pattern.</p>
 
   <figure class="w" id="convfig">
     <div class="head">
@@ -192,12 +227,20 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     </div>
     <figcaption>The heatmap is the filter's own 9 numbers — <span style="color:#0B8B8B"><b>teal</b></span> positive, <span style="color:#D8811C"><b>orange</b></span> negative. Watch it converge into a stripe-shaped pattern: strong along one direction, weak along the other, which is what "detects vertical, not horizontal" looks like as a matrix. The full pipeline — im2col conv forward/backward, max-pool, dense, gradient-checked to <span class="mono">~1e-9</span> — runs on real 8×8 digit images (not just stripes) in <code>examples/02_cnn_digit_classifier.py</code> (<a href="https://github.com/nilesh-salpe/genai/blob/main/concept/code/02_cnn_digit_classifier.ipynb" target="_blank" rel="noopener">notebook</a>), reaching 90% test accuracy.</figcaption>
   </figure>
+
+  <table>
+    <tr><th></th><th>This widget</th><th>examples/02_cnn_digit_classifier.py</th><th>A real production CNN</th></tr>
+    <tr><td>Filters</td><td>1</td><td>a handful</td><td>dozens to hundreds, per layer</td></tr>
+    <tr><td>Layers</td><td>1 conv layer</td><td>conv → pool → dense</td><td>many conv/pool blocks stacked</td></tr>
+    <tr><td>What it can detect</td><td>one pattern (stripe orientation)</td><td>enough to classify digits</td><td>hundreds of learned patterns, composed hierarchically</td></tr>
+  </table>
+  <p class="note">Same mechanism at every scale — weight sharing across positions — just fewer filters and one layer here, so the single 3×3 heatmap is small enough to actually watch converge.</p>
 </section>
 
 <section>
   <div class="eyebrow"><span class="num">03</span><span>Attention, applied</span><span class="line"></span></div>
   <h2>Retrieval by content, not position</h2>
-  <p>Part one §11 derives attention in five steps: score relevance with a dot product, separate "what I seek" (query) from "what I am" (key) with two projections, turn scores into weights with softmax, retrieve with a value projection and a weighted sum, and divide by <span class="mono">√d_k</span> so the softmax doesn't saturate. Below is exactly that, solving the simplest task attention is built for: given a few key–value pairs and a query key, find the pair whose key matches and return its value — something a network has to learn to do by <em>content</em>, since the matching pair can be anywhere in the sequence.</p>
+  <p>Imagine a lookup table where you don't know which row your answer is in — you only know what its label should match. A plain array lookup needs a position; this needs a <em>comparison</em> against every label to find the right one, wherever it happens to sit. That is retrieval by content, and it is the entire idea attention exists to do. Part one §11 derives attention in five steps: score relevance with a dot product, separate "what I seek" (query) from "what I am" (key) with two projections, turn scores into weights with softmax, retrieve with a value projection and a weighted sum, and divide by <span class="mono">√d_k</span> so the softmax doesn't saturate. Below is exactly that, solving the simplest task attention is built for: given a few key–value pairs and a query key, find the pair whose key matches and return its value — something a network has to learn to do by <em>content</em>, since the matching pair can be anywhere in the sequence.</p>
 
   <figure class="w" id="attnfig">
     <div class="head">
@@ -220,7 +263,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <section>
   <div class="eyebrow"><span class="num">04</span><span>Prediction, at every step</span><span class="line"></span></div>
   <h2>The next symbol, predicted causally</h2>
-  <p>Part one §11 also derives <strong>causal masking</strong>: a position can only attend to itself and whatever came before it, never the future — otherwise "predict the next token" would just mean copying it. This is the hardest of the four, because it reuses example three's Q/K/V attention but runs it at <em>every</em> position at once, under that mask — the actual loop a language model runs: given tokens[0..i], predict token[i+1], for every i simultaneously.</p>
+  <p>Predicting what comes next is easy if you're allowed to peek ahead — you'd just be copying the answer. A model generating text one word at a time never gets that peek: every single prediction has to come from strictly what came before it, nothing more. Part one §11 also derives <strong>causal masking</strong>: a position can only attend to itself and whatever came before it, never the future — otherwise "predict the next token" would just mean copying it. This is the hardest of the four, because it reuses example three's Q/K/V attention but runs it at <em>every</em> position at once, under that mask — the actual loop a language model runs: given tokens[0..i], predict token[i+1], for every i simultaneously.</p>
 
   <figure class="w" id="causalfig">
     <div class="head">
@@ -242,6 +285,29 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     </div>
     <figcaption>Position 0 can only see itself — predicting the very next symbol from a single token is genuinely impossible, since that symbol hasn't appeared yet, so it stays wrong forever and that is correct, not a bug (a real cause of confusion if you expected 100%). Every later position has enough history to know the alternating pattern, and once trained, its attention <span style="color:#0B8B8B"><b>concentrates on whichever earlier positions already carry the correct value</b></span> — teal below — not on a fixed distance back. A strict period-2 series only ever has two distinct values, so several earlier positions are equally valid sources; the query is matching by <em>content</em>, the same way example three's retrieval did, not by counting backwards. Full version, gradient-checked, in <code>examples/04_causal_series_predictor.py</code> (<a href="https://github.com/nilesh-salpe/genai/blob/main/concept/code/04_causal_series_predictor.ipynb" target="_blank" rel="noopener">notebook</a>).</figcaption>
   </figure>
+
+  <p>Both of these examples could, in principle, be solved a cheaper way — look back a fixed number of positions instead of comparing against all of them. Part one §04's "distance problem" is exactly why that cheaper option loses:</p>
+  <table>
+    <tr><th></th><th>Fixed window (classical NLP)</th><th>Full attention (§03, §04)</th></tr>
+    <tr><td>Cost per position</td><td>O(window size) — cheap, constant</td><td>O(n) — scales with sequence length</td></tr>
+    <tr><td>Can reach the whole sequence?</td><td>No — anything outside the window is structurally invisible</td><td>Yes — every position is one dot product away, regardless of distance</td></tr>
+    <tr><td>Fails when</td><td>The answer sits further back than the window reaches (part one §04's example)</td><td>Rarely, for reach — the real cost is quadratic total attention (part one §12) at long context</td></tr>
+    <tr><td>Right choice for</td><td>Tasks where relevant context is always nearby</td><td>Tasks where the relevant token could be anywhere — key–value retrieval and causal prediction, both above</td></tr>
+  </table>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">05</span><span>Reference</span><span class="line"></span></div>
+  <h2>Traps and a cheatsheet</h2>
+  <table>
+    <tr><th>Symptom</th><th>Explanation</th></tr>
+    <tr><td>Spiral (§01): loss drops fast, then the boundary looks like flat-edged polygons</td><td>Expected — a ReLU network's decision boundary is always piecewise-linear (part one §04). The polygon edges are the visible seams between linear pieces, not a bug; they smooth out visually as more pieces get used.</td></tr>
+    <tr><td>Filter (§02): the learned filter converges to detect horizontal, not vertical</td><td>Sign and orientation are arbitrary from random initialization — nothing forces convergence toward one direction over the other. Check the accuracy readout, not which specific orientation it happened to land on.</td></tr>
+    <tr><td>Retrieval (§03): attention weights stay near ⅓/⅓/⅓ even after pressing Run once</td><td>With only 3 keys the softmax starts high-entropy; press <b>Run</b> again or let it take more steps — it needs several gradient updates to sharpen toward the matching pair.</td></tr>
+    <tr><td>Causal (§04): position 0's prediction never reaches high accuracy</td><td>Correct, not a bug — position 0 has no history to predict from (see the figcaption above). Judge the model's accuracy from position 1 onward.</td></tr>
+    <tr><td>Numbers on this page don't match the linked <code>.py</code> file's printed output</td><td>These widgets are shrunk-down in-browser stand-ins (fewer neurons, filters, or keys, for speed) — the real, gradient-checked numbers are in each linked <code>examples/0N_*.py</code>.</td></tr>
+    <tr><td>You modify one of the linked <code>.py</code> files and the gradients look wrong</td><td>Same check as part two §11: nudge one weight by ε=1e-5, compare <span class="mono">(L(w+ε)−L(w−ε))/2ε</span> to the analytic gradient — this is how every gradient in all four files was originally verified.</td></tr>
+  </table>
 </section>
 
 <footer>
@@ -974,6 +1040,26 @@ function fmt(v, d){ return Number(v).toFixed(d === undefined ? 2 : d); }
   document.getElementById("ca-reset").onclick = function(){ stopRun(); P = initParams(); step = 0; render(0); };
   P = initParams();
   render(0);
+})();
+
+/* ============ MAP WIDGET ============ */
+(function(){
+  var row = document.getElementById("map-row");
+  if (!row) return;
+  var say = document.getElementById("map-say");
+  var buttons = row.querySelectorAll("button");
+  var descs = [
+    "<b>01 · Spiral — plain MLP.</b> Builds on part one §04 (why a kink is required) and part two §06 (the backprop formulas). No new mechanism here — this is the baseline every example below adds to.",
+    "<b>02 · Filter — one convolution.</b> Builds on part two §08 (why a dense layer misses spatial structure). One new idea on top of the baseline: share one small set of weights across every position, instead of learning a separate one per pixel.",
+    "<b>03 · Retrieval — attention.</b> Builds on part one §11's five-step derivation. One new idea: look things up by <em>content</em> — a dot-product comparison — instead of by position.",
+    "<b>04 · Causal — masked attention.</b> Reuses §03's exact Q/K/V mechanism, plus part one §11's causal mask. Combines both ideas: content-based lookup, restricted to only what came before."
+  ];
+  function select(i){
+    buttons.forEach(function(b, j){ b.classList.toggle("on", j === i); });
+    say.innerHTML = descs[i];
+  }
+  buttons.forEach(function(b, i){ b.onclick = function(){ select(i); }; });
+  select(0);
 })();
 
 })();

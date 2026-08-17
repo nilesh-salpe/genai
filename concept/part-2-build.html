@@ -57,6 +57,11 @@ h1 em{font-style:normal;color:var(--fwd)}
 .legend{display:flex;gap:1.5rem;flex-wrap:wrap;font-family:"IBM Plex Mono",monospace;font-size:.76rem;letter-spacing:.04em;color:var(--ink-2);border-top:1px solid var(--rule);padding-top:1rem}
 .legend b{font-weight:500}
 .swatch{display:inline-block;width:.65rem;height:.65rem;border-radius:50%;margin-right:.45rem;vertical-align:baseline}
+.progress{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin:0 0 3rem;padding:.85rem .95rem;background:var(--card);border:1px solid var(--rule);font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.02em;max-width:var(--wide)}
+.progress a{color:var(--ink-2);text-decoration:none;padding:.28rem .6rem;border:1px solid var(--rule);border-radius:2px;white-space:nowrap;transition:border-color .15s,background .15s,color .15s}
+.progress a:hover{border-color:var(--ink);color:var(--ink)}
+.progress a.here{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+.progress .sep{color:var(--ink-3);padding:0 .1rem}
 
 /* ---------- sections ---------- */
 section{margin:4.5rem 0 0}
@@ -192,7 +197,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <div class="shell">
 
 <header class="top">
-  <p class="kicker">Course · part two of two</p>
+  <p class="kicker">Course · part two of six</p>
   <h1>Fundamentals of neural networks: <em>actually</em> build one</h1>
   <p class="standfirst">The companion guide derives the formulas. This one assembles them into a working digit classifier — every shape, every parameter, and a complete implementation in about sixty lines of NumPy. Twelve of the ideas below are live: change them and watch what happens.</p>
   <div class="legend">
@@ -201,6 +206,17 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     <span><span class="swatch" style="background:var(--loss)"></span><b>loss</b> — how wrong we were</span>
   </div>
 </header>
+
+<nav class="progress" aria-label="Course progress">
+  <a href="part-1-maths.html">1 · Maths</a>
+  <a href="part-2-build.html" class="here">2 · Build</a>
+  <a href="part-3-examples.html">3 · Examples</a>
+  <a href="bonus-curve-fitting.html">Bonus · Sandbox</a>
+  <span class="sep">│</span>
+  <a href="part-4-pytorch.html">4 · PyTorch</a>
+  <a href="part-5-architecture.html">5 · Architecture</a>
+  <a href="part-6-build-gpt.html">6 · Build a GPT</a>
+</nav>
 
 <figure class="w" id="netfig">
   <div class="head">
@@ -538,6 +554,16 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   </figure>
 
   <p>The consequences are real. A digit shifted three pixels right is, to this model, a completely different input — it has to learn "3-ness" separately at every position. The model still works on MNIST because the digits are pre-centred and pre-sized. On less tidy images it falls over.</p>
+
+  <table>
+    <tr><th></th><th>Dense (this model)</th><th>Convolutional</th></tr>
+    <tr><td>Sees the 2D grid?</td><td>No — flattened to a bag of numbers</td><td>Yes — a filter slides over rows and columns</td></tr>
+    <tr><td>Weights per pattern</td><td>One full set per position that pattern can appear at</td><td>One small filter, reused at every position</td></tr>
+    <tr><td>Parameters for "detect an edge everywhere"</td><td>Learned separately per position — expensive, and never guaranteed consistent</td><td>One 3×3 filter (9 weights) shared across the whole image</td></tr>
+    <tr><td>Robust to shifted input?</td><td>No — a shift is a different input entirely</td><td>Yes, largely — the same filter fires wherever the pattern appears</td></tr>
+    <tr><td>Right choice for</td><td>Unstructured or already-flat features (tabular data, this MNIST demo)</td><td>Anything with spatial or local structure — images, and (as a 1D filter) audio or sequences</td></tr>
+  </table>
+  <p class="note">This isn't "convolutional is strictly better" — a dense layer is cheaper and simpler when there is no spatial structure to exploit in the first place. It's the wrong tool specifically here, for the reason the permutation test just demonstrated.</p>
 </section>
 
 <section>
@@ -657,6 +683,16 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 
   <h3>Choosing the architecture</h3>
   <p>Start small, and only grow when the model underfits. <strong>If training accuracy itself is poor, the model is too small. If training accuracy is excellent but validation accuracy is poor, it is too large</strong> — or needs the regularization above. Those two symptoms point in opposite directions, and diagnosing which one you have is most of the skill. For MNIST, 784→128→64→10 gets you 97–98%; beyond that, architecture tweaks stop helping and you need convolutions.</p>
+
+  <p>Once you know it's underfitting, there are still several different knobs that all "add capacity" — they are not interchangeable, and picking the wrong one wastes a training run:</p>
+  <table>
+    <tr><th>Option</th><th>What it buys</th><th>Cost / risk</th><th>Reach for it when</th></tr>
+    <tr><td>Widen a layer</td><td>More questions asked per layer (§3)</td><td>Parameter count grows fastest here — §7's 4.4× jump from one wider layer</td><td>The features at that stage feel too coarse, not too shallow</td></tr>
+    <tr><td>Add depth</td><td>More composed, more abstract intermediate features (§5)</td><td>Deeper stacks reintroduce §9's vanishing-gradient risk without care</td><td>The task needs higher-level features built from simpler ones, not just more of the same</td></tr>
+    <tr><td>Switch to convolution</td><td>Reuses one filter across every position (§8) instead of paying for each position separately</td><td>Only pays off when the input actually has spatial/local structure to exploit</td><td>You're plateaued on an image (or image-like) task specifically, not tabular data</td></tr>
+    <tr><td>Train longer / lower the learning rate</td><td>Free — no architecture change at all</td><td>Won't fix a model that's genuinely too small, only a model that hasn't finished converging</td><td>Loss is still visibly decreasing when training stops</td></tr>
+  </table>
+  <p class="note">And the reverse diagnosis — overfitting — has its own equally non-interchangeable menu: L2 regularization (above) taxes large weights, more data directly shrinks the gap between memorizing and generalizing, and shrinking the model removes the spare capacity that made memorizing possible in the first place. All three treat the same symptom; none of them substitutes for correctly diagnosing which one you actually need.</p>
 </section>
 
 <section>
