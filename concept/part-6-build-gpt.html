@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neural Networks and Transformers — Build a Tiny GPT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF2F5; --card:#FFFFFF; --ink:#15222E; --ink-2:#4B5F6E; --ink-3:#8399A8; --rule:#CBD8E0;
+  --fwd:#0B8B8B; --fwd-soft:#D3EDED;
+  --back:#D8811C; --back-soft:#F8E7CE;
+  --loss:#B31E55; --loss-soft:#F7DDE7;
+  --attn:#5A4A9F; --attn-soft:#E6E1F5;
+  --measure:34rem; --wide:52rem;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background-color:var(--paper);
+  background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);
+  background-size:28px 28px;background-position:-1px -1px;
+  color:var(--ink);font-family:"Spectral",Georgia,serif;font-size:17px;line-height:1.68}
+body::before{content:"";position:fixed;inset:0;background:var(--paper);opacity:.82;pointer-events:none;z-index:0}
+.shell{position:relative;z-index:1;max-width:var(--wide);margin:0 auto;padding:0 1.25rem 6rem}
+h1,h2,h3,.eyebrow,.ui,button,input,label,table,.tag,summary{font-family:"Space Grotesk",system-ui,sans-serif}
+code,.mono,.eq,.val,.shape{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+
+header.top{padding:4.5rem 0 2rem;max-width:var(--measure)}
+.kicker{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 1.4rem}
+h1{font-size:clamp(2.1rem,6vw,3.3rem);line-height:1.02;letter-spacing:-.03em;font-weight:700;margin:0 0 1.1rem}
+h1 em{font-style:normal;color:var(--attn)}
+.standfirst{font-size:1.12rem;color:var(--ink-2);margin:0 0 2rem}
+.legend{display:flex;gap:1.5rem;flex-wrap:wrap;font-family:"IBM Plex Mono",monospace;font-size:.76rem;letter-spacing:.04em;color:var(--ink-2);border-top:1px solid var(--rule);padding-top:1rem}
+.legend b{font-weight:500}
+.swatch{display:inline-block;width:.65rem;height:.65rem;border-radius:50%;margin-right:.45rem;vertical-align:baseline}
+
+.progress{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin:0 0 3rem;padding:.85rem .95rem;background:var(--card);border:1px solid var(--rule);font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.02em}
+.progress a{color:var(--ink-2);text-decoration:none;padding:.28rem .6rem;border:1px solid var(--rule);border-radius:2px;white-space:nowrap;transition:border-color .15s,background .15s,color .15s}
+.progress a:hover{border-color:var(--ink);color:var(--ink)}
+.progress a.here{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+.progress .sep{color:var(--ink-3);padding:0 .1rem}
+
+section{margin:4.5rem 0 0}
+.eyebrow{display:flex;align-items:baseline;gap:.85rem;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.5rem}
+.eyebrow .num{font-family:"IBM Plex Mono",monospace;color:var(--attn);font-weight:600}
+.eyebrow .line{flex:1;height:1px;background:var(--rule)}
+h2{font-size:clamp(1.4rem,3.4vw,1.95rem);line-height:1.15;letter-spacing:-.02em;margin:.1rem 0 1.1rem;font-weight:700;max-width:var(--measure)}
+h3{font-size:1.05rem;letter-spacing:-.01em;margin:2.2rem 0 .6rem;font-weight:600}
+p{margin:0 0 1.1rem;max-width:var(--measure)}
+ul,ol{max-width:var(--measure);padding-left:1.15rem;margin:0 0 1.1rem}
+li{margin-bottom:.4rem}
+strong{font-weight:600}
+a{color:var(--attn)}
+.lede{font-size:1.06rem;color:var(--ink-2)}
+
+blockquote{margin:1.6rem 0;padding:.2rem 0 .2rem 1.3rem;border-left:3px solid var(--attn);max-width:var(--measure);font-size:1.04rem}
+blockquote p:last-child{margin-bottom:0}
+
+.eq{display:block;margin:1.4rem 0;padding:.9rem 1.1rem;background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--ink-3);font-size:.95rem;overflow-x:auto;max-width:var(--measure);white-space:nowrap}
+.note{font-size:.9rem;color:var(--ink-2);font-style:italic}
+
+table{border-collapse:collapse;width:100%;max-width:var(--wide);margin:1.4rem 0;font-size:.86rem}
+th,td{text-align:left;padding:.55rem .7rem;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:600;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--ink-3)}
+td.shape,td .shape{font-family:"IBM Plex Mono",monospace;font-size:.82rem}
+
+figure.w{margin:2.5rem 0;background:var(--card);border:1px solid var(--rule);max-width:var(--wide)}
+figure.w .head{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.7rem 1.1rem;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+figure.w .title{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+figure.w .body{padding:1.2rem 1.1rem}
+figure.w figcaption{padding:.75rem 1.1rem 1rem;font-size:.85rem;color:var(--ink-2);border-top:1px dashed var(--rule)}
+figure.w figcaption b{color:var(--ink);font-weight:600}
+
+.ctrls{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+button{font-size:.78rem;font-weight:500;letter-spacing:.02em;padding:.42rem .85rem;border:1px solid var(--ink);background:var(--card);color:var(--ink);cursor:pointer;border-radius:2px;transition:background .15s,color .15s}
+button:hover{background:var(--ink);color:var(--card)}
+button:focus-visible{outline:2px solid var(--attn);outline-offset:2px}
+button.att{border-color:var(--attn);color:var(--attn)}
+button.att:hover{background:var(--attn);color:#fff}
+button.att.on{background:var(--attn);color:#fff}
+button[disabled]{opacity:.35;cursor:not-allowed}
+button[disabled]:hover{background:var(--card);color:var(--ink)}
+
+.slider-row{display:grid;grid-template-columns:auto 1fr auto;gap:.7rem;align-items:center;margin-bottom:.5rem;font-family:"IBM Plex Mono",monospace;font-size:.78rem}
+.slider-row label{color:var(--ink-2)}
+.slider-row .val{min-width:3.6rem;text-align:right;font-weight:500}
+input[type=range]{width:100%;accent-color:var(--attn);height:1.5rem}
+
+.readout{font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--ink-2);margin-top:.7rem;line-height:1.6}
+.readout b{color:var(--ink);font-weight:600}
+svg{display:block;max-width:100%;height:auto}
+
+.tag{display:inline-block;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;padding:.15rem .45rem;border-radius:2px;font-weight:600}
+.tag.fwd{background:var(--fwd-soft);color:var(--fwd)}
+.tag.back{background:var(--back-soft);color:var(--back)}
+.tag.loss{background:var(--loss-soft);color:var(--loss)}
+.tag.att{background:var(--attn-soft);color:var(--attn)}
+.tag.neutral{background:#E7ECEF;color:var(--ink-2)}
+.tag.dim{opacity:.35}
+.chain{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;font-family:"IBM Plex Mono",monospace;font-size:.75rem;margin:1rem 0}
+.chain .arrow{color:var(--ink-3)}
+
+pre{background:var(--ink);color:#DDE7EC;padding:1.15rem;overflow-x:auto;font-family:"IBM Plex Mono",monospace;font-size:.78rem;line-height:1.6;max-width:var(--wide);border-radius:2px}
+pre .c{color:#7F97A5;font-style:italic}
+pre .k{color:#5FCBCB}
+pre .s{color:#E9A85A}
+p code,li code,td code{background:#E2EAEF;padding:.08em .35em;font-size:.85em;border-radius:2px}
+
+.bars{display:flex;gap:.5rem;align-items:flex-end;height:9rem;margin-top:.4rem}
+.bar-wrap{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative}
+.bar-outline{position:absolute;left:0;right:0;bottom:0;border:1.5px dashed var(--ink-3);border-bottom:none;transition:height .3s}
+.bar{background:var(--attn);transition:height .3s,background .3s,opacity .3s;min-height:2px}
+.bar.zeroed{background:var(--ink-3);opacity:.25}
+.bar-lbl{font-family:"IBM Plex Mono",monospace;font-size:.68rem;text-align:center;color:var(--ink-2);margin-top:.3rem;line-height:1.4}
+
+.gentext{font-family:"IBM Plex Mono",monospace;font-size:.95rem;background:var(--ink);color:#fff;padding:1rem 1.1rem;border-radius:2px;min-height:1.6rem;line-height:1.6}
+.gentext .cursor{opacity:.6}
+
+details{max-width:var(--measure);margin:1.3rem 0;border-top:1px solid var(--rule);padding-top:.8rem}
+summary{cursor:pointer;font-family:"Space Grotesk",sans-serif;font-weight:500;font-size:.9rem}
+details.predict{max-width:var(--wide);background:var(--card);border:1px solid var(--rule);border-top:3px solid var(--attn);padding:1rem 1.15rem;margin:1.6rem 0}
+details.predict summary{color:var(--attn)}
+details.predict[open] summary{margin-bottom:.7rem}
+
+.callout{max-width:var(--measure);margin:1.6rem 0;padding:1rem 1.15rem;background:var(--card);border:1px solid var(--rule);border-top:3px solid var(--loss)}
+.callout p{margin-bottom:.6rem}
+.callout p:last-child{margin-bottom:0}
+.callout .h{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:.95rem;margin-bottom:.4rem}
+.callout.trap{border-top-color:var(--back)}
+.callout.trap .h::before{content:"Trap — ";color:var(--back)}
+.callout.trap .h{display:inline}
+
+footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-size:.85rem;color:var(--ink-3);max-width:var(--measure)}
+footer .nextprev{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.2rem;font-family:"IBM Plex Mono",monospace;font-size:.78rem}
+
+@media (max-width:640px){
+  body{font-size:16px}
+  figure.w .body{padding:1rem .8rem}
+  .shell{padding:0 1rem 4rem}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:.01ms !important;animation-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<header class="top">
+  <p class="kicker">Course · part six of six</p>
+  <h1>Everything, <em>wired together</em></h1>
+  <p class="standfirst">Every ingredient now exists. Part 1 derived attention and the causal mask. Part 3 already built causal self-attention by hand, in NumPy, on a toy sequence. Part 4 replaced hand-written backward passes with autograd. Part 5 filled in decoding. This part wires all of it into one real, small, decoder-only Transformer — trained in seconds on your own machine, generating text you sample from yourself.</p>
+  <div class="legend">
+    <span><span class="swatch" style="background:var(--fwd)"></span><b>forward</b> — signal travelling in</span>
+    <span><span class="swatch" style="background:var(--back)"></span><b>backward</b> — blame travelling out</span>
+    <span><span class="swatch" style="background:var(--attn)"></span><b>attention</b> — content-based retrieval</span>
+  </div>
+</header>
+
+<nav class="progress" aria-label="Course progress">
+  <a href="part-1-maths.html">1 · Maths</a>
+  <a href="part-2-build.html">2 · Build</a>
+  <a href="part-3-examples.html">3 · Examples</a>
+  <a href="bonus-curve-fitting.html">Bonus · Sandbox</a>
+  <span class="sep">│</span>
+  <a href="part-4-pytorch.html">4 · PyTorch</a>
+  <a href="part-5-architecture.html">5 · Architecture</a>
+  <a href="part-6-build-gpt.html" class="here">6 · Build a GPT</a>
+</nav>
+
+<!-- ================= 01 ================= -->
+<section>
+  <div class="eyebrow"><span class="num">01</span><span>What's already built</span><span class="line"></span></div>
+  <h2>Nothing left to invent, only to assemble</h2>
+  <p>Check the inventory before writing a line of code. Every piece a decoder-only Transformer needs already exists somewhere on this site:</p>
+  <table>
+    <tr><th>Piece</th><th>Where it came from</th></tr>
+    <tr><td>Scaled dot-product attention, Q/K/V, why ÷√d<sub>k</sub></td><td>Part 1 §11</td></tr>
+    <tr><td>Causal masking</td><td>Part 1 §11; a hand-derived NumPy version in Part 3 #4</td></tr>
+    <tr><td>Sinusoidal positional encoding</td><td>Part 1 §10</td></tr>
+    <tr><td>The residual block, <span class="mono">x' = x + MHA(LN(x))</span></td><td>Part 1 §11; narrated step by step in Part 5 §3</td></tr>
+    <tr><td><span class="mono">nn.Module</span>, the training loop, autograd</td><td>Part 4</td></tr>
+    <tr><td>Temperature, top-k, top-p</td><td>Part 5 §6</td></tr>
+  </table>
+  <p>What's left is exactly what a decoder-only model doesn't need from Part 5: no encoder, no cross-attention. Just Part 1's block, stacked N times, in PyTorch, predicting the next character.</p>
+</section>
+
+<!-- ================= 02 ================= -->
+<section>
+  <div class="eyebrow"><span class="num">02</span><span>The shape</span><span class="line"></span></div>
+  <h2>Token in, next-token probabilities out</h2>
+  <p>The full pipeline, end to end — the same shape Part 5 §1's opening diagram sketched, now concrete enough to write:</p>
+
+  <figure class="w" id="pipefig">
+    <div class="head">
+      <span class="title">One generation step, start to finish</span>
+      <div class="ctrls">
+        <button class="att" id="pipe-step">Next step</button>
+        <button id="pipe-reset">Reset</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="chain" id="pipe-chain">
+        <span class="tag att dim" data-i="0">token ids</span><span class="arrow">→</span>
+        <span class="tag att dim" data-i="1">embed + PE</span><span class="arrow">→</span>
+        <span class="tag att dim" data-i="2">N × decoder block</span><span class="arrow">→</span>
+        <span class="tag att dim" data-i="3">final LN</span><span class="arrow">→</span>
+        <span class="tag att dim" data-i="4">linear → logits</span><span class="arrow">→</span>
+        <span class="tag loss dim" data-i="5">sample</span><span class="arrow">→</span>
+        <span class="tag fwd dim" data-i="6">append, repeat</span>
+      </div>
+      <div class="readout" id="pipe-say">Press <b>Next step</b> to trace one character all the way through, and back into the input.</div>
+    </div>
+    <figcaption>The last arrow loops back to the first: whatever gets sampled becomes part of the input for the <em>next</em> forward pass. This is autoregressive generation (part-5-architecture.html §01) made literal — the model calls itself, once per output character.</figcaption>
+  </figure>
+</section>
+
+<!-- ================= 03 ================= -->
+<section>
+  <div class="eyebrow"><span class="num">03</span><span>Tokenization</span><span class="line"></span></div>
+  <h2>Why characters, here specifically</h2>
+  <p>A real model tokenizes in subword units (byte-pair encoding) so common words stay whole and the vocabulary stays a manageable size for a huge training set. At this toy scale that machinery buys nothing and costs real complexity — a character-level vocabulary is the entire alphabet used, nothing more.</p>
+  <table>
+    <tr><th></th><th>Character-level</th><th>Subword (BPE)</th></tr>
+    <tr><td>Vocabulary size here</td><td>~25 characters</td><td>Would need a trained merge table, unnecessary at this scale</td></tr>
+    <tr><td>Sequence length</td><td>Longer — one token per character</td><td>Shorter — common words compress to one token</td></tr>
+    <tr><td>What the model must learn</td><td>Spelling <em>and</em> structure, from scratch</td><td>Structure — spelling is handled by the tokenizer</td></tr>
+    <tr><td>Right choice for</td><td>This demo — small, transparent, nothing hidden</td><td>Any real model — vocabulary efficiency matters at scale</td></tr>
+  </table>
+  <p class="note">The tokenizer in <code>examples/05_tiny_gpt.py</code> is four lines: a sorted set of the unique characters in the training text, and two dictionaries mapping character ↔ index. That's the entire "tokenizer."</p>
+</section>
+
+<!-- ================= 04 ================= -->
+<section>
+  <div class="eyebrow"><span class="num">04</span><span>The model</span><span class="line"></span></div>
+  <h2>The whole architecture, in PyTorch</h2>
+  <p>One block — causal self-attention, then a feed-forward network, each behind a residual connection — stacked <span class="mono">N</span> times. This is Part 5 §3's block, minus cross-attention, which a decoder-only model never has.</p>
+
+<pre><span class="k">class</span> CausalSelfAttention(nn.Module):
+    <span class="c"># part-1-maths.html §11: softmax(QK^T/sqrt(d_k))V, masked so</span>
+    <span class="c"># position i never sees j &gt; i.</span>
+    <span class="k">def</span> __init__(self, d_model, n_heads, block_size):
+        super().__init__()
+        self.wq = nn.Linear(d_model, d_model, bias=<span class="k">False</span>)
+        self.wk = nn.Linear(d_model, d_model, bias=<span class="k">False</span>)
+        self.wv = nn.Linear(d_model, d_model, bias=<span class="k">False</span>)
+        self.wo = nn.Linear(d_model, d_model, bias=<span class="k">False</span>)
+        self.register_buffer(<span class="s">"mask"</span>, torch.tril(torch.ones(block_size, block_size)).bool())
+
+    <span class="k">def</span> forward(self, x):
+        <span class="c"># split into heads, score, mask, softmax, weight V, concat heads --</span>
+        <span class="c"># see examples/05_tiny_gpt.py for the full, runnable version</span>
+        ...
+
+<span class="k">class</span> DecoderBlock(nn.Module):
+    <span class="c"># part-1-maths.html §11's exact equation:</span>
+    <span class="c"># x' = x + MHA(LN(x));  x'' = x' + FFN(LN(x'))</span>
+    <span class="k">def</span> __init__(self, d_model, n_heads, ffn_hidden, block_size):
+        super().__init__()
+        self.ln1 = nn.LayerNorm(d_model)
+        self.attn = CausalSelfAttention(d_model, n_heads, block_size)
+        self.ln2 = nn.LayerNorm(d_model)
+        self.ffn = nn.Sequential(nn.Linear(d_model, ffn_hidden), nn.ReLU(), nn.Linear(ffn_hidden, d_model))
+
+    <span class="k">def</span> forward(self, x):
+        x = x + self.attn(self.ln1(x))
+        x = x + self.ffn(self.ln2(x))
+        <span class="k">return</span> x
+
+<span class="k">class</span> TinyGPT(nn.Module):
+    <span class="k">def</span> __init__(self, vocab_size, d_model, n_heads, n_blocks, ffn_hidden, block_size):
+        super().__init__()
+        self.tok_emb = nn.Embedding(vocab_size, d_model)
+        self.register_buffer(<span class="s">"pos_emb"</span>, sinusoidal_positional_encoding(block_size, d_model))
+        self.blocks = nn.ModuleList([DecoderBlock(d_model, n_heads, ffn_hidden, block_size) <span class="k">for</span> _ <span class="k">in</span> range(n_blocks)])
+        self.ln_f = nn.LayerNorm(d_model)
+        self.head = nn.Linear(d_model, vocab_size)   <span class="c"># logits, one score per vocab char</span>
+
+    <span class="k">def</span> forward(self, idx):
+        x = self.tok_emb(idx) + self.pos_emb[:idx.shape[1]]   <span class="c"># embed + PE, added</span>
+        <span class="k">for</span> block <span class="k">in</span> self.blocks:
+            x = block(x)
+        <span class="k">return</span> self.head(self.ln_f(x))</pre>
+
+  <p class="note">Full, runnable, gap-free version — including <span class="mono">generate()</span> with temperature/top-k/top-p — is <code>examples/05_tiny_gpt.py</code>. It trains a 3-block, 32-dimensional model on a handful of sentences in a few seconds on a CPU: <code class="mono">python3 examples/05_tiny_gpt.py</code>.</p>
+</section>
+
+<!-- ================= 05 ================= -->
+<section>
+  <div class="eyebrow"><span class="num">05</span><span>Training it</span><span class="line"></span></div>
+  <h2>The same five calls, one more time</h2>
+  <p>Nothing new here either — Part 4 §5's loop, with next-character cross-entropy as the loss.</p>
+<pre><span class="k">def</span> train(model, steps=<span class="s">800</span>, batch_size=<span class="s">16</span>, lr=<span class="s">3e-3</span>):
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
+    model.train()
+    <span class="k">for</span> step <span class="k">in</span> range(steps):
+        x, y = get_batch(batch_size, BLOCK_SIZE)      <span class="c"># y is x shifted one character right</span>
+        logits = model(x)                              <span class="c"># forward</span>
+        loss = F.cross_entropy(logits.view(-<span class="s">1</span>, VOCAB_SIZE), y.view(-<span class="s">1</span>))  <span class="c"># loss</span>
+        loss.backward()                                 <span class="c"># backward</span>
+        optimizer.step()                                <span class="c"># update</span>
+        optimizer.zero_grad()                           <span class="c"># reset</span></pre>
+
+  <div class="callout trap">
+    <p class="h">A handful of sentences will overfit — and that's fine here</p>
+    <p>Trained on the ~250-character toy corpus in <code>examples/05_tiny_gpt.py</code>, loss falls to near zero and the model reproduces training sentences almost verbatim. That is <strong>overfitting</strong> exactly as Part 2 §9 defined it — memorizing rather than generalizing — and normally a red flag. Here it's expected: the point is watching every mechanism run correctly end to end, not training a model that generalizes to sentences it never saw. A real model earns the right to generalize with orders of magnitude more data.</p>
+  </div>
+</section>
+
+<!-- ================= 06 ================= -->
+<section>
+  <div class="eyebrow"><span class="num">06</span><span>Generating</span><span class="line"></span></div>
+  <h2>Sampling, not the single best guess</h2>
+  <p>Part 5 §6 showed how temperature, top-k, and top-p <em>reshape</em> a probability distribution. What that page didn't show: reshaping alone changes nothing if you always take the single highest-probability word — the argmax doesn't move just because the gaps around it changed. The effect only shows up once you actually <strong>sample</strong>, repeatedly, and watch the outcomes vary.</p>
+
+  <details class="predict">
+    <summary>Predict first — at T=0.3, how much would repeated draws vary?</summary>
+    <p>Below, a fixed, illustrative distribution over five possible next words continuing <em>"...it did not ___"</em>. If you sampled from it 20 times at a low temperature, would you expect to see mostly the same word over and over, or a healthy mix of all five? What about at a high temperature?</p>
+  </details>
+
+  <figure class="w" id="samplefig">
+    <div class="head">
+      <span class="title">"...it did not ___" · sample repeatedly, watch the outcomes</span>
+      <div class="ctrls">
+        <button class="att on" id="sm-mode-t">Temperature</button>
+        <button class="att" id="sm-mode-k">Top-k (k=3)</button>
+        <button class="att" id="sm-mode-p">Top-p (p=0.6)</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="slider-row"><label for="sm-t">temperature T</label><input type="range" id="sm-t" min="0.2" max="2.5" step="0.05" value="1"><span class="val" id="sm-tv">1.00</span></div>
+      <div class="ctrls" style="margin-bottom:.8rem">
+        <button class="att" id="sm-one">Sample once</button>
+        <button class="att" id="sm-many">Sample 20×</button>
+        <button id="sm-reset">Reset counts</button>
+      </div>
+      <div class="bars" id="sm-bars"></div>
+      <div class="readout" id="sm-say"></div>
+    </div>
+    <figcaption>The dashed outline is the reshaped probability after temperature/top-k/top-p — exactly Part 5 §6's widget. The solid <span style="color:#5A4A9F"><b>filled</b></span> bar is the <em>actual count</em> out of every draw so far — real randomness, drawn client-side, not a canned animation. At low T the filled bars converge almost entirely onto one outline; at high T they spread out to roughly match all five outlines.</figcaption>
+  </figure>
+</section>
+
+<!-- ================= 07 ================= -->
+<section>
+  <div class="eyebrow"><span class="num">07</span><span>Reference</span><span class="line"></span></div>
+  <h2>Traps and a cheatsheet</h2>
+  <table>
+    <tr><th>Symptom</th><th>Likely cause</th></tr>
+    <tr><td>Loss won't drop below ~3 (roughly <span class="mono">ln(vocab_size)</span>)</td><td>Same signature as Part 2 §11's "stuck loss" — check the learning rate isn't ~0, and that <span class="mono">y</span> is actually shifted one position from <span class="mono">x</span></td></tr>
+    <tr><td>Shape error inside attention</td><td>Almost always the head-split/merge reshape — trace <span class="mono">(B,T,D) → (B,H,T,D/H) → (B,T,D)</span> by hand</td></tr>
+    <tr><td>Generated text is memorized verbatim</td><td>Expected at this corpus size — see §5's trap callout, not a bug</td></tr>
+    <tr><td>Generation crashes past a certain length</td><td>Context exceeded <span class="mono">BLOCK_SIZE</span> — the positional encoding buffer and the causal mask are both sized for a maximum length</td></tr>
+    <tr><td>Output is the same every run despite temperature &gt; 0</td><td>Check <span class="mono">torch.multinomial</span> is actually being called — an accidental <span class="mono">argmax</span> ignores temperature entirely, silently</td></tr>
+  </table>
+</section>
+
+<!-- ================= 08 ================= -->
+<section>
+  <div class="eyebrow"><span class="num">08</span><span>Summary</span><span class="line"></span></div>
+  <h2>What the whole course built</h2>
+  <ul>
+    <li><b>Part 1</b> derived every formula — dot products through backprop through attention's √d<sub>k</sub> — from the problem it solves</li>
+    <li><b>Part 2</b> assembled those formulas into a hand-written, 60-line NumPy MLP, with a hand-derived backward pass</li>
+    <li><b>Part 3</b> extended the same toolkit to four more models, including causal self-attention, by hand</li>
+    <li><b>Part 4</b> replaced hand-written backward passes with PyTorch's autograd — same maths, automated</li>
+    <li><b>Part 5</b> filled in the architecture Part 1 left out: encoder vs. decoder, cross-attention, and how a trained model actually speaks</li>
+    <li><b>Part 6</b> — this part — wired all of it into one small, real, decoder-only Transformer, trained and sampled from on your own machine</li>
+  </ul>
+  <blockquote><p>Every line of <code>examples/05_tiny_gpt.py</code> traces back to a specific, derived, motivated idea earlier in this course. Nothing in a much larger model changes that pattern — only the numbers get bigger.</p></blockquote>
+  <p>From here: run <code>examples/05_tiny_gpt.py</code> yourself, then try widening it (bigger <span class="mono">D_MODEL</span>, more blocks), training it on a larger corpus, or swapping the character tokenizer for a real one.</p>
+</section>
+
+<!-- ================= 09 ================= -->
+<section>
+  <div class="eyebrow"><span class="num">09</span><span>Practice</span><span class="line"></span></div>
+  <h2>Exercises</h2>
+  <ol>
+    <li>Why does <span class="mono">TinyGPT</span> have no cross-attention layer anywhere in its code, unlike Part 5's encoder-decoder diagram?</li>
+    <li>The training corpus is about 250 characters. Roughly how many parameters does the 3-block, 32-dimensional model in <code>05_tiny_gpt.py</code> have (see Part 1 §11's ≈12d² per block, plus the embedding and output layers)? What does that ratio suggest about overfitting?</li>
+    <li>You increase <span class="mono">BLOCK_SIZE</span> after training a model and try to generate a longer sequence. What breaks, and why?</li>
+    <li>At <span class="mono">T=1.0</span> with no top-k or top-p filtering, is the highest-probability word guaranteed to be sampled? Why or why not?</li>
+  </ol>
+  <details>
+    <summary>Answers</summary>
+    <ol>
+      <li>Cross-attention exists to fuse a decoder with a separately-encoded second sequence. A decoder-only model, like this one, only ever has one sequence — its own — so there's nothing for cross-attention to connect to.</li>
+      <li>≈12 × 32² × 3 blocks ≈ 36,900, plus a small embedding table (24 × 32) and output projection (32 × 24) — on the order of 39,000 parameters (the actual printed count in the script's own output is close to this). Against a ~250-character corpus, that's vastly more parameters than training examples — memorization, not generalization, is the only possible outcome, exactly as Part 2 §9 predicts for a model with capacity that outstrips its data.</li>
+      <li>The positional encoding buffer and the causal mask buffer are both sized for the original <span class="mono">BLOCK_SIZE</span> at construction time. Indexing past that length either errors or silently reads garbage, depending on how the buffer was built — the fix is retraining (or at least re-instantiating) with the new size.</li>
+      <li>No — sampling is genuinely random, weighted by probability. The highest-probability word is the <em>most likely</em> single outcome, not a guaranteed one; over many draws it should come up roughly as often as its probability says, no more.</li>
+    </ol>
+  </details>
+</section>
+
+<footer>
+  <div class="nextprev">
+    <span>← <a href="part-5-architecture.html">Part 5 · The full architecture</a></span>
+    <span><a href="index.html">Back to course index</a> →</span>
+  </div>
+  <p>This closes the six-part course. <code>examples/05_tiny_gpt.py</code> is the one piece of this part meant to be run, not just read — every other file in <code>examples/</code> is its NumPy-only predecessor.</p>
+</footer>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+function gid(id){ return document.getElementById(id); }
+function fmt(v, d){ return Number(v).toFixed(d === undefined ? 2 : d); }
+function softmaxArr(v){
+  var m = Math.max.apply(null, v);
+  var e = v.map(function(x){ return Math.exp(x - m); });
+  var s = e.reduce(function(a, b){ return a + b; }, 0);
+  return e.map(function(x){ return x / s; });
+}
+
+/* ============ PIPELINE CHAIN ============ */
+(function(){
+  var btn = gid("pipe-step");
+  if (!btn) return;
+  var say = gid("pipe-say");
+  var chain = gid("pipe-chain").querySelectorAll(".tag");
+  var steps = [
+    "<b>Token ids.</b> The characters seen so far, each looked up as an integer index into the vocabulary.",
+    "<b>Embed + positional encoding.</b> Each id becomes a learned vector; Part 1 §10's fixed sine/cosine vector is added on top, position by position.",
+    "<b>N decoder blocks.</b> Each one: causal self-attention (Part 1 §11), then a feed-forward network, each behind its own residual connection.",
+    "<b>Final LayerNorm.</b> One more normalization before the output projection — keeps the scale well-behaved going into the last layer.",
+    "<b>Linear → logits.</b> One score per vocabulary character — not yet a probability.",
+    "<b>Sample.</b> Temperature reshapes the distribution, top-k/top-p optionally restrict it, then one character is actually drawn at random (Part 5 §6, Part 6 §6).",
+    "<b>Append, repeat.</b> The sampled character is appended to the sequence and becomes part of the input for the very next forward pass — the autoregressive loop."
+  ];
+  var cur = -1;
+  function apply(){
+    chain.forEach(function(t, i){ t.classList.toggle("dim", i !== cur); });
+    say.innerHTML = cur === -1
+      ? "Press <b>Next step</b> to trace one character all the way through, and back into the input."
+      : steps[cur];
+    btn.textContent = cur >= steps.length - 1 ? "Restart" : "Next step";
+  }
+  btn.onclick = function(){ cur = cur >= steps.length - 1 ? -1 : cur + 1; apply(); };
+  gid("pipe-reset").onclick = function(){ cur = -1; apply(); };
+  apply();
+})();
+
+/* ============ SAMPLE REPEATEDLY ============ */
+(function(){
+  var wrap = gid("sm-bars");
+  if (!wrap) return;
+  var say = gid("sm-say");
+  var slider = gid("sm-t"), sliderVal = gid("sm-tv");
+  var words = ["stop", "cross", "move", "sleep", "run"];
+  var logits = [3.6, 2.0, 1.5, -0.5, 0.8];
+  var mode = "t";
+  var counts = [0, 0, 0, 0, 0];
+  var total = 0;
+
+  var bars = [], outlines = [], labels = [];
+  words.forEach(function(){
+    var w = document.createElement("div"); w.className = "bar-wrap";
+    var outline = document.createElement("div"); outline.className = "bar-outline"; outline.style.height = "2%";
+    var b = document.createElement("div"); b.className = "bar"; b.style.height = "0%";
+    var l = document.createElement("div"); l.className = "bar-lbl";
+    w.appendChild(outline); w.appendChild(b); w.appendChild(l); wrap.appendChild(w);
+    bars.push(b); outlines.push(outline); labels.push(l);
+  });
+
+  function currentDistribution(){
+    var T = parseFloat(slider.value);
+    var scaled = logits.map(function(v){ return v / T; });
+    var probs = softmaxArr(scaled);
+    var eligible = words.map(function(){ return true; });
+
+    if (mode === "k"){
+      var order = probs.map(function(p, i){ return i; }).sort(function(a, b){ return probs[b] - probs[a]; });
+      var keep = order.slice(0, 3);
+      eligible = words.map(function(_, i){ return keep.indexOf(i) > -1; });
+      var renorm = 0; keep.forEach(function(i){ renorm += probs[i]; });
+      probs = probs.map(function(p, i){ return eligible[i] ? p / renorm : 0; });
+    } else if (mode === "p"){
+      var order2 = probs.map(function(p, i){ return i; }).sort(function(a, b){ return probs[b] - probs[a]; });
+      var cum = 0, keepSet = {};
+      for (var idx = 0; idx < order2.length; idx++){
+        keepSet[order2[idx]] = true;
+        cum += probs[order2[idx]];
+        if (cum >= 0.6) break;
+      }
+      eligible = words.map(function(_, i){ return !!keepSet[i]; });
+      var renorm2 = 0; eligible.forEach(function(e, i){ if (e) renorm2 += probs[i]; });
+      probs = probs.map(function(p, i){ return eligible[i] ? p / renorm2 : 0; });
+    }
+    return { probs: probs, eligible: eligible };
+  }
+
+  function drawSample(probs){
+    var r = Math.random(), cum = 0;
+    for (var i = 0; i < probs.length; i++){
+      cum += probs[i];
+      if (r <= cum) return i;
+    }
+    return probs.length - 1;
+  }
+
+  function render(){
+    sliderVal.textContent = fmt(parseFloat(slider.value), 2);
+    var d = currentDistribution();
+    var maxP = Math.max.apply(null, d.probs);
+    words.forEach(function(w, i){
+      outlines[i].style.height = Math.max(2, d.probs[i] * 100 / Math.max(0.0001, maxP) * 0.88) + "%";
+      var countPct = total > 0 ? counts[i] / total : 0;
+      bars[i].style.height = Math.max(0, countPct * 100 / Math.max(0.0001, maxP) * 0.88) + "%";
+      bars[i].classList.toggle("zeroed", !d.eligible[i]);
+      labels[i].textContent = w + " (" + (total > 0 ? Math.round(countPct * 100) : 0) + "%, n=" + counts[i] + ")";
+    });
+    say.innerHTML = total === 0
+      ? "No draws yet — press <b>Sample once</b> or <b>Sample 20×</b>."
+      : "<b>" + total + "</b> draw" + (total === 1 ? "" : "s") + " so far. Dashed outline = target probability; filled bar = what actually got sampled.";
+  }
+
+  function sampleOnce(){
+    var d = currentDistribution();
+    var i = drawSample(d.probs);
+    counts[i]++; total++;
+  }
+
+  gid("sm-one").onclick = function(){ sampleOnce(); render(); };
+  gid("sm-many").onclick = function(){ for (var i = 0; i < 20; i++) sampleOnce(); render(); };
+  gid("sm-reset").onclick = function(){ counts = [0,0,0,0,0]; total = 0; render(); };
+  gid("sm-mode-t").onclick = function(){ mode = "t"; setMode(this); };
+  gid("sm-mode-k").onclick = function(){ mode = "k"; setMode(this); };
+  gid("sm-mode-p").onclick = function(){ mode = "p"; setMode(this); };
+  function setMode(btnEl){
+    [gid("sm-mode-t"), gid("sm-mode-k"), gid("sm-mode-p")].forEach(function(b){ b.classList.remove("on"); });
+    btnEl.classList.add("on");
+    render();
+  }
+  slider.oninput = render;
+  render();
+})();
+
+})();
+</script>
+</body>
+</html>
