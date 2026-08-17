@@ -934,43 +934,72 @@ const STEP_GEOMETRIC = {
 let selectedLayer = 4;
 const DIM_COLORS = ["#75b9ff","#a78bfa","#f5b84b","#8be28b"];
 
+let stackedView = "matrix"; // "matrix" | "graph" | "neurons" — which detail view is showing for the selected layer
 const STEP_STACKED = {
   title:"Stacked layers", math:["X⁴ = Layer₄(Layer₃(Layer₂(Layer₁(X))))"],
-  explain:"The same block — multi-head attention, then FFN, both behind residuals — repeats 4 times. Click a layer below to inspect its real output matrix and a graph of how each dimension moves across the 6 positions.",
+  explain:"The same block — multi-head attention, then FFN, both behind residuals — repeats 4 times. Click a layer below, then pick a view: its real output matrix, a graph of how each dimension moves across positions, or the FFN's hidden-neuron activations.",
   why:"Layer 1 catches local relationships; by layer 4 the representation is considerably more context-aware. This illustration reuses the same hand-picked W_Q/W_K/W_V/W₁/W₂ at every layer for simplicity — real models learn independent weights per layer (Part 5).",
   pytorch:["self.blocks = nn.ModuleList([Block(d_model, n_heads) for _ in range(n_layers)])","for block in self.blocks:","    x = block(x)"],
   render(t){
     const shown = Math.max(1, Math.ceil(t*4));
     if(selectedLayer > shown) selectedLayer = shown;
-    const boxW=200, gap=16, startX=500-(4*boxW+3*gap)/2, y=40;
+    const boxW=200, gap=16, startX=500-(4*boxW+3*gap)/2, y=32;
     const sub = ["local","richer context","more abstract","contextual"];
     for(let i=0;i<4;i++){
       const on = i < shown;
       const isSel = (i+1)===selectedLayer;
       const bx = startX + i*(boxW+gap);
       const g = el("g",{opacity: on?1:0.18});
-      g.appendChild(el("rect",{x:bx,y,width:boxW,height:50,rx:10,fill: isSel?"#20385f":"#131d36",
+      g.appendChild(el("rect",{x:bx,y,width:boxW,height:46,rx:10,fill: isSel?"#20385f":"#131d36",
         stroke: isSel?"#75b9ff":"#2a3a63","stroke-width": isSel?2.4:1.2}));
-      g.appendChild(txt(bx+boxW/2,y+22,"Layer "+(i+1),"tok-lbl")).setAttribute("font-size","13");
-      g.appendChild(txt(bx+boxW/2,y+40,sub[i],"axis-lbl")).setAttribute("text-anchor","middle");
+      g.appendChild(txt(bx+boxW/2,y+20,"Layer "+(i+1),"tok-lbl")).setAttribute("font-size","13");
+      g.appendChild(txt(bx+boxW/2,y+37,sub[i],"axis-lbl")).setAttribute("text-anchor","middle");
       stage.appendChild(g);
       if(on){
         g.style.cursor="pointer";
         g.addEventListener("click", ()=>{ selectedLayer=i+1; render(); });
       }
     }
-    stage.appendChild(txt(500,112,"click a layer to inspect it below","axis-lbl")).setAttribute("text-anchor","middle");
+
+    // view selector — Matrix / Graph / Neurons, for the selected layer
+    const views = [["matrix","Matrix"],["graph","Graph"],["neurons","Neurons"]];
+    const vw=110, vgap=10, vStartX=500-(3*vw+2*vgap)/2, vy=92;
+    views.forEach(([id,label],i)=>{
+      const on = stackedView===id;
+      const vx = vStartX + i*(vw+vgap);
+      const vg = el("g",{});
+      vg.appendChild(el("rect",{x:vx,y:vy,width:vw,height:26,rx:13,fill:on?"#75b9ff":"#131d36",stroke:on?"#75b9ff":"#2a3a63","stroke-width":1.2}));
+      const vt = vg.appendChild(txt(vx+vw/2,vy+17,label,"")); vt.setAttribute("text-anchor","middle"); vt.setAttribute("font-size","12"); vt.setAttribute("font-weight","700"); vt.setAttribute("fill", on?"#06111f":"var(--muted)");
+      vg.style.cursor="pointer";
+      vg.addEventListener("click", ()=>{ stackedView=id; render(); });
+      stage.appendChild(vg);
+    });
 
     const L = LAYERS[selectedLayer-1];
     const labels = SENTENCE.map((w,i)=>w+" "+i);
-    const mTitle = stage.appendChild(txt(120,146,"Matrix view — Layer "+selectedLayer+" output (6×4)",""));
-    mTitle.setAttribute("font-size","13"); mTitle.setAttribute("font-weight","700"); mTitle.setAttribute("fill","var(--text)");
-    matrixGrid(120,164, L.out, 54,30, labels, ["d1","d2","d3","d4"], {});
-    const gTitle = stage.appendChild(txt(560,146,"Graph view — Layer "+selectedLayer+", each dim across positions",""));
-    gTitle.setAttribute("font-size","13"); gTitle.setAttribute("font-weight","700"); gTitle.setAttribute("fill","var(--text)");
-    const series = [0,1,2,3].map(d=>({label:"d"+(d+1), color:DIM_COLORS[d], values: L.out.map(row=>row[d])}));
-    lineChart(560,164,400,190, series, SENTENCE.map((w,i)=>i));
-    stage.appendChild(txt(500,430,"weights applied at this layer: W_Q, W_K, W_V, W_O, W₁, W₂ — same values shown in the \"Multi-head Q/K/V\" and \"Feed-forward network\" steps","axis-lbl")).setAttribute("text-anchor","middle");
+
+    if(stackedView==="matrix"){
+      const mTitle = stage.appendChild(txt(300,150,"Matrix view — Layer "+selectedLayer+" output (6×4)",""));
+      mTitle.setAttribute("text-anchor","middle"); mTitle.setAttribute("font-size","13"); mTitle.setAttribute("font-weight","700"); mTitle.setAttribute("fill","var(--text)");
+      matrixGrid(390,168, L.out, 60,32, labels, ["d1","d2","d3","d4"], {});
+    } else if(stackedView==="graph"){
+      const gTitle = stage.appendChild(txt(500,150,"Graph view — Layer "+selectedLayer+", each dim across positions",""));
+      gTitle.setAttribute("text-anchor","middle"); gTitle.setAttribute("font-size","13"); gTitle.setAttribute("font-weight","700"); gTitle.setAttribute("fill","var(--text)");
+      const series = [0,1,2,3].map(d=>({label:"d"+(d+1), color:DIM_COLORS[d], values: L.out.map(row=>row[d])}));
+      lineChart(260,168, 480,220, series, SENTENCE.map((w,i)=>i));
+    } else {
+      const nTitle = stage.appendChild(txt(500,150,"Neuron view — Layer "+selectedLayer+" FFN hidden units ("+FFN_HIDDEN+"), post-ReLU",""));
+      nTitle.setAttribute("text-anchor","middle"); nTitle.setAttribute("font-size","13"); nTitle.setAttribute("font-weight","700"); nTitle.setAttribute("fill","var(--text)");
+      // transpose to rows=neurons, cols=positions — same convention as the live-training lab's neuron tab
+      const Ht = [];
+      for(let n=0;n<FFN_HIDDEN;n++) Ht.push(L.ffn.H.map(row=>row[n]));
+      const maxAct = Math.max.apply(null, Ht.flat().concat([1e-6]));
+      matrixGrid(300,168, Ht, 64,26, Ht.map((r,n)=>"n"+n), SENTENCE.map((w,i)=>i), {heat:true, norm:maxAct,
+        tooltip:(n,i,v)=> "neuron n"+n+" @ position "+i+" (\""+SENTENCE[i]+"\")<br>activation: <b>"+fmt(v)+"</b>"});
+      stage.appendChild(txt(500,400,"watch for a row that lights up consistently at a particular word or position — that neuron is specializing","axis-lbl")).setAttribute("text-anchor","middle");
+    }
+
+    stage.appendChild(txt(500,440,"weights applied at this layer: W_Q, W_K, W_V, W_O, W₁, W₂ — same values shown in the \"Multi-head Q/K/V\" and \"Feed-forward network\" steps","axis-lbl")).setAttribute("text-anchor","middle");
   }
 };
 
