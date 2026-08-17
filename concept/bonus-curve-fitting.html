@@ -78,14 +78,16 @@
       </div>
 
       <div class="card stage">
-        <div class="sectionHead"><span class="badge">1</span><div><b>Features go in</b><div class="sectionSub">Choose 1D, 2D, 3D, or 4D. The network receives that many features for each example.</div></div></div>
+        <div class="sectionHead"><span class="badge">1</span><div><b>Features go in</b><div class="sectionSub">Choose 1D, 2D, 3D, or 4D. The network receives that many features for each example — this is the effective function it's trying to match.</div></div></div>
         <canvas id="inputCanvas" aria-label="Plot of the input feature values across the training set"></canvas>
         <div class="legend" id="inputLegend"></div>
+        <div id="targetFormulas" style="margin-top:8px"></div>
       </div>
 
       <div class="card" style="padding-bottom:12px">
         <div class="sectionHead"><span class="badge">2</span><div><b>How do we show many features on a 2D screen?</b><div class="sectionSub">Pick one feature to vary and hold the others fixed. That gives a 2D slice.</div></div></div>
         <div class="sliceIntro">We vary <b>one feature</b> and hold the others at their chosen values. The graph shows both the <b>correct target</b> and the network's <b>prediction</b> for that slice.</div>
+        <div class="small" id="kinkNote" style="margin:0 0 8px"></div>
         <div class="sliceGrid">
           <div class="featureKnobs" id="featureKnobs"></div>
           <canvas id="sliceCanvas" aria-label="Plot of target versus predicted value as one feature is swept, with the others held fixed"></canvas>
@@ -99,7 +101,7 @@
       </div>
 
       <div class="two">
-        <div class="card diagram"><div class="sectionHead compact"><span class="badge">4</span><div><b>Inside the network</b><div class="sectionSub">Features are combined — not fitted independently.</div></div></div><canvas id="netCanvas" aria-label="Diagram of the network's layers and connections"></canvas></div>
+        <div class="card diagram"><div class="sectionHead compact"><span class="badge">4</span><div><b>Inside the network</b><div class="sectionSub">Features are combined — not fitted independently. Wire color is sign (green positive, orange negative), thickness is magnitude relative to the largest weight in the network — watch them reorganize as training runs.</div></div></div><canvas id="netCanvas" aria-label="Diagram of the network's layers and connections, wires colored by weight sign and weighted by magnitude, updating live during training"></canvas></div>
         <div class="card conceptCard">
           <div class="bigConcept"><span>ReLU intuition</span><strong>many simple pieces → one flexible function</strong></div>
           <div class="miniFlow"><span>weighted sum</span><span>→</span><span>ReLU</span><span>→</span><span>piece</span><span>+</span><span>piece</span><span>→</span><span>prediction</span></div>
@@ -201,6 +203,25 @@ function drawInputs(){
   const series=[];for(let j=0;j<cfg.inputs;j++)series.push({v:data.X.map(r=>r[j]),c:`hsl(${210+j*55},80%,70%)`});
   chart($('inputCanvas'),series);$('inputLegend').innerHTML=series.map((_,j)=>`<span><span class="dot" style="background:hsl(${210+j*55},80%,70%)"></span>x${j+1}</span>`).join('');
 }
+const FORMULA_TERMS=[
+  ['0.55·sin(2.2·x₁)','0.25·x₁²','0.35·cos(2.4·x₂)','0.20·x₃²','−0.18·sin(3·x₄)'],
+  ['0.45·x₁²','−0.25·sin(3·x₁)','0.30·x₂','−0.20·x₃','0.18·x₄²'],
+  ['0.35·sin(4·x₁)','0.20·cos(2·x₁)','0.30·x₂²','0.22·sin(3·x₃)','−0.12·x₄'],
+  ['0.25·cos(5·x₁)','0.20·x₁','−0.22·sin(2·x₂)','0.18·x₃','0.16·x₄²']
+];
+function formulaFor(o){
+  const base=FORMULA_TERMS[o], terms=[base[0],base[1]];
+  if(cfg.inputs>=2) terms.push(base[2]);
+  if(cfg.inputs>=3) terms.push(base[3]);
+  if(cfg.inputs>=4) terms.push(base[4]);
+  return `y${o+1} = `+terms.join(' + ').replace(/\+ −/g,'− ');
+}
+function drawFormulas(){
+  const box=$('targetFormulas'); if(!box) return;
+  let html='';
+  for(let o=0;o<cfg.outputs;o++) html+=`<div class="formula" style="font-size:12px;margin-top:2px">${formulaFor(o)}</div>`;
+  box.innerHTML=html;
+}
 function drawOutputs(){
   const series=[];const pred=Array.from({length:cfg.outputs},()=>[]);
   for(let i=0;i<data.X.length;i++){const y=forward(data.X[i]);for(let o=0;o<cfg.outputs;o++)pred[o].push(y[o]);}
@@ -222,6 +243,27 @@ function drawSlice(){
   const span=Math.max(1e-4,hi-lo);lo-=span*.10;hi+=span*.10;
   ctx.strokeStyle='#24314f';ctx.lineWidth=1;for(let g=0;g<=4;g++){const y=pad.t+(h-pad.t-pad.b)*g/4;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();}
   ctx.fillStyle='#7f8daa';ctx.font='11px system-ui';ctx.textAlign='right';for(let g=0;g<=4;g++){const val=hi-(hi-lo)*g/4,y=pad.t+(h-pad.t-pad.b)*g/4;ctx.fillText(val.toFixed(2),pad.l-6,y+4);}
+  let kinks=0;
+  if(cfg.act==='relu' && net && net[0]){
+    const L=net[0];
+    ctx.setLineDash([3,3]); ctx.strokeStyle='rgba(176,165,255,.45)'; ctx.lineWidth=1;
+    for(let j=0;j<L.b.length;j++){
+      const wf=L.W[feature][j];
+      if(Math.abs(wf)<1e-9) continue;
+      let s=L.b[j];
+      for(let i=0;i<cfg.inputs;i++) if(i!==feature) s+=L.W[i][j]*(sliceVals[i]||0);
+      const v0=-s/wf;
+      if(v0<-1||v0>1) continue;
+      kinks++;
+      const x=pad.l+(w-pad.l-pad.r)*(v0+1)/2;
+      ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,h-pad.b);ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
+  const kinkNote=$('kinkNote');
+  if(kinkNote) kinkNote.textContent = cfg.act==='relu'
+    ? `Dashed lines mark where a first-layer ReLU neuron switches on or off along this slice (${kinks} in range) — each one is a kink in the piecewise-linear fit.`
+    : 'Kink markers only apply to the ReLU activation, which is piecewise-linear; tanh and sigmoid bend smoothly instead.';
   const draw=(vals,stroke,dash,width)=>{ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.setLineDash(dash);ctx.beginPath();vals.forEach((v,i)=>{const x=pad.l+(w-pad.l-pad.r)*i/(steps-1),y=pad.t+(hi-v)/(hi-lo)*(h-pad.t-pad.b);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.setLineDash([])};
   draw(targ,'#f5b84b',[],3.5); draw(pred,'#6ee7b7',[7,5],3.0);
   ctx.fillStyle='#d8e1f2';ctx.textAlign='center';ctx.font='12px system-ui';ctx.fillText(`x-axis = x${feature+1} • other features fixed • target vs prediction`,w/2,18);ctx.fillStyle='#8fa0bd';ctx.fillText(`Correct target is computed from all ${cfg.inputs} feature values`,w/2,h-10);
@@ -244,12 +286,24 @@ function drawNet(){
   const sizes=[cfg.inputs,...Array(cfg.layers).fill(cfg.neurons),cfg.outputs], names=['Input',...Array.from({length:cfg.layers},(_,i)=>`Hidden ${i+1}`),'Output'];
   const x0=58,x1=w-58, dx=(x1-x0)/(sizes.length-1); let pts=[];
   sizes.forEach((s,l)=>{const x=x0+l*dx;const gap=Math.min(23,(h-78)/(s+1));const total=(s-1)*gap;const y0=(h-total)/2-2;pts.push([]);for(let i=0;i<s;i++)pts[l].push({x,y:y0+i*gap});});
-  for(let l=0;l<pts.length-1;l++){for(const a of pts[l])for(const b of pts[l+1]){ctx.strokeStyle='rgba(118,149,201,.18)';ctx.lineWidth=.7;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}}
+  let maxAbs=1e-6;
+  net.forEach(L=>L.W.forEach(row=>row.forEach(v=>{const a=Math.abs(v); if(a>maxAbs)maxAbs=a;})));
+  for(let l=0;l<pts.length-1;l++){
+    const L=net[l];
+    for(let i=0;i<pts[l].length;i++){
+      for(let j=0;j<pts[l+1].length;j++){
+        const a=pts[l][i], b=pts[l+1][j], wgt=L.W[i][j], mag=Math.abs(wgt)/maxAbs;
+        ctx.strokeStyle=wgt>=0?`rgba(110,231,183,${0.12+0.7*mag})`:`rgba(216,129,28,${0.12+0.7*mag})`;
+        ctx.lineWidth=0.5+2.5*mag;
+        ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+      }
+    }
+  }
   pts.forEach((layer,l)=>layer.forEach((p,i)=>{ctx.beginPath();ctx.arc(p.x,p.y,7,0,2*Math.PI);ctx.fillStyle=l===0?'#7ab8ff':l===pts.length-1?'#74e0ad':'#b0a5ff';ctx.fill();ctx.strokeStyle='#dbe6ff';ctx.lineWidth=1;ctx.stroke();}));
   ctx.fillStyle='#c7d3ea';ctx.font='12px system-ui';ctx.textAlign='center';pts.forEach((layer,l)=>ctx.fillText(names[l],layer[0].x,24));
   ctx.fillStyle='#8fa0bd';ctx.font='11px system-ui';if(pts.length>=2){ctx.fillText('combine', (pts[0][0].x+pts[1][0].x)/2, h-12);}if(pts.length>=3){ctx.fillText('learn', (pts[pts.length-2][0].x+pts[pts.length-1][0].x)/2, h-12);}
 }
-function redraw(){drawInputs();drawOutputs();drawSlice();drawNet();$('stepM').textContent=step.toLocaleString();$('lossM').textContent=isFinite(lastLoss)?lastLoss.toFixed(5):'—';}
+function redraw(){drawInputs();drawFormulas();drawOutputs();drawSlice();drawNet();$('stepM').textContent=step.toLocaleString();$('lossM').textContent=isFinite(lastLoss)?lastLoss.toFixed(5):'—';}
 function loop(){if(running){for(let k=0;k<cfg.speed;k++)trainOne();redraw();raf=requestAnimationFrame(loop)}}
 function sync(){
   cfg.inputs=+$('dimension').value;cfg.outputs=+$('outputs').value;cfg.layers=+$('layers').value;cfg.neurons=+$('neurons').value;cfg.lr=+$('lr').value/1000;cfg.speed=+$('speed').value;cfg.act=$('act').value;
