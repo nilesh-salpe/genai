@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Neural Network: From Features to Prediction</title>
+<style>
+  :root{--bg:#0b1020;--panel:#121a2e;--panel2:#0f1628;--text:#e9eefb;--muted:#96a3bd;--grid:#24314f;--accent:#75b9ff;--target:#f5b84b;--pred:#6ee7b7;--good:#8be28b;}
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(145deg,#090e1b,#111a31 55%,#0a1121);font:14px system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--text)}
+  .wrap{max-width:1450px;margin:0 auto;padding:18px}
+  h1{font-size:24px;margin:0 0 4px}.sub{color:var(--muted);margin-bottom:14px}
+  .hero{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 14px}
+  .step{background:linear-gradient(180deg,#16223b,#10192c);border:1px solid #2a3a5d;border-radius:12px;padding:12px;position:relative;min-height:84px}
+  .stepNum{font-size:11px;color:#8fa4c8;font-weight:750;text-transform:uppercase;letter-spacing:.08em}.stepTitle{font-size:15px;font-weight:750;margin-top:4px}.stepText{font-size:12px;color:#9eabc2;margin-top:2px}.arrow{position:absolute;right:-10px;top:30px;color:#7189b2;font-size:18px;z-index:2}
+  .beginner{background:#0e1730;border:1px solid #31446b;border-radius:12px;padding:12px 14px;margin-bottom:14px;color:#d8e1f2}.beginner b{color:#fff}.formula{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#bfe3ff}
+
+  .grid{display:grid;grid-template-columns:330px 1fr;gap:14px}
+  .card{background:rgba(18,26,46,.92);border:1px solid #253252;border-radius:14px;padding:14px;box-shadow:0 10px 35px rgba(0,0,0,.22)}
+  .controls{display:grid;gap:12px}.control{display:grid;gap:6px}.row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  label{font-weight:650}.value{font-variant-numeric:tabular-nums;color:#b9c7e4;min-width:44px;text-align:right}
+  input[type=range]{width:100%;accent-color:#6ea8fe}
+  select,button{background:#18233d;color:#e9eefb;border:1px solid #344468;border-radius:9px;padding:8px 10px;font:inherit}
+  button{cursor:pointer}.buttons{display:flex;gap:8px;flex-wrap:wrap}.buttons button:hover{background:#21304f}
+  .main{display:grid;gap:14px}.topline{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .metric{font-size:26px;font-weight:760}.small{font-size:12px;color:var(--muted)}
+  .stage{position:relative;overflow:hidden;min-height:445px}.stage canvas{width:100%;height:440px;display:block}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:7px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+  .two{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}.diagram{height:520px}.diagram canvas{width:100%;height:520px;display:block}
+  .explain{line-height:1.5;color:#c9d3e9}.sliceIntro{font-size:12px;color:var(--muted);margin:5px 0 10px}.sliceGrid{display:grid;grid-template-columns:220px 1fr;gap:14px;align-items:stretch}.featureKnobs{display:grid;gap:8px;align-content:start}.featureCard{background:#0c1426;border:1px solid #263656;border-radius:10px;padding:8px}.featureCard .row{font-size:12px}.sliceGrid canvas{width:100%;height:330px;display:block;border-radius:10px}@media(max-width:800px){.sliceGrid{grid-template-columns:1fr}}.codeish{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#bfe3ff}
+  @media(max-width:1050px){.grid{grid-template-columns:1fr}.two{grid-template-columns:1fr}.topline{grid-template-columns:1fr 1fr}.diagram{height:420px}.diagram canvas{height:420px}}
+  @media(max-width:650px){.topline{grid-template-columns:1fr}}
+
+/* Presentation-friendly layer */
+.titlebar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:12px}.kicker{font-size:11px;letter-spacing:.13em;color:#7fa6d7;font-weight:800;margin-bottom:4px}.titlebar h1{font-size:30px;line-height:1.1;margin:0}.presentBtn{background:#16223b;border:1px solid #35507c;color:#dce8fb;border-radius:10px;padding:10px 13px;font-weight:700;cursor:pointer}.presentBtn:hover{background:#1b2a47}.callout{display:flex;gap:10px;align-items:center;background:#11203b;border:1px solid #31517e;border-radius:12px;padding:12px 14px;margin-bottom:14px;color:#dce7f8}.calloutIcon{font-size:20px}.controlsCard{padding:12px}.controlGroup{background:#0e1730;border:1px solid #273a61;border-radius:12px;padding:11px}.groupTitle{font-weight:800;margin-bottom:8px}.secondaryControls{margin-top:10px}.tip{font-size:12px;line-height:1.45;color:#b8c7df;background:#0d1730;border:1px dashed #33496e;border-radius:10px;padding:9px 10px}.primaryBtn{font-size:15px;padding:10px 15px}.sectionHead{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px}.sectionHead.compact{margin-bottom:0}.badge{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#20385f;color:#dce9ff;font-weight:850;flex:0 0 auto}.sectionSub{color:#99a8c2;font-size:12px;margin-top:2px}.bigConcept{display:flex;flex-direction:column;gap:4px;margin:2px 0 14px}.bigConcept span{font-size:12px;color:#86a5cf;text-transform:uppercase;letter-spacing:.08em;font-weight:800}.bigConcept strong{font-size:21px;line-height:1.2}.miniFlow{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:14px;color:#cbd8ec;font-size:12px}.miniFlow span{background:#111d33;border:1px solid #2c426b;padding:5px 7px;border-radius:7px}.miniFlow span:nth-child(even){background:transparent;border:0;padding:0;color:#7894bd}.presentationMode .grid{grid-template-columns:1fr}.presentationMode .controlsCard{display:none}.presentationMode .titlebar h1{font-size:34px}.presentationMode .hero .step{min-height:72px}.presentationMode .stage{min-height:420px}.presentationMode .stage canvas{height:410px}.presentationMode .sliceGrid canvas{height:360px}.presentationMode .diagram{height:480px}.presentationMode .diagram canvas{height:430px}.presentationMode .two{grid-template-columns:1fr}.presentationMode .two .conceptCard{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="titlebar">
+    <div>
+      <div class="kicker">NEURAL NETWORKS • VISUAL EXPLANATION</div>
+      <h1>How a Neural Network Learns a Function</h1>
+      <div class="sub">Think of it as <b>features → simple pieces → one prediction</b>.</div>
+    </div>
+    <button id="present" class="presentBtn">☰ Presentation mode</button>
+  </header>
+  <div class="hero">
+    <div class="step active"><div class="stepNum">1</div><div class="stepTitle">Give it features</div><div class="stepText">x₁, x₂, x₃… describe one example.</div><span class="arrow">→</span></div>
+    <div class="step"><div class="stepNum">2</div><div class="stepTitle">Combine them</div><div class="stepText">Each neuron makes a simple transformation.</div><span class="arrow">→</span></div>
+    <div class="step"><div class="stepNum">3</div><div class="stepTitle">Build the function</div><div class="stepText">Many ReLU pieces combine into a flexible shape.</div><span class="arrow">→</span></div>
+    <div class="step"><div class="stepNum">4</div><div class="stepTitle">Match the target</div><div class="stepText">Training changes weights so prediction moves closer.</div></div>
+  </div>
+  <div class="callout"><span class="calloutIcon">💡</span><div><b>One important idea:</b> 4 features do not mean 4 target curves. With one output, the network learns <span class="formula">ŷ = f(x₁,x₂,x₃,x₄)</span> — one function with a higher-dimensional input.</div></div>
+  <div class="grid">
+    <aside class="card controlsCard" id="controlsCard">
+      <div class="controls">
+        <div class="controlGroup"><div class="groupTitle">Choose the input dimension</div>
+          <div class="control"><div class="row"><label>Dimensions</label><span class="value" id="inputsV">2D</span></div><select id="dimension" style="width:100%"><option value="1">1D — one feature</option><option value="2" selected>2D — two features</option><option value="3">3D — three features</option><option value="4">4D — four features</option></select></div>
+          <div class="control"><div class="row"><label>Output targets</label><span class="value" id="outputsV">1</span></div><input id="outputs" type="range" min="1" max="4" value="1"></div>
+          <div class="control"><div class="row"><label>Hidden layers</label><span class="value" id="layersV">2</span></div><input id="layers" type="range" min="1" max="4" value="2"></div>
+          <div class="control"><div class="row"><label>Neurons / layer</label><span class="value" id="neuronsV">8</span></div><input id="neurons" type="range" min="2" max="20" value="8"></div>
+        </div>
+        <div class="controlGroup secondaryControls">
+          <div class="control"><div class="row"><label>Learning rate</label><span class="value" id="lrV">0.010</span></div><input id="lr" type="range" min="1" max="40" value="10"></div>
+          <div class="control"><div class="row"><label>Train speed</label><span class="value" id="speedV">5</span></div><input id="speed" type="range" min="1" max="20" value="5"></div>
+          <div class="control"><div class="row"><label>Activation</label></div><select id="act"><option value="relu">ReLU</option><option value="tanh">tanh</option><option value="sigmoid">sigmoid</option></select></div>
+        </div>
+        <div class="buttons"><button id="train" class="primaryBtn">▶ Train</button><button id="pause">Ⅱ Pause</button><button id="reset">↺ Reset</button><button id="newdata">↻ New targets</button></div>
+        <div class="tip"><b>Best demo:</b> start with <b>2 features → 1 output</b>. Press <b>Train</b>. Then increase Features to 3 or 4 and use the slice graph below.</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topline">
+        <div class="card"><div class="small">Training step</div><div class="metric" id="stepM">0</div></div>
+        <div class="card"><div class="small">Mean squared error</div><div class="metric" id="lossM">—</div></div>
+      </div>
+
+      <div class="card stage">
+        <div class="sectionHead"><span class="badge">1</span><div><b>Features go in</b><div class="sectionSub">Choose 1D, 2D, 3D, or 4D. The network receives that many features for each example.</div></div></div>
+        <canvas id="inputCanvas" aria-label="Plot of the input feature values across the training set"></canvas>
+        <div class="legend" id="inputLegend"></div>
+      </div>
+
+      <div class="card" style="padding-bottom:12px">
+        <div class="sectionHead"><span class="badge">2</span><div><b>How do we show many features on a 2D screen?</b><div class="sectionSub">Pick one feature to vary and hold the others fixed. That gives a 2D slice.</div></div></div>
+        <div class="sliceIntro">We vary <b>one feature</b> and hold the others at their chosen values. The graph shows both the <b>correct target</b> and the network's <b>prediction</b> for that slice.</div>
+        <div class="sliceGrid">
+          <div class="featureKnobs" id="featureKnobs"></div>
+          <canvas id="sliceCanvas" aria-label="Plot of target versus predicted value as one feature is swept, with the others held fixed"></canvas>
+        </div>
+      </div>
+
+      <div class="card stage">
+        <div class="sectionHead"><span class="badge">3</span><div><b>Prediction vs. target</b><div class="sectionSub">The network starts wrong. Training moves the prediction toward the target.</div></div></div>
+        <canvas id="outputCanvas" aria-label="Plot of target versus predicted value across the training set"></canvas>
+        <div class="legend" id="outputLegend"></div><div class="small" style="margin-top:6px">Target = what we want. Prediction = what the network currently produces.</div>
+      </div>
+
+      <div class="two">
+        <div class="card diagram"><div class="sectionHead compact"><span class="badge">4</span><div><b>Inside the network</b><div class="sectionSub">Features are combined — not fitted independently.</div></div></div><canvas id="netCanvas" aria-label="Diagram of the network's layers and connections"></canvas></div>
+        <div class="card conceptCard">
+          <div class="bigConcept"><span>ReLU intuition</span><strong>many simple pieces → one flexible function</strong></div>
+          <div class="miniFlow"><span>weighted sum</span><span>→</span><span>ReLU</span><span>→</span><span>piece</span><span>+</span><span>piece</span><span>→</span><span>prediction</span></div>
+          <div class="explain">With ReLU, each neuron creates a simple piece such as <span class="codeish">max(0, wx+b)</span>. Many neurons combine those pieces. For many features, the true function lives in higher dimensions; the slice graph above lets us see one 2D view at a time.</div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<script>
+// Self-contained educational demo. Gradients are computed with manual backpropagation.
+const $ = id => document.getElementById(id);
+const cfg = {N:64, inputs:2, outputs:1, layers:2, neurons:8, lr:.01, speed:5, act:'relu'};
+let data, net, step=0, running=false, lastLoss=Infinity, raf=0, seed=17, sliceVals=[0,0,0,0];
+window.activeFeature=0;
+const rand = () => { seed = (seed*1664525+1013904223)>>>0; return seed/4294967296; };
+const gauss=()=>{let u=0,v=0; while(!u)u=rand(); while(!v)v=rand(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+function zeros(n){return Array(n).fill(0)}
+function mat(r,c,val=0){return Array.from({length:r},()=>Array(c).fill(val))}
+function act(x){ if(cfg.act==='relu')return Math.max(0,x); if(cfg.act==='tanh')return Math.tanh(x); return 1/(1+Math.exp(-Math.max(-20,Math.min(20,x)))); }
+function dact(x){ if(cfg.act==='relu')return x>0?1:0; if(cfg.act==='tanh'){let t=Math.tanh(x);return 1-t*t} let s=1/(1+Math.exp(-Math.max(-20,Math.min(20,x))));return s*(1-s); }
+function target(i,o){
+  const x=data.X[i];
+  let y=0;
+  const x1=x[0]||0, x2=x[1]||0, x3=x[2]||0, x4=x[3]||0;
+  if(o===0) y=.55*Math.sin(2.2*x1) + .25*x1*x1 + (cfg.inputs>=2?.35*Math.cos(2.4*x2):0) + (cfg.inputs>=3?.20*x3*x3:0) + (cfg.inputs>=4?-.18*Math.sin(3*x4):0);
+  if(o===1) y=.45*x1*x1-.25*Math.sin(3*x1) + (cfg.inputs>=2?.30*x2:0) + (cfg.inputs>=3?-.20*x3:0) + (cfg.inputs>=4?.18*x4*x4:0);
+  if(o===2) y=.35*Math.sin(4*x1)+.20*Math.cos(2*x1) + (cfg.inputs>=2?.30*x2*x2:0) + (cfg.inputs>=3?.22*Math.sin(3*x3):0) + (cfg.inputs>=4?-.12*x4:0);
+  if(o===3) y=.25*Math.cos(5*x1)+.20*x1 + (cfg.inputs>=2?-.22*Math.sin(2*x2):0) + (cfg.inputs>=3?.18*x3:0) + (cfg.inputs>=4?.16*x4*x4:0);
+  return y;
+}
+function buildData(){
+  seed = 17;
+  data={X:mat(cfg.N,cfg.inputs),Y:mat(cfg.N,cfg.outputs)};
+  for(let i=0;i<cfg.N;i++){
+    for(let j=0;j<cfg.inputs;j++) data.X[i][j]=rand()*2-1;
+    for(let o=0;o<cfg.outputs;o++) data.Y[i][o]=target(i,o);
+  }
+}
+function initNet(){
+  seed=12345;
+  const sizes=[cfg.inputs,...Array(cfg.layers).fill(cfg.neurons),cfg.outputs];
+  net=[];
+  for(let l=0;l<sizes.length-1;l++){
+    const fanIn=sizes[l], fanOut=sizes[l+1];
+    const scale=Math.sqrt(2/fanIn);
+    const W=mat(fanIn,fanOut); const b=zeros(fanOut);
+    for(let i=0;i<fanIn;i++)for(let j=0;j<fanOut;j++)W[i][j]=gauss()*scale*.6;
+    net.push({W,b});
+  }
+}
+function forward(x, cache=false){
+  let a=x.slice(), acts=[a], zs=[];
+  for(let l=0;l<net.length;l++){
+    const L=net[l], z=zeros(L.b.length);
+    for(let j=0;j<L.b.length;j++){let s=L.b[j]; for(let i=0;i<a.length;i++)s+=a[i]*L.W[i][j]; z[j]=s;}
+    const out=z.map((v)=> l===net.length-1 ? v : act(v));
+    zs.push(z); acts.push(out); a=out;
+  }
+  return cache?{y:a,acts,zs}:a;
+}
+function trainOne(){
+  // Full batch gradient descent for stable visualization.
+  const gW=net.map(L=>mat(L.W.length,L.W[0].length)), gb=net.map(L=>zeros(L.b.length));
+  let loss=0;
+  for(let n=0;n<data.X.length;n++){
+    const c=forward(data.X[n],true), delta=zeros(cfg.outputs);
+    for(let j=0;j<cfg.outputs;j++){let e=c.y[j]-data.Y[n][j]; loss+=e*e; delta[j]=2*e;}
+    for(let l=net.length-1;l>=0;l--){
+      const L=net[l], prev=c.acts[l];
+      for(let i=0;i<L.W.length;i++)for(let j=0;j<L.W[i].length;j++)gW[l][i][j]+=prev[i]*delta[j];
+      for(let j=0;j<L.b.length;j++)gb[l][j]+=delta[j];
+      if(l>0){const prevDelta=zeros(L.W.length); for(let i=0;i<L.W.length;i++){let s=0;for(let j=0;j<L.W[i].length;j++)s+=L.W[i][j]*delta[j];prevDelta[i]=s*dact(c.zs[l-1][i]);} delta.splice(0,delta.length,...prevDelta);}
+    }
+  }
+  const inv=1/data.X.length;
+  for(let l=0;l<net.length;l++){
+    const L=net[l];
+    for(let i=0;i<L.W.length;i++)for(let j=0;j<L.W[i].length;j++)L.W[i][j]-=cfg.lr*gW[l][i][j]*inv;
+    for(let j=0;j<L.b.length;j++)L.b[j]-=cfg.lr*gb[l][j]*inv;
+  }
+  lastLoss=loss*inv/cfg.outputs; step++;
+}
+function resizeCanvas(c){const r=c.getBoundingClientRect(), dpr=devicePixelRatio||1; c.width=Math.max(1,r.width*dpr); c.height=Math.max(1,r.height*dpr); const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return {ctx,w:r.width,h:r.height};}
+function chart(c, series, labels){
+  const {ctx,w,h}=resizeCanvas(c); const pad={l:44,r:14,t:18,b:26};
+  ctx.clearRect(0,0,w,h); ctx.fillStyle='#0c1426';ctx.fillRect(0,0,w,h);
+  let min=Infinity,max=-Infinity;series.forEach(s=>s.v.forEach(v=>{min=Math.min(min,v);max=Math.max(max,v)}));
+  if(!isFinite(min)){min=-1;max=1} const span=Math.max(1e-3,max-min);min-=span*.08;max+=span*.08;
+  ctx.strokeStyle='#24314f';ctx.lineWidth=1;
+  for(let g=0;g<=4;g++){const y=pad.t+(h-pad.t-pad.b)*g/4;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();}
+  for(let g=0;g<=4;g++){const x=pad.l+(w-pad.l-pad.r)*g/4;ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,h-pad.b);ctx.stroke();}
+  ctx.fillStyle='#7f8daa';ctx.font='11px system-ui';ctx.textAlign='right';
+  for(let g=0;g<=4;g++){const val=max-(max-min)*g/4;const y=pad.t+(h-pad.t-pad.b)*g/4;ctx.fillText(val.toFixed(2),pad.l-6,y+4);}
+  series.forEach((s,idx)=>{ctx.strokeStyle=s.c;ctx.lineWidth=2.1;ctx.setLineDash(s.dash?[6,5]:[]);ctx.beginPath();s.v.forEach((v,i)=>{const x=pad.l+(w-pad.l-pad.r)*i/(s.v.length-1);const y=pad.t+(max-v)/(max-min)*(h-pad.t-pad.b);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.setLineDash([]);});
+  ctx.fillStyle='#8a98b2';ctx.textAlign='center';ctx.fillText('sample index',w/2,h-6);
+}
+function drawInputs(){
+  const series=[];for(let j=0;j<cfg.inputs;j++)series.push({v:data.X.map(r=>r[j]),c:`hsl(${210+j*55},80%,70%)`});
+  chart($('inputCanvas'),series);$('inputLegend').innerHTML=series.map((_,j)=>`<span><span class="dot" style="background:hsl(${210+j*55},80%,70%)"></span>x${j+1}</span>`).join('');
+}
+function drawOutputs(){
+  const series=[];const pred=Array.from({length:cfg.outputs},()=>[]);
+  for(let i=0;i<data.X.length;i++){const y=forward(data.X[i]);for(let o=0;o<cfg.outputs;o++)pred[o].push(y[o]);}
+  for(let o=0;o<cfg.outputs;o++){const hue=35+o*68;series.push({v:data.Y.map(r=>r[o]),c:`hsl(${hue},85%,64%)`});series.push({v:pred[o],c:`hsl(${hue+18},72%,72%)`,dash:true});}
+  chart($('outputCanvas'),series); let html='';for(let o=0;o<cfg.outputs;o++){const hue=35+o*68;html+=`<span><span class="dot" style="background:hsl(${hue},85%,64%)"></span>target y${o+1}</span><span><span class="dot" style="background:hsl(${hue+18},72%,72%)"></span>prediction y${o+1}</span>`} $('outputLegend').innerHTML=html;
+}
+function sliceTarget(x,o=0){
+  const a=x[0]||0,b=x[1]||0,c=x[2]||0,d=x[3]||0;
+  if(o===0) return .55*Math.sin(2.2*a)+.25*a*a+(cfg.inputs>=2?.35*Math.cos(2.4*b):0)+(cfg.inputs>=3?.20*c*c:0)+(cfg.inputs>=4?-.18*Math.sin(3*d):0);
+  if(o===1) return .45*a*a-.25*Math.sin(3*a)+(cfg.inputs>=2?.30*b:0)+(cfg.inputs>=3?-.20*c:0)+(cfg.inputs>=4?.18*d*d:0);
+  if(o===2) return .35*Math.sin(4*a)+.20*Math.cos(2*a)+(cfg.inputs>=2?.30*b*b:0)+(cfg.inputs>=3?.22*Math.sin(3*c):0)+(cfg.inputs>=4?-.12*d:0);
+  return .25*Math.cos(5*a)+.20*a+(cfg.inputs>=2?-.22*Math.sin(2*b):0)+(cfg.inputs>=3?.18*c:0)+(cfg.inputs>=4?.16*d*d:0);
+}
+function drawSlice(){
+  const c=$('sliceCanvas'); const {ctx,w,h}=resizeCanvas(c); ctx.clearRect(0,0,w,h); ctx.fillStyle='#0c1426';ctx.fillRect(0,0,w,h);
+  const pad={l:48,r:16,t:34,b:38}; const feature=Math.max(0,Math.min(cfg.inputs-1,Number(window.activeFeature||0))); const steps=80;
+  const pred=[], targ=[]; let lo=Infinity,hi=-Infinity;
+  for(let k=0;k<steps;k++){const v=-1+2*k/(steps-1);const xx=Array(cfg.inputs).fill(0);for(let j=0;j<cfg.inputs;j++)xx[j]=sliceVals[j]||0;xx[feature]=v;const yp=forward(xx)[0]||0;const yt=sliceTarget(xx,0);pred.push(yp);targ.push(yt);lo=Math.min(lo,yp,yt);hi=Math.max(hi,yp,yt);}
+  const span=Math.max(1e-4,hi-lo);lo-=span*.10;hi+=span*.10;
+  ctx.strokeStyle='#24314f';ctx.lineWidth=1;for(let g=0;g<=4;g++){const y=pad.t+(h-pad.t-pad.b)*g/4;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();}
+  ctx.fillStyle='#7f8daa';ctx.font='11px system-ui';ctx.textAlign='right';for(let g=0;g<=4;g++){const val=hi-(hi-lo)*g/4,y=pad.t+(h-pad.t-pad.b)*g/4;ctx.fillText(val.toFixed(2),pad.l-6,y+4);}
+  const draw=(vals,stroke,dash,width)=>{ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.setLineDash(dash);ctx.beginPath();vals.forEach((v,i)=>{const x=pad.l+(w-pad.l-pad.r)*i/(steps-1),y=pad.t+(hi-v)/(hi-lo)*(h-pad.t-pad.b);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.setLineDash([])};
+  draw(targ,'#f5b84b',[],3.5); draw(pred,'#6ee7b7',[7,5],3.0);
+  ctx.fillStyle='#d8e1f2';ctx.textAlign='center';ctx.font='12px system-ui';ctx.fillText(`x-axis = x${feature+1} • other features fixed • target vs prediction`,w/2,18);ctx.fillStyle='#8fa0bd';ctx.fillText(`Correct target is computed from all ${cfg.inputs} feature values`,w/2,h-10);
+}
+function updateFeatureKnobs(){
+  const box=$('featureKnobs'); if(!box)return; let html='';
+  html += `<div class="featureCard"><div class="small"><b>Choose feature to vary</b></div>`;
+  html += `<select id="activeFeature" style="width:100%;margin-top:6px">${Array.from({length:cfg.inputs},(_,j)=>`<option value="${j}" ${j===Number(window.activeFeature||0)?'selected':''}>x${j+1}</option>`).join('')}</select></div>`;
+  for(let j=0;j<cfg.inputs;j++){
+    html += `<div class="featureCard"><div class="row"><label>x${j+1} (hold)</label><span class="value" id="sliceV${j}">${(sliceVals[j]||0).toFixed(2)}</span></div><input data-slice="${j}" type="range" min="-1" max="1" step="0.01" value="${sliceVals[j]||0}"></div>`;
+  }
+  html += `<div class="small" style="margin-top:2px">Selected feature sweeps left → right. The other ${Math.max(0,cfg.inputs-1)} feature value(s) stay fixed. Yellow = correct target, green dashed = prediction.</div>`;
+  box.innerHTML=html;
+  $('activeFeature').addEventListener('change',e=>{window.activeFeature=+e.target.value;drawSlice();});
+  box.querySelectorAll('input[data-slice]').forEach(el=>el.addEventListener('input',()=>{const j=+el.dataset.slice;sliceVals[j]=+el.value;$(`sliceV${j}`).textContent=sliceVals[j].toFixed(2);drawSlice();}));
+}
+
+function drawNet(){
+  const {ctx,w,h}=resizeCanvas($('netCanvas'));ctx.clearRect(0,0,w,h);ctx.fillStyle='#0c1426';ctx.fillRect(0,0,w,h);
+  const sizes=[cfg.inputs,...Array(cfg.layers).fill(cfg.neurons),cfg.outputs], names=['Input',...Array.from({length:cfg.layers},(_,i)=>`Hidden ${i+1}`),'Output'];
+  const x0=58,x1=w-58, dx=(x1-x0)/(sizes.length-1); let pts=[];
+  sizes.forEach((s,l)=>{const x=x0+l*dx;const gap=Math.min(23,(h-78)/(s+1));const total=(s-1)*gap;const y0=(h-total)/2-2;pts.push([]);for(let i=0;i<s;i++)pts[l].push({x,y:y0+i*gap});});
+  for(let l=0;l<pts.length-1;l++){for(const a of pts[l])for(const b of pts[l+1]){ctx.strokeStyle='rgba(118,149,201,.18)';ctx.lineWidth=.7;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}}
+  pts.forEach((layer,l)=>layer.forEach((p,i)=>{ctx.beginPath();ctx.arc(p.x,p.y,7,0,2*Math.PI);ctx.fillStyle=l===0?'#7ab8ff':l===pts.length-1?'#74e0ad':'#b0a5ff';ctx.fill();ctx.strokeStyle='#dbe6ff';ctx.lineWidth=1;ctx.stroke();}));
+  ctx.fillStyle='#c7d3ea';ctx.font='12px system-ui';ctx.textAlign='center';pts.forEach((layer,l)=>ctx.fillText(names[l],layer[0].x,24));
+  ctx.fillStyle='#8fa0bd';ctx.font='11px system-ui';if(pts.length>=2){ctx.fillText('combine', (pts[0][0].x+pts[1][0].x)/2, h-12);}if(pts.length>=3){ctx.fillText('learn', (pts[pts.length-2][0].x+pts[pts.length-1][0].x)/2, h-12);}
+}
+function redraw(){drawInputs();drawOutputs();drawSlice();drawNet();$('stepM').textContent=step.toLocaleString();$('lossM').textContent=isFinite(lastLoss)?lastLoss.toFixed(5):'—';}
+function loop(){if(running){for(let k=0;k<cfg.speed;k++)trainOne();redraw();raf=requestAnimationFrame(loop)}}
+function sync(){
+  cfg.inputs=+$('dimension').value;cfg.outputs=+$('outputs').value;cfg.layers=+$('layers').value;cfg.neurons=+$('neurons').value;cfg.lr=+$('lr').value/1000;cfg.speed=+$('speed').value;cfg.act=$('act').value;
+  $('inputsV').textContent=cfg.inputs+'D';$('outputsV').textContent=cfg.outputs;$('layersV').textContent=cfg.layers;$('neuronsV').textContent=cfg.neurons;$('lrV').textContent=cfg.lr.toFixed(3);$('speedV').textContent=cfg.speed;
+}
+$('dimension').addEventListener('change',()=>{sync();sliceVals=[0,0,0,0];window.activeFeature=0;buildData();initNet();step=0;lastLoss=Infinity;updateFeatureKnobs();redraw();});
+['outputs','layers','neurons'].forEach(id=>$(id).addEventListener('input',()=>{sync();buildData();initNet();step=0;lastLoss=Infinity;redraw();}));
+['lr','speed','act'].forEach(id=>$(id).addEventListener('input',sync));
+$('train').onclick=()=>{sync();if(!running){running=true;loop()}};
+$('pause').onclick=()=>{running=false;cancelAnimationFrame(raf)};
+$('reset').onclick=()=>{running=false;cancelAnimationFrame(raf);sync();initNet();step=0;lastLoss=Infinity;redraw()};
+$('newdata').onclick=()=>{running=false;cancelAnimationFrame(raf);sync();buildData();initNet();step=0;lastLoss=Infinity;redraw()};
+
+$('present').onclick=()=>{document.body.classList.toggle('presentationMode'); $('present').textContent=document.body.classList.contains('presentationMode')?'✕ Exit presentation':'☰ Presentation mode'; redraw();};
+window.addEventListener('resize',redraw);
+sync();buildData();initNet();updateFeatureKnobs();redraw();
+</script>
+</body>
+</html>

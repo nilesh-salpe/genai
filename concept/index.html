@@ -93,6 +93,9 @@ footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <h3>Running it</h3>
 <p>All three pages are single self-contained HTML files — no build step, no dependencies, no network calls beyond the web font. Open any file directly in a browser, or serve the folder with <code class="mono">python3 -m http.server</code>. Part three's Python files need only NumPy (and scikit-learn, for one bundled dataset) — run any of them directly: <code class="mono">python3 examples/01_mlp_spiral_classifier.py</code>.</p>
 
+<h3>A sandbox to play with afterward</h3>
+<p><a href="bonus-curve-fitting.html">This standalone demo</a> trains a small network live in your browser to fit a target function of 1 to 4 input features, with hidden-layer count, width, activation, and learning rate all exposed as sliders. Since only one feature can be plotted against the output at a time, it holds the rest fixed and sweeps one — the point being that four features don't mean four separate curves, but one function of a higher-dimensional input.</p>
+
 <footer>
   <p>Reduced-motion preferences are respected throughout; every animation degrades to its final state.</p>
   <p>A personal footnote: not the author's first pass at a weighted-matrix model. A <a href="https://nileshsalpe.blogspot.com/2007/12/salpes-response-index-for-calculating.html">2007 blog post</a> proposed predicting human behaviour with a matrix of pairwise influence weights, explicitly likened to neural-network weights — the same shape of object attention uses, though without attention's defining move: those weights were symmetric and fixed, not computed per-query from content. A precursor in form, not in mechanism.</p>
