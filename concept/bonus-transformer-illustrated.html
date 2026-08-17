@@ -1090,16 +1090,49 @@ function stepWeightUpdate(mode){
       : "Repeat this for millions of (context, next-word) pairs, and this loop — forward pass, loss, backward pass, update — is the entire training process. Nothing more exotic happens anywhere. Fine-tuning (see that mode) is this identical loop, just started from pretrained weights instead of random ones.",
     pytorch:["optimizer = torch.optim.AdamW(model.parameters(), lr="+lr+")","loss.backward()","optimizer.step()","optimizer.zero_grad()"],
     render(t){
-      stage.appendChild(txt(500,40,"W_Q before → after one update step (illustrative direction)","axis-lbl")).setAttribute("text-anchor","middle");
-      matrixGrid(300,70,WQ,60,40,["r0","r1","r2","r3"],["c0","c1","c2","c3"]);
+      // Starting-point badge — the underlying WQ numbers are the same fixed,
+      // hand-picked matrix either way (this page is deterministic, not a real
+      // trained/untrained model) — the badge marks what to *imagine* it
+      // represents in each mode, since that's the actual difference.
+      const isFt = mode==="finetune";
+      const modeColor = isFt ? "#f5b84b" : "#75b9ff";
+      const badgeText = isFt ? "🔒  Starting point: pretrained weights (not random)" : "🎲  Starting point: freshly initialized (random) weights";
+      stage.appendChild(el("rect",{x:230,y:10,width:540,height:30,rx:15,fill:modeColor,"fill-opacity":0.12,stroke:modeColor,"stroke-width":1.4}));
+      stage.appendChild(txt(500,30,badgeText,"")).setAttribute("text-anchor","middle");
+      const badgeTxt = stage.lastChild;
+      badgeTxt.setAttribute("font-size","13"); badgeTxt.setAttribute("fill",modeColor); badgeTxt.setAttribute("font-weight","700");
+
+      stage.appendChild(txt(500,60,"W_Q before → after one update step (illustrative direction)","axis-lbl")).setAttribute("text-anchor","middle");
+      matrixGrid(300,92,WQ,60,40,["r0","r1","r2","r3"],["c0","c1","c2","c3"]);
       if(t>0.4){
         const b=Math.min(1,(t-0.4)/0.6);
         const after = WQ.map((row,i)=>row.map((v,j)=> v - b*0.06*Math.sin(i+j*1.7)));
         ensureArrowMarker();
-        flowArrow(560,150,650,150,"−η·grad","#f5b84b");
-        matrixGrid(680,70,after,60,40,["r0","r1","r2","r3"],["c0","c1","c2","c3"]);
+        flowArrow(560,172,650,172,"−η·grad","#f5b84b");
+        matrixGrid(680,92,after,60,40,["r0","r1","r2","r3"],["c0","c1","c2","c3"]);
       }
-      stage.appendChild(txt(500,400,"(cell deltas here are illustrative motion — the real per-weight gradient for W_Q follows the same chain rule shown in the previous step)","axis-lbl")).setAttribute("text-anchor","middle");
+
+      // η comparison, log scale — makes "smaller learning rate" visible, not
+      // just a number in the equation above.
+      const etaRows = [
+        {label:"Training", eta:0.01, on: mode==="training"},
+        {label:"Fine-tuning", eta:0.0003, on: mode==="finetune"}
+      ];
+      const logMin = Math.log10(0.0001), logMax = Math.log10(0.03);
+      const barX = 260, barMaxW = 480;
+      stage.appendChild(txt(500,278,"learning rate η, compared (log scale)","axis-lbl")).setAttribute("text-anchor","middle");
+      etaRows.forEach((r,i)=>{
+        const y = 300 + i*36;
+        const frac = Math.max(0,(Math.log10(r.eta)-logMin)/(logMax-logMin));
+        const w = Math.max(4, frac*barMaxW*Math.min(1,t*1.6));
+        stage.appendChild(txt(barX-10,y+14,r.label,"axis-lbl")).setAttribute("text-anchor","end");
+        stage.appendChild(el("rect",{x:barX,y:y,width:barMaxW,height:20,rx:4,fill:"#101b34"}));
+        stage.appendChild(el("rect",{x:barX,y:y,width:w,height:20,rx:4,fill:r.on?modeColor:"#3a4a72","fill-opacity":r.on?1:0.6}));
+        const vt = stage.appendChild(txt(barX+w+8,y+14,"η = "+r.eta+(r.on?"  ← this mode":""),"axis-lbl"));
+        if(r.on){ vt.setAttribute("fill","var(--text)"); vt.setAttribute("font-weight","700"); }
+      });
+
+      stage.appendChild(txt(500,392,"(cell deltas above are illustrative motion — the real per-weight gradient for W_Q follows the same chain rule shown in the previous step)","axis-lbl")).setAttribute("text-anchor","middle");
     }
   };
 }
