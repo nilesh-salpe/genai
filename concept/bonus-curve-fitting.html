@@ -78,8 +78,8 @@
       </div>
 
       <div class="card stage">
-        <div class="sectionHead"><span class="badge">1</span><div><b>Features go in</b><div class="sectionSub">Choose 1D, 2D, 3D, or 4D. The network receives that many features for each example — this is the effective function it's trying to match.</div></div></div>
-        <canvas id="inputCanvas" aria-label="Plot of the input feature values across the training set"></canvas>
+        <div class="sectionHead"><span class="badge">1</span><div><b>Features go in</b><div class="sectionSub">Choose 1D, 2D, 3D, or 4D. The network receives that many features for each example — <span style="color:#f5b84b">y1</span> below is the target computed from them, by the effective function underneath.</div></div></div>
+        <canvas id="inputCanvas" aria-label="Plot of the input feature values and the target output across the training set"></canvas>
         <div class="legend" id="inputLegend"></div>
         <div id="targetFormulas" style="margin-top:8px"></div>
       </div>
@@ -201,7 +201,11 @@ function chart(c, series, labels){
 }
 function drawInputs(){
   const series=[];for(let j=0;j<cfg.inputs;j++)series.push({v:data.X.map(r=>r[j]),c:`hsl(${210+j*55},80%,70%)`});
-  chart($('inputCanvas'),series);$('inputLegend').innerHTML=series.map((_,j)=>`<span><span class="dot" style="background:hsl(${210+j*55},80%,70%)"></span>x${j+1}</span>`).join('');
+  series.push({v:data.Y.map(r=>r[0]),c:'#f5b84b'});
+  chart($('inputCanvas'),series);
+  let html=series.slice(0,cfg.inputs).map((_,j)=>`<span><span class="dot" style="background:hsl(${210+j*55},80%,70%)"></span>x${j+1}</span>`).join('');
+  html+=`<span><span class="dot" style="background:#f5b84b"></span>y1 (target)</span>`;
+  $('inputLegend').innerHTML=html;
 }
 const FORMULA_TERMS=[
   ['0.55·sin(2.2·x₁)','0.25·x₁²','0.35·cos(2.4·x₂)','0.20·x₃²','−0.18·sin(3·x₄)'],
