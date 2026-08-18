@@ -122,23 +122,23 @@ svg text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1>TRANSFORMER VISUALIZER</h1>
-    <div class="sub">"From tokens &rarr; vectors &rarr; attention &rarr; prediction" &mdash; an educational, deterministic simulation, not a real trained model</div>
-  </header>
-
-  <nav class="progress" aria-label="Course progress">
+    <nav class="progress" aria-label="Course progress">
     <a href="part-1-maths.html">1 · Maths</a>
     <a href="part-2-build.html">2 · Build</a>
     <a href="part-3-examples.html">3 · Examples</a>
-    <a href="bonus-curve-fitting.html">Bonus · Sandbox</a>
-    <a href="bonus-transformer-lab.html">Bonus · Live lab</a>
-    <a href="bonus-transformer-illustrated.html" class="here">Bonus · Illustrated</a>
+    <a href="bonus-curve-fitting.html">Sandbox</a>
+    <a href="bonus-transformer-lab.html">Live Lab</a>
+    <a href="bonus-transformer-illustrated.html" class="here">Illustrated</a>
     <span class="sep">│</span>
     <a href="part-4-pytorch.html">4 · PyTorch</a>
     <a href="part-5-architecture.html">5 · Architecture</a>
     <a href="part-6-build-gpt.html">6 · Build a GPT</a>
   </nav>
+
+  <header>
+    <h1>TRANSFORMER VISUALIZER</h1>
+    <div class="sub">"From tokens &rarr; vectors &rarr; attention &rarr; prediction" &mdash; an educational, deterministic simulation, not a real trained model</div>
+  </header>
 
   <div class="intro-note">
     <b>How to use this page:</b> pick a mode below, then step through with <b>Next</b> or <b>Play</b>. Steps 1–13 (Text → Final prediction) are identical in every mode; the last few steps show what happens differently after that — predicting the next word (Inference) vs. learning from the correct answer (Training / Fine-tuning). Hover any diagram element for a definition.
@@ -1009,7 +1009,7 @@ const STEP_FFN = {
 const STEP_GEOMETRIC = {
   title:"Geometric transformation", math:["W₁ rotates/scales; ReLU bends the result"],
   explain:"In vector space, matrix multiplication moves points; the nonlinearity bends that movement so it isn't just one flat transformation.",
-  why:"This is the exact same curve-fitting idea from the bonus sandbox — just happening inside a much higher-dimensional space here.",
+  why:"This is the exact same curve-fitting idea from the curve-fitting sandbox — just happening inside a much higher-dimensional space here.",
   render(t){
     if(showVec){
       const X = X0();
