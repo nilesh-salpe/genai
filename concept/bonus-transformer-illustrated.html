@@ -83,6 +83,17 @@ header .sub{color:var(--muted);font-size:13px}
 .traps-panel li{margin-bottom:6px}
 .traps-panel b{color:var(--accent2)}
 
+.sentence-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;
+  background:#0e1730;border:1px solid #273a61;border-radius:12px;padding:10px 14px;margin-bottom:12px}
+.sentence-bar input[type=text]{flex:1;min-width:220px;max-width:420px;background:#0a1128;color:var(--text);
+  border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:13px}
+.sentence-bar input[type=text]:focus{outline:none;border-color:var(--accent)}
+.sentence-bar button{background:#18233d;color:var(--text);border:1px solid var(--line);border-radius:8px;
+  padding:8px 14px;font:inherit;font-size:13px;cursor:pointer}
+.sentence-bar button:hover{border-color:var(--accent)}
+.sentence-bar .hint{font-size:11.5px;color:var(--dim);width:100%;text-align:center}
+.sentence-bar .err{font-size:11.5px;color:var(--warn);width:100%;text-align:center;display:none}
+
 footer{margin-top:16px;text-align:center;font-size:12px;color:var(--dim)}
 footer a{color:var(--accent)}
 
@@ -128,6 +139,15 @@ svg text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
     <span><span class="sw" style="background:rgba(240,133,122,.75)"></span>negative value</span>
     <span>— cell/bar opacity ≈ magnitude</span>
     <span><b style="color:var(--text)">×</b> = blocked by the causal mask</span>
+  </div>
+
+  <div class="sentence-bar">
+    <label for="sentenceInput" style="font-size:12px;color:var(--muted)">Try your own sentence</label>
+    <input type="text" id="sentenceInput" placeholder="the cat sat on the mat" maxlength="80" />
+    <button id="btnRebuild">Rebuild</button>
+    <button id="btnResetSentence">Reset to default</button>
+    <div class="hint">2–8 words, space-separated. Words outside the built-in 8-word vocabulary get a deterministic (not trained) generated embedding.</div>
+    <div class="err" id="sentenceErr"></div>
   </div>
 
   <div class="modebar">
@@ -246,6 +266,14 @@ function softmax(arr){
   const s = ex.reduce((a,b)=>a+b,0);
   return ex.map(v=>v/s);
 }
+function softmaxWithTemp(logits, temp){ return softmax(logits.map(v=>v/temp)); }
+function mulberry32(seed){ let a=seed>>>0; return function(){ a|=0; a=(a+0x6D2B79F5)|0; let t=Math.imul(a^(a>>>15),1|a); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }; }
+function sampleFromDist(probs, rng){
+  const r = rng();
+  let cum = 0;
+  for(let i=0;i<probs.length;i++){ cum += probs[i]; if(r<=cum) return i; }
+  return probs.length-1;
+}
 function weightedSum(weights, vectors){
   const d = vectors[0].length;
   const out = new Array(d).fill(0);
@@ -259,8 +287,8 @@ function weightedSum(weights, vectors){
    Every downstream number (Q, K, V, attention, FFN, logits) is computed
    from these once, at load, with the exact functions above.
    ========================================================================= */
-const VOCAB = ["the","cat","sat","on","mat","dog","ran","was"];
-const EMB = {
+const BASE_VOCAB = ["the","cat","sat","on","mat","dog","ran","was"];
+const EMB_BASE = {
   the:[0.20, 0.70,-0.10, 0.40],
   cat:[0.80, 0.10, 0.50,-0.20],
   sat:[0.40, 0.60, 0.20, 0.10],
@@ -270,8 +298,20 @@ const EMB = {
   ran:[0.35, 0.55, 0.25, 0.05],
   was:[0.15, 0.35, 0.55,-0.25]
 };
-const SENTENCE = ["the","cat","sat","on","the","mat"]; // 6 positions
-const D = 4, T = SENTENCE.length;
+// Any word outside the 8 hand-picked ones (typed via the custom-sentence box)
+// gets a deterministic pseudo-random embedding instead — same word always
+// gets the same vector, so the page stays fully reproducible, but nothing
+// needs to be hand-picked in advance to accept arbitrary text.
+function hashSeed(str){ let h=0; for(let i=0;i<str.length;i++){ h=(h*31+str.charCodeAt(i))|0; } return h>>>0; }
+function hashEmbed(word, d){ const rng=mulberry32(hashSeed(word)+12345); const v=[]; for(let i=0;i<d;i++) v.push((rng()*2-1)*0.5); return v; }
+function getEmb(word){ return EMB_BASE[word] ? EMB_BASE[word].slice() : hashEmbed(word, D); }
+
+const D = 4;
+let SENTENCE = ["the","cat","sat","on","the","mat"]; // default: 6 positions — replaceable via the "Try your own sentence" box
+let T = SENTENCE.length;
+let QUERY_POS = T-1;  // last position — sees the whole (unmasked-for-it) context; used to illustrate attention
+let PRED_POS = T-2;   // second-to-last position — its hidden state is what predicts the final word
+let VOCAB = Array.from(new Set([...BASE_VOCAB, ...SENTENCE])); // base 8 words + any new words from the current sentence
 
 const WQ = [[1,0,0,0.2],[0,1,0.1,0],[0.1,0,1,0],[0,0.2,0,1]];
 const WK = [[1,0.1,0,0],[0,1,0,0.1],[0,0,1,0.1],[0.1,0,0,1]];
@@ -316,9 +356,9 @@ function sinusoidalPE(maxLen, d){
   }
   return pe;
 }
-const PE = sinusoidalPE(T, D);
-function tokenEmb0(){ return SENTENCE.map(w => EMB[w].slice()); }
-function X0(){ return SENTENCE.map((w,i) => EMB[w].map((v,j)=> v + PE[i][j])); }
+let PE = sinusoidalPE(T, D);
+function tokenEmb0(){ return SENTENCE.map(w => getEmb(w)); }
+function X0(){ return SENTENCE.map((w,i) => getEmb(w).map((v,j)=> v + PE[i][j])); }
 
 // Causal mask: position i may only look at positions j <= i. This is what
 // makes the model a *decoder* — at generation time token i has never seen
@@ -367,38 +407,6 @@ function oneLayer(X){
   return {attn:a, ffn:f, out:normalizeRows(f.residual2, 0.9)};
 }
 
-// Run 4 stacked layers (illustrative — real weights repeat, but each layer's
-// output feeds the next, exactly as a real stack does).
-const LAYER1 = oneLayer(X0());
-const LAYER2 = oneLayer(LAYER1.out);
-const LAYER3 = oneLayer(LAYER2.out);
-const LAYER4 = oneLayer(LAYER3.out);
-const LAYERS = [LAYER1,LAYER2,LAYER3,LAYER4];
-const FINAL_H = LAYER4.out[4]; // position 4 = "the", the token predicting what comes next
-
-// Output head: chosen so this specific illustrative example predicts "mat" —
-// stated plainly, since nothing here was trained. Built from the real final
-// hidden vector so the number that "wins" is a real dot product, not faked.
-const WHEAD = VOCAB.map((w,i) => {
-  if (w === "mat") return scaleVec(FINAL_H, 1.55);
-  if (w === "dog") return scaleVec(FINAL_H, 1.15);
-  if (w === "the") return scaleVec(FINAL_H, 0.95);
-  return EMB[w] ? scaleVec(EMB[w], 0.9) : new Array(D).fill(0.1);
-});
-const bHEAD = VOCAB.map(()=>0);
-const LOGITS = WHEAD.map((row,i) => dot(FINAL_H, row) + bHEAD[i]);
-const PROBS = softmax(LOGITS);
-
-// Training-only quantities. Real, checked gradients (finite-difference
-// verified to ~1e-11) for the one layer closest to the loss — see the
-// "Backpropagation" step for why the rest of the stack is described rather
-// than fully re-derived here.
-const MAT_IDX = VOCAB.indexOf("mat");
-const LOSS = -Math.log(Math.max(PROBS[MAT_IDX], 1e-12));
-const D_LOGITS = PROBS.map((p,i)=> p - (i===MAT_IDX?1:0));
-const D_FINAL_H = new Array(D).fill(0);
-for(let i=0;i<VOCAB.length;i++) for(let k=0;k<D;k++) D_FINAL_H[k] += D_LOGITS[i]*WHEAD[i][k];
-
 // Data-driven description of how the two heads actually differ for this
 // example, computed once from the real numbers above (not asserted) — used
 // in the "Softmax attention" step so the "different heads learn different
@@ -407,11 +415,67 @@ function describeHeadRow(w){
   const max = Math.max.apply(null,w), min = Math.min.apply(null,w);
   return {max, min, maxIdx: w.indexOf(max)};
 }
-const HEAD_ROW5 = [0,1].map(h => describeHeadRow(LAYER1.attn.heads[h].weights[5]));
-const HEAD_COMPARE_TEXT = "In this example: head 1 peaks at position "+HEAD_ROW5[0].maxIdx+' ("'+SENTENCE[HEAD_ROW5[0].maxIdx]+'", '+
-  (HEAD_ROW5[0].max*100).toFixed(0)+"%) and ranges down to "+(HEAD_ROW5[0].min*100).toFixed(0)+"%; head 2 peaks at position "+
-  HEAD_ROW5[1].maxIdx+' ("'+SENTENCE[HEAD_ROW5[1].maxIdx]+'", '+(HEAD_ROW5[1].max*100).toFixed(0)+
-  "%). Same 6 positions, two different patterns — that's the point of having more than one head.";
+
+let LAYER1, LAYER2, LAYER3, LAYER4, LAYERS, FINAL_H, WHEAD, bHEAD, LOGITS, PROBS;
+let TARGET_IDX, LOSS, D_LOGITS, D_FINAL_H, HEAD_ROW_Q, HEAD_COMPARE_TEXT;
+
+// Recomputes every sentence-dependent quantity on the page — called once at
+// load with the default sentence, and again whenever a custom sentence is
+// submitted. Everything below this point (layers, prediction, loss,
+// gradients) is a pure function of SENTENCE; nothing is hand-tuned per word.
+function computeExample(){
+  // Run 4 stacked layers (illustrative — real weights repeat, but each
+  // layer's output feeds the next, exactly as a real stack does).
+  LAYER1 = oneLayer(X0());
+  LAYER2 = oneLayer(LAYER1.out);
+  LAYER3 = oneLayer(LAYER2.out);
+  LAYER4 = oneLayer(LAYER3.out);
+  LAYERS = [LAYER1,LAYER2,LAYER3,LAYER4];
+  FINAL_H = LAYER4.out[PRED_POS]; // the hidden state that predicts the final word
+
+  // Output head: the actual target word (whatever the sentence's last word
+  // is) gets a fixed, deterministic edge; every other vocabulary word gets a
+  // smaller, per-word deterministic scale (via a seeded hash, not hand-
+  // picked) so the "wrong answer" candidates still vary realistically.
+  // Stated plainly: nothing here was trained — see Training mode for that.
+  const targetWord = SENTENCE[QUERY_POS];
+  WHEAD = VOCAB.map((w) => {
+    const boost = w===targetWord ? 1.5 : (0.8 + mulberry32(hashSeed(w))()*0.5);
+    return scaleVec(FINAL_H, boost);
+  });
+  bHEAD = VOCAB.map(()=>0);
+  LOGITS = WHEAD.map((row,i) => dot(FINAL_H, row) + bHEAD[i]);
+  PROBS = softmax(LOGITS);
+
+  // Training-only quantities. Real, checked gradients (finite-difference
+  // verified to ~1e-11) for the one layer closest to the loss — see the
+  // "Backpropagation" step for why the rest of the stack is described rather
+  // than fully re-derived here.
+  TARGET_IDX = VOCAB.indexOf(targetWord);
+  LOSS = -Math.log(Math.max(PROBS[TARGET_IDX], 1e-12));
+  D_LOGITS = PROBS.map((p,i)=> p - (i===TARGET_IDX?1:0));
+  D_FINAL_H = new Array(D).fill(0);
+  for(let i=0;i<VOCAB.length;i++) for(let k=0;k<D;k++) D_FINAL_H[k] += D_LOGITS[i]*WHEAD[i][k];
+
+  HEAD_ROW_Q = [0,1].map(h => describeHeadRow(LAYER1.attn.heads[h].weights[QUERY_POS]));
+  HEAD_COMPARE_TEXT = "In this example: head 1 peaks at position "+HEAD_ROW_Q[0].maxIdx+' ("'+SENTENCE[HEAD_ROW_Q[0].maxIdx]+'", '+
+    (HEAD_ROW_Q[0].max*100).toFixed(0)+"%) and ranges down to "+(HEAD_ROW_Q[0].min*100).toFixed(0)+"%; head 2 peaks at position "+
+    HEAD_ROW_Q[1].maxIdx+' ("'+SENTENCE[HEAD_ROW_Q[1].maxIdx]+'", '+(HEAD_ROW_Q[1].max*100).toFixed(0)+
+    "%). Same "+T+" positions, two different patterns — that's the point of having more than one head.";
+}
+computeExample();
+
+// Rebuilds the entire example (embeddings, all 4 layers, prediction, loss,
+// gradients) for a new sentence typed into the "Try your own sentence" box.
+function rebuildExample(words){
+  SENTENCE = words;
+  T = SENTENCE.length;
+  QUERY_POS = T-1;
+  PRED_POS = T-2;
+  PE = sinusoidalPE(T, D);
+  VOCAB = Array.from(new Set([...BASE_VOCAB, ...SENTENCE]));
+  computeExample();
+}
 
 /* =========================================================================
    ANIMATION CONTROLLER
@@ -517,10 +581,12 @@ function matrixGrid(x,y,M,cellW,cellH,rowLabels,colLabels,opts){
       }
       const r = el("rect",{x:cx,y:cy,width:cellW-2,height:cellH-2,rx:3,fill,stroke: masked?"#22304f":"#2a3a63"});
       g.appendChild(r);
-      if(masked){
-        g.appendChild(txt(cx+cellW/2,cy+cellH/2+1,"×","axis-lbl")).setAttribute("text-anchor","middle");
-      } else if(showVals){
-        g.appendChild(txt(cx+cellW/2,cy+cellH/2+1,fmt(v),"axis-lbl")).setAttribute("text-anchor","middle");
+      if(!opts.noVals){
+        if(masked){
+          g.appendChild(txt(cx+cellW/2,cy+cellH/2+1,"×","axis-lbl")).setAttribute("text-anchor","middle");
+        } else if(showVals){
+          g.appendChild(txt(cx+cellW/2,cy+cellH/2+1,fmt(v),"axis-lbl")).setAttribute("text-anchor","middle");
+        }
       }
       if(opts.tooltip) withTip(r, opts.tooltip(i,j,v));
     });
@@ -636,8 +702,8 @@ const STEP_TEXT = {
   why:"\"Transformers operate on tokens rather than raw text.\"",
   render(t){
     ensureArrowMarker();
-    const sentence = "The cat sat on the mat";
-    stage.appendChild(txt(500,180,sentence,"tok-lbl")).setAttribute("font-size","28");
+    const sentence = SENTENCE.map((w,i)=> i===0 ? w.charAt(0).toUpperCase()+w.slice(1) : w).join(" ");
+    stage.appendChild(txt(500,180,sentence,"tok-lbl")).setAttribute("font-size", T>8?"22":"28");
     const words = sentence.split(" ");
     const widths = words.map(w=>w.length*15+18);
     const total = widths.reduce((a,b)=>a+b,0);
@@ -649,30 +715,49 @@ const STEP_TEXT = {
       if(hit) stage.appendChild(el("rect",{x:wx-4,y:160,width:widths[i]-8,height:34,rx:6,fill:"none",stroke:"#75b9ff","stroke-width":2}));
     });
     stage.appendChild(el("line",{x1:cursorX,y1:150,x2:cursorX,y2:200,stroke:"#f5b84b","stroke-width":2}));
-    stage.appendChild(txt(500,260,"6 words → will become 6 tokens","axis-lbl")).setAttribute("text-anchor","middle");
+    stage.appendChild(txt(500,260,T+" word"+(T===1?"":"s")+" → will become "+T+" token"+(T===1?"":"s"),"axis-lbl")).setAttribute("text-anchor","middle");
   }
 };
+// Finds two positions sharing the same word — used so the Tokenization and
+// Positional-encoding steps can point at a *real* repeat instead of the
+// hardcoded "the"/"the" example, which only exists in the default sentence.
+function findRepeatedPositions(){
+  for(let i=0;i<SENTENCE.length;i++)
+    for(let j=i+1;j<SENTENCE.length;j++)
+      if(SENTENCE[i]===SENTENCE[j]) return [i,j];
+  return null;
+}
 const STEP_TOKENIZATION = {
-  title:"Tokenization", math:["\"the\"→0  \"cat\"→1  \"sat\"→2  \"on\"→3  \"the\"→4  \"mat\"→5"],
-  explain:"Each word becomes a token with a position index (0–5). Note \"the\" appears twice — same word, two different positions.",
+  title:"Tokenization",
+  math(){ return [SENTENCE.map((w,i)=>'"'+w+'"→'+VOCAB.indexOf(w)).join("  ")]; },
+  explain(){
+    const rep = findRepeatedPositions();
+    return "Each word becomes a token with a position index (0–"+(T-1)+")."
+      + (rep ? " Note \""+SENTENCE[rep[0]]+"\" appears twice — same word, two different positions." : " Every word here is different, but the same rule applies to any repeats.");
+  },
   why:"Position and identity are tracked separately from here on — that separation is what positional encoding (Part 1 §10) later re-adds meaning to.",
-  pytorch:["tokens = tokenizer.encode(text)","# e.g. via tiktoken, or a small custom BPE/word tokenizer","# tokens: [0, 1, 2, 3, 0, 4]   (integers, one per word)"],
+  pytorch:["tokens = tokenizer.encode(text)","# e.g. via tiktoken, or a small custom BPE/word tokenizer","# tokens: one integer id per word, looked up in the vocabulary"],
   render(t){
     const n = Math.max(1, Math.floor(t*T+0.001));
     drawTokenRow(200, -1, i => i<n ? 1 : 0.08);
   }
 };
 const STEP_EMBEDDINGS = {
-  title:"Embeddings", math:["TokenEmb[i] = Embedding(token_i)  —  6×"+D+", before position is added"],
+  title:"Embeddings",
+  math(){ return ["TokenEmb[i] = Embedding(token_i)  —  "+T+"×"+D+", before position is added"]; },
   explain:"Every token becomes a small numeric vector — here just 4 numbers, so they fit on screen and every step stays checkable by hand.",
-  why:"Real models use hundreds or thousands of dimensions. We use 4 purely so humans can see every number involved. Note both \"the\" tokens (position 0 and 4) get the exact same vector here — that gets fixed next.",
+  why(){
+    const rep = findRepeatedPositions();
+    const base = "Real models use hundreds or thousands of dimensions. We use 4 purely so humans can see every number involved.";
+    return rep ? base+" Note both \""+SENTENCE[rep[0]]+"\" tokens (position "+rep[0]+" and "+rep[1]+") get the exact same vector here — that gets fixed next." : base;
+  },
   pytorch:["self.tok_emb = nn.Embedding(vocab_size, d_model)","x = self.tok_emb(tokens)          # (T, d_model) — position not yet included"],
   render(t){
     const xs = drawTokenRow(60, -1);
     const X = tokenEmb0();
     X.forEach((vec,i)=>{ vectorCells(xs[i]-24, 150, vec, 48, 22); });
     if(t>0.5){
-      stage.appendChild(txt(500,300,"stacked into one matrix, TokenEmb (6×4):","axis-lbl")).setAttribute("text-anchor","middle");
+      stage.appendChild(txt(500,300,"stacked into one matrix, TokenEmb ("+T+"×"+D+"):","axis-lbl")).setAttribute("text-anchor","middle");
       matrixGrid(390,320, X.map(r=>r), 50,26, SENTENCE.map((w,i)=>w+" "+i), ["d1","d2","d3","d4"]);
     }
   }
@@ -681,17 +766,23 @@ const STEP_EMBEDDINGS = {
 const STEP_POSENC = {
   title:"Positional encoding",
   math:["PE(pos, 2i)   = sin(pos / 10000^(2i/d))","PE(pos, 2i+1) = cos(pos / 10000^(2i/d))","X = TokenEmbedding + PE"],
-  explain:"The token embedding alone can't tell \"the\" at position 0 apart from \"the\" at position 4 — same word, same vector. A second vector, built purely from the position index using sine/cosine waves of different frequencies, gets added on top to break that tie.",
+  explain(){
+    const rep = findRepeatedPositions();
+    return rep
+      ? "The token embedding alone can't tell \""+SENTENCE[rep[0]]+"\" at position "+rep[0]+" apart from \""+SENTENCE[rep[1]]+"\" at position "+rep[1]+" — same word, same vector. A second vector, built purely from the position index using sine/cosine waves of different frequencies, gets added on top to break that tie."
+      : "This sentence has no repeated word, so every position already has a distinct embedding — but positional encoding still runs, unconditionally, on every token. A second vector, built purely from the position index using sine/cosine waves of different frequencies, gets added on top of every embedding.";
+  },
   why:"Attention itself is order-blind — it just weights and sums vectors, with no notion of \"before\" or \"after\". This is the one place order gets injected, once, before attention ever runs (Part 1 §10).",
   pytorch:["pe = sinusoidal_positional_encoding(max_len, d_model)  # fixed, as in the original paper","# or: self.pos_emb = nn.Embedding(max_len, d_model)      # learned, GPT-style","x = self.tok_emb(tokens) + pe[:T]"],
   render(t){
     const tok = tokenEmb0();
-    const rows = [0,4];
+    const rep = findRepeatedPositions();
+    const rows = rep || [0, T-1];
     rows.forEach((pos,ri)=>{
       const y = 90 + ri*130;
       const a = ri===0 ? 1 : Math.min(1, Math.max(0,(t-0.15)*3));
       if(a<=0) return;
-      stage.appendChild(txt(30,y+14,'"the" (pos '+pos+')',"axis-lbl"));
+      stage.appendChild(txt(30,y+14,'"'+SENTENCE[pos]+'" (pos '+pos+')',"axis-lbl"));
       vectorCells(120,y,tok[pos],44,22, ri===0?"token emb":undefined);
       stage.appendChild(txt(180,y+52,"+","tok-lbl")).setAttribute("font-size","16");
       const peShown = PE[pos].map(v=>v*Math.min(1,Math.max(0,(t-0.35)*2.2)));
@@ -705,7 +796,7 @@ const STEP_POSENC = {
     });
     if(t>0.65){
       const b = Math.min(1,(t-0.65)/0.35);
-      const lbl = stage.appendChild(txt(30,360,"same token embedding, different position → different final vector","axis-lbl"));
+      const lbl = stage.appendChild(txt(30,360,rep ? "same token embedding, different position → different final vector" : "different words, different positions — both contribute to the final vector","axis-lbl"));
       lbl.setAttribute("opacity",String(b));
     }
     const seriesTitle = stage.appendChild(txt(560,50,"PE(pos) — all "+T+" positions, "+D+" dims (sin/cos waves)",""));
@@ -793,50 +884,51 @@ const STEP_SCORES = {
 
 const STEP_SOFTMAX = {
   title:"Softmax attention", math:["softmax(x_i) = e^{x_i} / Σⱼ e^{xⱼ}   (per head, per row)"],
-  explain:"Take position 5 (\"mat\", the last token) in both heads and turn its masked scores into probabilities. Position 5 is last, so its mask hides nothing — look back at the matrices in the previous step to see earlier rows losing access to later columns.",
-  why:"Each head produces its own independent set of attention weights over the same 6 positions. "+HEAD_COMPARE_TEXT,
+  explain(){ return "Take position "+QUERY_POS+' ("'+SENTENCE[QUERY_POS]+'", the last token) in both heads and turn its masked scores into probabilities. Position '+QUERY_POS+" is last, so its mask hides nothing — look back at the matrices in the previous step to see earlier rows losing access to later columns."; },
+  why(){ return "Each head produces its own independent set of attention weights over the same "+T+" positions. "+HEAD_COMPARE_TEXT; },
   pytorch:["weights = F.softmax(scores, dim=-1)   # (n_heads, T, T), rows sum to 1"],
   render(t){
     const X = X0();
     const a = attentionBlock(X);
     const labels = SENTENCE.map((w,i)=>w+" "+i);
-    const row0 = a.heads[0].weights[5].map((w,i)=> w*t + (1-t)*(1/T));
-    const row1 = a.heads[1].weights[5].map((w,i)=> w*t + (1-t)*(1/T));
-    stage.appendChild(txt(255,40,"Head 1 — query: \"mat\" (5)","axis-lbl")).setAttribute("text-anchor","middle");
+    const row0 = a.heads[0].weights[QUERY_POS].map((w,i)=> w*t + (1-t)*(1/T));
+    const row1 = a.heads[1].weights[QUERY_POS].map((w,i)=> w*t + (1-t)*(1/T));
+    stage.appendChild(txt(255,40,"Head 1 — query: \""+SENTENCE[QUERY_POS]+"\" ("+QUERY_POS+")","axis-lbl")).setAttribute("text-anchor","middle");
     barChart(70,70,380,320,labels,row0,{pct:true, highlight: row0.indexOf(Math.max.apply(null,row0))});
-    stage.appendChild(txt(750,40,"Head 2 — query: \"mat\" (5)","axis-lbl")).setAttribute("text-anchor","middle");
+    stage.appendChild(txt(750,40,"Head 2 — query: \""+SENTENCE[QUERY_POS]+"\" ("+QUERY_POS+")","axis-lbl")).setAttribute("text-anchor","middle");
     barChart(560,70,380,320,labels,row1,{pct:true, highlight: row1.indexOf(Math.max.apply(null,row1))});
   }
 };
 
 const STEP_ATTNOUT = {
   title:"Attention output & merge",
-  math:["head_h,i = Σⱼ weights_h[i,j]·V_h[j]","concat = [head_1 ; head_2]  (6×4)","AttnOut = concat · W_O"],
-  explain:"Each head separately gathers a weighted blend of its own Value vectors for position 5. The two heads' results are concatenated back into one 4-dim vector, then one more learned matrix W_O mixes the heads together.",
+  math(){ return ["head_h,i = Σⱼ weights_h[i,j]·V_h[j]","concat = [head_1 ; head_2]  ("+T+"×"+D+")","AttnOut = concat · W_O"]; },
+  explain(){ return "Each head separately gathers a weighted blend of its own Value vectors for position "+QUERY_POS+". The two heads' results are concatenated back into one "+D+"-dim vector, then one more learned matrix W_O mixes the heads together."; },
   why:"W_O is what lets information from different heads combine — without it the heads would stay in two disconnected halves of the vector.",
   pytorch:["out = weights @ v                              # per head: (T, d_head)","out = out.transpose(0,1).reshape(T, d_model)    # concat heads back to d_model","attn_out = self.out_proj(out)                   # W_O: nn.Linear(d_model, d_model)"],
   render(t){
     ensureArrowMarker();
     const X = X0();
     const a = attentionBlock(X);
+    const q = QUERY_POS;
     stage.appendChild(txt(70,60,"head 1 out","axis-lbl"));
-    vectorCells(70,72,a.heads[0].out[5],52,24);
+    vectorCells(70,72,a.heads[0].out[q],52,24);
     stage.appendChild(txt(200,60,"head 2 out","axis-lbl"));
-    vectorCells(200,72,a.heads[1].out[5],52,24);
+    vectorCells(200,72,a.heads[1].out[q],52,24);
     stage.appendChild(txt(340,60,"concat (4)","axis-lbl"));
-    vectorCells(340,72,a.concat[5],52,24);
+    vectorCells(340,72,a.concat[q],52,24);
     if(t>0.35){
       flowArrow(410,120,500,120,"× W_O","#75b9ff");
-      const merged = a.attnOut[5].map((v,i)=> a.concat[5][i] + (v-a.concat[5][i])*Math.min(1,(t-0.35)/0.5));
-      stage.appendChild(txt(520,60,"attnOut[5] (4)","axis-lbl"));
+      const merged = a.attnOut[q].map((v,i)=> a.concat[q][i] + (v-a.concat[q][i])*Math.min(1,(t-0.35)/0.5));
+      stage.appendChild(txt(520,60,"attnOut["+q+"] (4)","axis-lbl"));
       vectorCells(520,72,merged,52,24);
     }
     if(t>0.55){
       const b=(t-0.55)/0.45;
       stage.appendChild(txt(260,270,"before (embedding)","axis-lbl"));
-      vectorCells(260,290,X[5],52,26);
+      vectorCells(260,290,X[q],52,26);
       stage.appendChild(txt(640,270,"after (attention output)","axis-lbl"));
-      vectorCells(640,290,a.attnOut[5].map((v,i)=>X[5][i]+(v-X[5][i])*b),52,26);
+      vectorCells(640,290,a.attnOut[q].map((v,i)=>X[q][i]+(v-X[q][i])*b),52,26);
       flowArrow(390,320,630,320,"","#75b9ff");
     }
   }
@@ -851,17 +943,18 @@ const STEP_RESIDUAL1 = {
     ensureArrowMarker();
     const X = X0();
     const {attnOut,residual1} = attentionBlock(X);
-    stage.appendChild(txt(220,40,"original X[5]","axis-lbl"));
-    vectorCells(220,60,X[5],52,26);
-    stage.appendChild(txt(460,40,"Attention(X)[5]","axis-lbl"));
-    vectorCells(460,60,attnOut[5],52,26);
+    const q = QUERY_POS;
+    stage.appendChild(txt(220,40,"original X["+q+"]","axis-lbl"));
+    vectorCells(220,60,X[q],52,26);
+    stage.appendChild(txt(460,40,"Attention(X)["+q+"]","axis-lbl"));
+    vectorCells(460,60,attnOut[q],52,26);
     flowArrow(300,180,420,180,"","#5f7296"); flowArrow(540,180,420,180,"","#5f7296");
     stage.appendChild(el("circle",{cx:420,cy:180,r:22,fill:"#131d36",stroke:"#75b9ff","stroke-width":2}));
     stage.appendChild(txt(420,187,"+","tok-lbl")).setAttribute("font-size","22");
     if(t>0.4){
       const a=Math.min(1,(t-0.4)/0.6);
-      stage.appendChild(txt(420,260,"X'[5]","axis-lbl")).setAttribute("text-anchor","middle");
-      vectorCells(394,280,residual1[5].map((v,i)=>X[5][i]+(v-X[5][i])*a),52,26);
+      stage.appendChild(txt(420,260,"X'["+q+"]","axis-lbl")).setAttribute("text-anchor","middle");
+      vectorCells(394,280,residual1[q].map((v,i)=>X[q][i]+(v-X[q][i])*a),52,26);
     }
   }
 };
@@ -885,7 +978,7 @@ const STEP_FFN = {
       stage.appendChild(el("line",{x1:xhid,y1:ny(1,j,hidNodes),x2:xout,y2:ny(2,k,outNodes),stroke:"#1c2947","stroke-width":1}));
     for(let i=0;i<inNodes;i++) stage.appendChild(el("circle",{cx:xin,cy:ny(0,i,inNodes),r:9,fill:"#75b9ff"}));
     for(let j=0;j<hidNodes;j++){
-      const act = Math.max(0,H[4][j])*t;
+      const act = Math.max(0,H[PRED_POS][j])*t;
       stage.appendChild(el("circle",{cx:xhid,cy:ny(1,j,hidNodes),r:9,fill:`rgba(167,139,250,${0.15+Math.min(1,act)*0.8})`,stroke:"#a78bfa"}));
     }
     for(let k=0;k<outNodes;k++) stage.appendChild(el("circle",{cx:xout,cy:ny(2,k,outNodes),r:9,fill:"#8be28b",opacity:Math.min(1,t*1.5)}));
@@ -961,9 +1054,9 @@ const STEP_STACKED = {
       }
     }
 
-    // view selector — Matrix / Graph / Neurons, for the selected layer
-    const views = [["matrix","Matrix"],["graph","Graph"],["neurons","Neurons"]];
-    const vw=110, vgap=10, vStartX=500-(3*vw+2*vgap)/2, vy=92;
+    // view selector — Matrix / Graph / Neurons / Attention, for the selected layer, plus Overview across all layers
+    const views = [["matrix","Matrix"],["graph","Graph"],["neurons","Neurons"],["attention","Attention"],["overview","Overview"]];
+    const vw=116, vgap=8, vStartX=500-(5*vw+4*vgap)/2, vy=92;
     views.forEach(([id,label],i)=>{
       const on = stackedView===id;
       const vx = vStartX + i*(vw+vgap);
@@ -979,7 +1072,7 @@ const STEP_STACKED = {
     const labels = SENTENCE.map((w,i)=>w+" "+i);
 
     if(stackedView==="matrix"){
-      const mTitle = stage.appendChild(txt(300,150,"Matrix view — Layer "+selectedLayer+" output (6×4)",""));
+      const mTitle = stage.appendChild(txt(300,150,"Matrix view — Layer "+selectedLayer+" output ("+T+"×"+D+")",""));
       mTitle.setAttribute("text-anchor","middle"); mTitle.setAttribute("font-size","13"); mTitle.setAttribute("font-weight","700"); mTitle.setAttribute("fill","var(--text)");
       matrixGrid(390,168, L.out, 60,32, labels, ["d1","d2","d3","d4"], {});
     } else if(stackedView==="graph"){
@@ -987,7 +1080,7 @@ const STEP_STACKED = {
       gTitle.setAttribute("text-anchor","middle"); gTitle.setAttribute("font-size","13"); gTitle.setAttribute("font-weight","700"); gTitle.setAttribute("fill","var(--text)");
       const series = [0,1,2,3].map(d=>({label:"d"+(d+1), color:DIM_COLORS[d], values: L.out.map(row=>row[d])}));
       lineChart(260,168, 480,220, series, SENTENCE.map((w,i)=>i));
-    } else {
+    } else if(stackedView==="neurons"){
       const nTitle = stage.appendChild(txt(500,150,"Neuron view — Layer "+selectedLayer+" FFN hidden units ("+FFN_HIDDEN+"), post-ReLU",""));
       nTitle.setAttribute("text-anchor","middle"); nTitle.setAttribute("font-size","13"); nTitle.setAttribute("font-weight","700"); nTitle.setAttribute("fill","var(--text)");
       // transpose to rows=neurons, cols=positions — same convention as the live-training lab's neuron tab
@@ -997,21 +1090,58 @@ const STEP_STACKED = {
       matrixGrid(300,168, Ht, 64,26, Ht.map((r,n)=>"n"+n), SENTENCE.map((w,i)=>i), {heat:true, norm:maxAct,
         tooltip:(n,i,v)=> "neuron n"+n+" @ position "+i+" (\""+SENTENCE[i]+"\")<br>activation: <b>"+fmt(v)+"</b>"});
       stage.appendChild(txt(500,400,"watch for a row that lights up consistently at a particular word or position — that neuron is specializing","axis-lbl")).setAttribute("text-anchor","middle");
+    } else if(stackedView==="attention"){
+      const aTitle = stage.appendChild(txt(500,150,"Attention view — Layer "+selectedLayer+", causal-masked scores per head",""));
+      aTitle.setAttribute("text-anchor","middle"); aTitle.setAttribute("font-size","13"); aTitle.setAttribute("font-weight","700"); aTitle.setAttribute("fill","var(--text)");
+      const shortLabels = SENTENCE.map((w,i)=>String(i));
+      [0,1].forEach((h,hi)=>{
+        const gx = hi===0 ? 90 : 560;
+        const hd = L.attn.heads[h];
+        const norm = Math.max.apply(null, hd.maskedScores.flat().filter(v=>v>-Infinity));
+        stage.appendChild(txt(gx+130,178,"Head "+(h+1),"tok-lbl")).setAttribute("font-size","13");
+        matrixGrid(gx,200, hd.maskedScores, 44,36, shortLabels, shortLabels, {
+          heat:true, norm, mask:(i,j)=>j>i,
+          tooltip:(i,j,v)=> j>i
+            ? "<b>"+labels[i]+"</b> → <b>"+labels[j]+"</b><br>masked — future token"
+            : "Query: <b>"+labels[i]+"</b><br>Key: <b>"+labels[j]+"</b><br>Score: <b>"+fmt(hd.maskedScores[i][j])+"</b>"
+        });
+      });
+      stage.appendChild(txt(500,432,"same causal mask, same two heads, at layer "+selectedLayer+" instead of layer 1 — compare against the \"Attention scores & causal mask\" step earlier","axis-lbl")).setAttribute("text-anchor","middle");
+    } else { // overview — every layer × head at once, small multiples
+      const ovTitle = stage.appendChild(txt(500,150,"Overview — every layer × head, causal-masked attention at a glance",""));
+      ovTitle.setAttribute("text-anchor","middle"); ovTitle.setAttribute("font-size","13"); ovTitle.setAttribute("font-weight","700"); ovTitle.setAttribute("fill","var(--text)");
+      const thumbW=190, thumbH=96, gapX=25, gapY=34, gridX=45, gridY=180;
+      for(let l=0;l<4;l++){
+        for(let h=0;h<2;h++){
+          const tx = gridX + l*(thumbW+gapX);
+          const ty = gridY + h*(thumbH+gapY);
+          const isCur = (l+1)===selectedLayer;
+          const lbl = stage.appendChild(txt(tx+thumbW/2, ty-8, "Layer "+(l+1)+" · Head "+(h+1), ""));
+          lbl.setAttribute("text-anchor","middle"); lbl.setAttribute("font-size","10.5"); lbl.setAttribute("fill", isCur?"var(--accent)":"var(--dim)");
+          const hd = LAYERS[l].attn.heads[h];
+          const norm = Math.max.apply(null, hd.maskedScores.flat().filter(v=>v>-Infinity));
+          const g = matrixGrid(tx, ty, hd.maskedScores, thumbW/6, thumbH/6, null, null, {heat:true, norm, mask:(i,j)=>j>i, noVals:true});
+          g.style.cursor = "pointer";
+          g.addEventListener("click", ()=>{ selectedLayer=l+1; stackedView="attention"; render(); });
+          stage.appendChild(el("rect",{x:tx-4,y:ty-4,width:thumbW+8,height:thumbH+8,rx:6,fill:"none",stroke:isCur?"var(--accent)":"transparent","stroke-width":1.4}));
+        }
+      }
+      stage.appendChild(txt(500,440,"click any thumbnail to open its full detail — patterns genuinely differ across layers/heads even though this illustration reuses the same weights at every layer","axis-lbl")).setAttribute("text-anchor","middle");
     }
 
-    stage.appendChild(txt(500,440,"weights applied at this layer: W_Q, W_K, W_V, W_O, W₁, W₂ — same values shown in the \"Multi-head Q/K/V\" and \"Feed-forward network\" steps","axis-lbl")).setAttribute("text-anchor","middle");
+    if(stackedView==="matrix" || stackedView==="graph" || stackedView==="neurons") stage.appendChild(txt(500,440,"weights applied at this layer: W_Q, W_K, W_V, W_O, W₁, W₂ — same values shown in the \"Multi-head Q/K/V\" and \"Feed-forward network\" steps","axis-lbl")).setAttribute("text-anchor","middle");
   }
 };
 
 const STEP_FINALPRED = {
   title:"Final prediction", math:["logits = W_{head}\\,h,\\;\\; h = final hidden vector","p = softmax(logits)"],
-  explain:"The final hidden vector at position 4 (\"the\", the last real token) is projected to one score per vocabulary word, then softmax turns those into probabilities.",
+  explain(){ return "The final hidden vector at position "+PRED_POS+' ("'+SENTENCE[PRED_POS]+'", the last context token) is projected to one score per vocabulary word, then softmax turns those into probabilities.'; },
   why:"The highest-probability word is the model's actual next-token guess.",
   pytorch:["logits = self.lm_head(self.ln_f(x))     # (T, vocab_size)","probs = F.softmax(logits[-1], dim=-1)   # distribution for the next token"],
   render(t){
     if(t<0.5){
       const a = t*2;
-      stage.appendChild(txt(500,40,"final hidden vector h (position 4)","axis-lbl")).setAttribute("text-anchor","middle");
+      stage.appendChild(txt(500,40,"final hidden vector h (position "+PRED_POS+")","axis-lbl")).setAttribute("text-anchor","middle");
       vectorCells(454,70,FINAL_H,52,26);
       if(a>0.3){
         const b=(a-0.3)/0.7;
@@ -1027,43 +1157,89 @@ const STEP_FINALPRED = {
   }
 };
 
+let samplingMode = "greedy"; // "greedy" | "t07" | "t15"
+let sampleSeed = 1;
 const STEP_AUTOREGRESSIVE = {
   title:"Autoregressive loop", math:["context → Transformer → P(next) → pick → append → new context → …"],
-  explain:"The predicted word gets appended to the context, and the whole process runs again to predict the word after that.",
-  why:"This loop, one token at a time, is the entire generation process — every sentence a language model writes is this loop repeated.",
-  pytorch:["for _ in range(max_new_tokens):","    logits = model(context)[-1]","    next_id = torch.multinomial(F.softmax(logits, dim=-1), 1)","    context = torch.cat([context, next_id])"],
+  explain:"The predicted word gets appended to the context, and the whole process runs again to predict the word after that. Try the sampling modes below — greedy always takes the top pick; temperature sampling can pick something else, on purpose.",
+  why:"This loop, one token at a time, is the entire generation process — every sentence a language model writes is this loop repeated. Real generation almost always samples rather than always taking the greedy top pick — otherwise every run of the model would produce the exact same output.",
+  pytorch:["for _ in range(max_new_tokens):","    logits = model(context)[-1]","    probs = F.softmax(logits / temperature, dim=-1)","    next_id = torch.multinomial(probs, 1)   # or argmax(probs) for greedy","    context = torch.cat([context, next_id])"],
   render(t){
     ensureArrowMarker();
-    const top = "The cat sat on the";
-    const chosen = VOCAB[PROBS.indexOf(Math.max.apply(null,PROBS))];
-    stage.appendChild(txt(500,60,'"'+top+'"',"tok-lbl")).setAttribute("font-size","18");
-    flowArrow(500,80,500,120,"","#5f7296");
-    const bx = el("rect",{x:400,y:130,width:200,height:44,rx:8,fill:"#131d36",stroke:"#75b9ff","stroke-width":1.6});
-    stage.appendChild(bx); stage.appendChild(txt(500,157,"Transformer","tok-lbl")).setAttribute("font-size","14");
-    flowArrow(500,174,500,210,"","#5f7296");
-    stage.appendChild(txt(500,230,"P(next token)","axis-lbl")).setAttribute("text-anchor","middle");
-    flowArrow(500,240,500,270,"","#5f7296");
+    const contextWords = SENTENCE.slice(0, QUERY_POS);
+    const top = contextWords.map((w,i)=> i===0 ? w.charAt(0).toUpperCase()+w.slice(1) : w).join(" ");
+
+    // sampling-mode pills + resample button
+    const modes = [["greedy","Greedy (argmax)"],["t07","Temperature 0.7"],["t15","Temperature 1.5"]];
+    const pillW = [130,150,150], gap=8;
+    const totalW = pillW.reduce((a,b)=>a+b,0) + gap*(pillW.length-1);
+    let px0 = 500-totalW/2;
+    modes.forEach(([id,label],i)=>{
+      const w = pillW[i];
+      const on = samplingMode===id;
+      const g = el("g",{});
+      g.appendChild(el("rect",{x:px0,y:8,width:w,height:26,rx:13,fill:on?"#75b9ff":"#131d36",stroke:on?"#75b9ff":"#2a3a63","stroke-width":1.2}));
+      const lt = g.appendChild(txt(px0+w/2,25,label,"")); lt.setAttribute("text-anchor","middle"); lt.setAttribute("font-size","11.5"); lt.setAttribute("font-weight","700"); lt.setAttribute("fill",on?"#06111f":"var(--muted)");
+      g.style.cursor="pointer";
+      g.addEventListener("click", ()=>{ samplingMode=id; render(); });
+      stage.appendChild(g);
+      px0 += w+gap;
+    });
+    if(samplingMode!=="greedy"){
+      const rx = px0+10;
+      const rg = el("g",{});
+      rg.appendChild(el("rect",{x:rx,y:8,width:110,height:26,rx:13,fill:"#131d36",stroke:"#f5b84b","stroke-width":1.2}));
+      const rt = rg.appendChild(txt(rx+55,25,"🎲 Resample","")); rt.setAttribute("text-anchor","middle"); rt.setAttribute("font-size","11.5"); rt.setAttribute("font-weight","700"); rt.setAttribute("fill","#f5b84b");
+      rg.style.cursor="pointer";
+      rg.addEventListener("click", ()=>{ sampleSeed++; render(); });
+      stage.appendChild(rg);
+    }
+
+    // compute the sampled/greedy distribution and choice
+    const temp = samplingMode==="t07" ? 0.7 : samplingMode==="t15" ? 1.5 : 1.0;
+    const distP = samplingMode==="greedy" ? PROBS : softmaxWithTemp(LOGITS, temp);
+    const greedyIdx = PROBS.indexOf(Math.max.apply(null,PROBS));
+    const chosenIdx = samplingMode==="greedy" ? greedyIdx : sampleFromDist(distP, mulberry32(sampleSeed*7919+ (temp*100|0)));
+    const chosen = VOCAB[chosenIdx];
+    const matchesGreedy = chosenIdx===greedyIdx;
+
+    stage.appendChild(txt(500,68,'"'+top+'"',"tok-lbl")).setAttribute("font-size","17");
+    flowArrow(500,86,500,116,"","#5f7296");
+    const bx = el("rect",{x:400,y:118,width:200,height:38,rx:8,fill:"#131d36",stroke:"#75b9ff","stroke-width":1.6});
+    stage.appendChild(bx); stage.appendChild(txt(500,141,"Transformer","tok-lbl")).setAttribute("font-size","13");
+    flowArrow(500,156,500,180,"","#5f7296");
+
+    const dTitle = stage.appendChild(txt(500,196,samplingMode==="greedy" ? "P(next token)" : "P(next token) / temperature "+temp,""));
+    dTitle.setAttribute("text-anchor","middle"); dTitle.setAttribute("font-size","12"); dTitle.setAttribute("fill","var(--muted)");
+    const order = distP.map((p,i)=>i).sort((a,b)=>distP[b]-distP[a]);
+    const top4 = order.slice(0,4);
+    barChart(340,210, 320,110, top4.map(i=>VOCAB[i]), top4.map(i=>distP[i]), {pct:true, highlight: top4.indexOf(chosenIdx)});
+
     const a = Math.min(1,t*1.6);
-    stage.appendChild(txt(500,300,a>0.5?('→ "'+chosen+'"'):"","tok-lbl")).setAttribute("font-size","18");
+    stage.appendChild(txt(500,352,a>0.5?('→ "'+chosen+'"'):"","tok-lbl")).setAttribute("font-size","17");
+    if(a>0.5 && samplingMode!=="greedy"){
+      const note = stage.appendChild(txt(500,370,matchesGreedy ? "(sampled — happened to match the top pick)" : "(sampled — NOT the top pick, that's what temperature does)","axis-lbl"));
+      note.setAttribute("text-anchor","middle"); if(!matchesGreedy) note.setAttribute("fill","#f5b84b");
+    }
     if(a>=1){
-      var doneLbl = stage.appendChild(txt(500,340,'"'+top+" "+chosen+'"',"tok-lbl"));
-      doneLbl.setAttribute("font-size","18"); doneLbl.setAttribute("fill","#8be28b");
-      stage.appendChild(txt(500,370,"→ fed back in as the new context, and the loop repeats","axis-lbl")).setAttribute("text-anchor","middle");
+      var doneLbl = stage.appendChild(txt(500,398,'"'+top+" "+chosen+'"',"tok-lbl"));
+      doneLbl.setAttribute("font-size","17"); doneLbl.setAttribute("fill","#8be28b");
+      stage.appendChild(txt(500,420,"→ fed back in as the new context, and the loop repeats","axis-lbl")).setAttribute("text-anchor","middle");
     }
   }
 };
 
 const STEP_LOSS = {
   title:"Loss function (training)",
-  math:["L = −log P(y_target)","y_target = \"mat\"  (the real next word in this training example)"],
+  math(){ return ["L = −log P(y_target)","y_target = \""+SENTENCE[QUERY_POS]+"\"  (the real next word in this training example)"]; },
   explain:"During training the correct next word is already known — it's just the next word in the real sentence. Cross-entropy loss measures how far the model's predicted distribution is from being fully confident in that word.",
   why:"Lower loss = higher probability assigned to the correct word. Training is nothing but repeatedly nudging weights to make this one number smaller, across millions of examples. (This walkthrough uses a single example for clarity — real training batches many examples together and averages their loss before every update.)",
   pytorch:["loss = F.cross_entropy(logits, target)   # target = the real next-token id","# equivalently: loss = -log_softmax(logits)[target]"],
   render(t){
     const labels = VOCAB;
     const a = Math.min(1,t*1.4);
-    barChart(280,70,520,300,labels,PROBS.map(v=>v),{pct:true, highlight:MAT_IDX});
-    stage.appendChild(txt(500,40,"softmax probabilities — target = \"mat\"","axis-lbl")).setAttribute("text-anchor","middle");
+    barChart(280,70,520,300,labels,PROBS.map(v=>v),{pct:true, highlight:TARGET_IDX});
+    stage.appendChild(txt(500,40,"softmax probabilities — target = \""+SENTENCE[QUERY_POS]+"\"","axis-lbl")).setAttribute("text-anchor","middle");
     if(a>0.3){
       const b=(a-0.3)/0.7;
       stage.appendChild(el("rect",{x:60,y:170,width:170,height:70,rx:10,fill:"#131d36",stroke:"#f0857a","stroke-width":1.6,opacity:b}));
@@ -1220,6 +1396,7 @@ const MODE_DESC = {
   finetune: "Same loop as training, but starting from pretrained weights on a small, task-specific dataset with a smaller learning rate."
 };
 
+function resolveField(f){ return typeof f==="function" ? f() : f; }
 function render(){
   clearStage();
   const s = STEPS[stepIdx];
@@ -1227,11 +1404,11 @@ function render(){
   document.getElementById("stepLabel").textContent = "STEP "+(stepIdx+1)+" / "+STEPS.length;
   document.getElementById("stepTitle").textContent = s.title;
   document.getElementById("progressFill").style.width = (((stepIdx+stepT)/STEPS.length)*100)+"%";
-  document.getElementById("explainBody").textContent = s.explain;
-  document.getElementById("explainWhy").textContent = s.why;
+  document.getElementById("explainBody").textContent = resolveField(s.explain);
+  document.getElementById("explainWhy").textContent = resolveField(s.why);
   const mathPanel = document.getElementById("mathPanel");
   mathPanel.style.display = showEq ? "block" : "none";
-  document.getElementById("mathBody").innerHTML = s.math.map(m=>'<div class="math-eq">'+m+'</div>').join("");
+  document.getElementById("mathBody").innerHTML = resolveField(s.math).map(m=>'<div class="math-eq">'+m+'</div>').join("");
   document.getElementById("pytorchPanel").style.display = (showPy && s.pytorch) ? "block" : "none";
   document.getElementById("pytorchBody").textContent = s.pytorch ? s.pytorch.join("\n") : "";
   document.getElementById("btnPrev").disabled = stepIdx===0;
@@ -1282,6 +1459,38 @@ document.querySelectorAll("#modeGroup button").forEach(b=>{
     b.classList.add("on");
     render();
   };
+});
+
+/* ---------- custom sentence input ---------- */
+const DEFAULT_SENTENCE = ["the","cat","sat","on","the","mat"];
+function applySentence(words){
+  pause();
+  rebuildExample(words);
+  selectedLayer = 4; stackedView = "matrix";
+  samplingMode = "greedy"; sampleSeed = 1;
+  STEPS = buildSteps(MODE);
+  stepIdx = 0; stepT = 0;
+  render();
+}
+document.getElementById("btnRebuild").onclick = () => {
+  const raw = document.getElementById("sentenceInput").value;
+  const words = raw.toLowerCase().trim().replace(/[.,!?;:]+/g," ").split(/\s+/).filter(Boolean);
+  const errEl = document.getElementById("sentenceErr");
+  if(words.length < 2 || words.length > 8){
+    errEl.textContent = "Please enter 2–8 words (got "+words.length+").";
+    errEl.style.display = "block";
+    return;
+  }
+  errEl.style.display = "none";
+  applySentence(words);
+};
+document.getElementById("btnResetSentence").onclick = () => {
+  document.getElementById("sentenceInput").value = "";
+  document.getElementById("sentenceErr").style.display = "none";
+  applySentence(DEFAULT_SENTENCE.slice());
+};
+document.getElementById("sentenceInput").addEventListener("keydown", e => {
+  if(e.key==="Enter") document.getElementById("btnRebuild").click();
 });
 
 render();
