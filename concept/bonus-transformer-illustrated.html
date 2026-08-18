@@ -1,6 +1,15 @@
 <!doctype html>
 <html lang="en">
 <head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SPR2FRFBQ1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-SPR2FRFBQ1');
+</script>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Transformer Visualizer</title>
@@ -214,6 +223,7 @@ svg text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   <div class="traps-panel">
     <h3>Common misconceptions</h3>
     <ul>
+      <li><b>Layer, head, and neuron are three different, nested things.</b> A layer is a full transformation stage (this page stacks 4); inside <i>its</i> attention step it has several heads; inside <i>its</i> FFN it has several neurons. A head is never called a neuron, and neither is a layer.</li>
       <li><b>Multi-head attention isn't "split one projection into pieces."</b> We do that here only to keep every number traceable by hand — real models give each head its own independent, full-size W_Q/W_K/W_V, learned separately.</li>
       <li><b>Attention itself has no sense of order.</b> It just weights and sums vectors — position only enters the model once, at the positional-encoding step, before attention ever runs.</li>
       <li><b>Causal masking is a decoder thing.</b> It exists because a decoder predicts the next token and must not see the future. Encoder-only models (like BERT) deliberately skip it and let every position see the whole sequence.</li>
@@ -514,7 +524,10 @@ const TERM_DEFS = {
   Mask: "Causal mask — blocks a position from attending to any position that comes after it.",
   WO: "Output projection — mixes the concatenated heads back into one vector.",
   Loss: "A single number measuring how wrong the prediction was — lower is better.",
-  Gradient: "The direction and size of the nudge that would most reduce the loss."
+  Gradient: "The direction and size of the nudge that would most reduce the loss.",
+  Layer: "One full transformation stage — attention, then FFN, both behind residuals. This page stacks 4. A layer <i>contains</i> heads (inside its attention) and neurons (inside its FFN) — they're nested, not the same kind of thing.",
+  Head: "One independent attention computation inside a layer's attention step. This page uses 2 per layer, each with its own slice of Q/K/V, free to attend to something different. Not the same thing as a neuron.",
+  Neuron: "One hidden unit inside a layer's feed-forward network (FFN) — unrelated to attention heads. This page's FFN has "+FFN_HIDDEN+" per layer; each one's activation can be watched in the Stacked Layers step's Neuron view."
 };
 
 function fmt(v){ return v.toFixed(2); }
@@ -831,7 +844,7 @@ const STEP_QKV = {
     matrixGrid(40,90,X,40,22,SENTENCE.map((w,i)=>w+" "+i),["d1","d2","d3","d4"]);
     const labels6 = SENTENCE.map((w,i)=>w+" "+i);
     if(t>0.15){
-      stage.appendChild(txt(380,66,"Head 1","tok-lbl")).setAttribute("font-size","14");
+      withTip(stage.appendChild(txt(380,66,"Head 1","tok-lbl")), TERM_DEFS.Head).setAttribute("font-size","14");
       stage.appendChild(txt(300,86,"Q","axis-lbl"));
       matrixGrid(260,98,a.heads[0].Qh,42,22,null,["1","2"]);
       stage.appendChild(txt(398,86,"K","axis-lbl"));
@@ -840,7 +853,7 @@ const STEP_QKV = {
       matrixGrid(460,98,a.heads[0].Vh,42,22,null,["1","2"]);
     }
     if(t>0.5){
-      stage.appendChild(txt(700,66,"Head 2","tok-lbl")).setAttribute("font-size","14");
+      withTip(stage.appendChild(txt(700,66,"Head 2","tok-lbl")), TERM_DEFS.Head).setAttribute("font-size","14");
       stage.appendChild(txt(620,86,"Q","axis-lbl"));
       matrixGrid(580,98,a.heads[1].Qh,42,22,null,["1","2"]);
       stage.appendChild(txt(718,86,"K","axis-lbl"));
@@ -870,7 +883,7 @@ const STEP_SCORES = {
       if(hi===1 && t<0.4) return;
       const gx = hi===0 ? 100 : 590;
       const norm = Math.max.apply(null, a.heads[h].maskedScores.flat().filter(v=>v>-Infinity));
-      stage.appendChild(txt(gx+130,68,"Head "+(h+1)+" — scores (masked)","tok-lbl")).setAttribute("font-size","13");
+      withTip(stage.appendChild(txt(gx+130,68,"Head "+(h+1)+" — scores (masked)","tok-lbl")), TERM_DEFS.Head).setAttribute("font-size","13");
       matrixGrid(gx,90, a.heads[h].maskedScores.map(row=>row.map(v=>v===-Infinity?0:v*Math.min(1,t*1.6))), 44,38, shortLabels, shortLabels, {
         heat:true, norm,
         mask:(i,j)=> j>i,
@@ -893,9 +906,9 @@ const STEP_SOFTMAX = {
     const labels = SENTENCE.map((w,i)=>w+" "+i);
     const row0 = a.heads[0].weights[QUERY_POS].map((w,i)=> w*t + (1-t)*(1/T));
     const row1 = a.heads[1].weights[QUERY_POS].map((w,i)=> w*t + (1-t)*(1/T));
-    stage.appendChild(txt(255,40,"Head 1 — query: \""+SENTENCE[QUERY_POS]+"\" ("+QUERY_POS+")","axis-lbl")).setAttribute("text-anchor","middle");
+    withTip(stage.appendChild(txt(255,40,"Head 1 — query: \""+SENTENCE[QUERY_POS]+"\" ("+QUERY_POS+")","axis-lbl")), TERM_DEFS.Head).setAttribute("text-anchor","middle");
     barChart(70,70,380,320,labels,row0,{pct:true, highlight: row0.indexOf(Math.max.apply(null,row0))});
-    stage.appendChild(txt(750,40,"Head 2 — query: \""+SENTENCE[QUERY_POS]+"\" ("+QUERY_POS+")","axis-lbl")).setAttribute("text-anchor","middle");
+    withTip(stage.appendChild(txt(750,40,"Head 2 — query: \""+SENTENCE[QUERY_POS]+"\" ("+QUERY_POS+")","axis-lbl")), TERM_DEFS.Head).setAttribute("text-anchor","middle");
     barChart(560,70,380,320,labels,row1,{pct:true, highlight: row1.indexOf(Math.max.apply(null,row1))});
   }
 };
@@ -911,9 +924,9 @@ const STEP_ATTNOUT = {
     const X = X0();
     const a = attentionBlock(X);
     const q = QUERY_POS;
-    stage.appendChild(txt(70,60,"head 1 out","axis-lbl"));
+    withTip(stage.appendChild(txt(70,60,"head 1 out","axis-lbl")), TERM_DEFS.Head);
     vectorCells(70,72,a.heads[0].out[q],52,24);
-    stage.appendChild(txt(200,60,"head 2 out","axis-lbl"));
+    withTip(stage.appendChild(txt(200,60,"head 2 out","axis-lbl")), TERM_DEFS.Head);
     vectorCells(200,72,a.heads[1].out[q],52,24);
     stage.appendChild(txt(340,60,"concat (4)","axis-lbl"));
     vectorCells(340,72,a.concat[q],52,24);
@@ -961,8 +974,8 @@ const STEP_RESIDUAL1 = {
 
 const STEP_FFN = {
   title:"Feed-forward network", math:["FFN(x) = W₂ σ(W₁x + b₁) + b₂","4 → "+FFN_HIDDEN+" → 4,  σ = ReLU"],
-  explain:"After attention gathers context, a small network processes each position independently.",
-  why:"\"Attention gathers; the FFN thinks about what was gathered\" (Part 1 §11).",
+  explain:"After attention gathers context, a small network processes each position independently. The "+FFN_HIDDEN+" purple circles below are its hidden units — commonly called neurons — each one a single number computed as one row of W₁ dotted with the input, then passed through ReLU.",
+  why:"\"Attention gathers; the FFN thinks about what was gathered\" (Part 1 §11). Neurons are not the same thing as attention heads: heads live in the attention step you just saw; neurons live here, inside the FFN. The Stacked Layers step later lets you watch these neurons' activations across the whole sentence.",
   pytorch:["self.ffn = nn.Sequential(","    nn.Linear(d_model, d_ffn), nn.ReLU(),","    nn.Linear(d_ffn, d_model))","x = x + self.ffn(self.ln2(x))"],
   render(t){
     const X = X0();
@@ -1030,8 +1043,8 @@ const DIM_COLORS = ["#75b9ff","#a78bfa","#f5b84b","#8be28b"];
 let stackedView = "matrix"; // "matrix" | "graph" | "neurons" — which detail view is showing for the selected layer
 const STEP_STACKED = {
   title:"Stacked layers", math:["X⁴ = Layer₄(Layer₃(Layer₂(Layer₁(X))))"],
-  explain:"The same block — multi-head attention, then FFN, both behind residuals — repeats 4 times. Click a layer below, then pick a view: its real output matrix, a graph of how each dimension moves across positions, or the FFN's hidden-neuron activations.",
-  why:"Layer 1 catches local relationships; by layer 4 the representation is considerably more context-aware. This illustration reuses the same hand-picked W_Q/W_K/W_V/W₁/W₂ at every layer for simplicity — real models learn independent weights per layer (Part 5).",
+  explain:"The same block — multi-head attention, then FFN, both behind residuals — repeats 4 times. Click a layer below, then pick a view: its real output matrix, a graph of how each dimension moves across positions, its attention heads, or the FFN's hidden-neuron activations.",
+  why:"Layer 1 catches local relationships; by layer 4 the representation is considerably more context-aware. This illustration reuses the same hand-picked W_Q/W_K/W_V/W₁/W₂ at every layer for simplicity — real models learn independent weights per layer (Part 5). Nesting, spelled out: each of the 4 layers contains its own 2 attention heads and its own "+FFN_HIDDEN+" FFN neurons — a layer is the outer container, heads and neurons are two different things living inside it, not two names for the same thing.",
   pytorch:["self.blocks = nn.ModuleList([Block(d_model, n_heads) for _ in range(n_layers)])","for block in self.blocks:","    x = block(x)"],
   render(t){
     const shown = Math.max(1, Math.ceil(t*4));
@@ -1045,7 +1058,7 @@ const STEP_STACKED = {
       const g = el("g",{opacity: on?1:0.18});
       g.appendChild(el("rect",{x:bx,y,width:boxW,height:46,rx:10,fill: isSel?"#20385f":"#131d36",
         stroke: isSel?"#75b9ff":"#2a3a63","stroke-width": isSel?2.4:1.2}));
-      g.appendChild(txt(bx+boxW/2,y+20,"Layer "+(i+1),"tok-lbl")).setAttribute("font-size","13");
+      withTip(g.appendChild(txt(bx+boxW/2,y+20,"Layer "+(i+1),"tok-lbl")), TERM_DEFS.Layer).setAttribute("font-size","13");
       g.appendChild(txt(bx+boxW/2,y+37,sub[i],"axis-lbl")).setAttribute("text-anchor","middle");
       stage.appendChild(g);
       if(on){
@@ -1063,6 +1076,8 @@ const STEP_STACKED = {
       const vg = el("g",{});
       vg.appendChild(el("rect",{x:vx,y:vy,width:vw,height:26,rx:13,fill:on?"#75b9ff":"#131d36",stroke:on?"#75b9ff":"#2a3a63","stroke-width":1.2}));
       const vt = vg.appendChild(txt(vx+vw/2,vy+17,label,"")); vt.setAttribute("text-anchor","middle"); vt.setAttribute("font-size","12"); vt.setAttribute("font-weight","700"); vt.setAttribute("fill", on?"#06111f":"var(--muted)");
+      if(id==="neurons") withTip(vt, TERM_DEFS.Neuron);
+      else if(id==="attention") withTip(vt, TERM_DEFS.Head);
       vg.style.cursor="pointer";
       vg.addEventListener("click", ()=>{ stackedView=id; render(); });
       stage.appendChild(vg);
@@ -1098,7 +1113,7 @@ const STEP_STACKED = {
         const gx = hi===0 ? 90 : 560;
         const hd = L.attn.heads[h];
         const norm = Math.max.apply(null, hd.maskedScores.flat().filter(v=>v>-Infinity));
-        stage.appendChild(txt(gx+130,178,"Head "+(h+1),"tok-lbl")).setAttribute("font-size","13");
+        withTip(stage.appendChild(txt(gx+130,178,"Head "+(h+1),"tok-lbl")), TERM_DEFS.Head).setAttribute("font-size","13");
         matrixGrid(gx,200, hd.maskedScores, 44,36, shortLabels, shortLabels, {
           heat:true, norm, mask:(i,j)=>j>i,
           tooltip:(i,j,v)=> j>i
