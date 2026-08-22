@@ -157,6 +157,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <div class="shell">
 
 <nav class="progress" aria-label="Course progress">
+  <a href="part-0-foundations.html">0 · Foundations</a>
   <a href="part-1-maths.html" class="here">1 · Maths</a>
   <a href="part-2-build.html">2 · Build</a>
   <a href="part-3-examples.html">3 · Examples</a>
@@ -167,12 +168,13 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <a href="part-4-pytorch.html">4 · PyTorch</a>
   <a href="part-5-architecture.html">5 · Architecture</a>
   <a href="part-6-build-gpt.html">6 · Build a GPT</a>
+  <a href="references.html">References</a>
 </nav>
 
 <header class="top">
-  <p class="kicker">Course · part one of six</p>
+  <p class="kicker">Course · part one of seven</p>
   <h1>The maths of neural networks and <em>transformers</em>, built from scratch</h1>
-  <p class="standfirst">Every formula derived from the problem it solves — nothing asserted before it is motivated. Assumes school algebra and a first calculus course. Assumes no machine learning at all. Thirteen of the derivations below are live: change them and watch the argument hold.</p>
+  <p class="standfirst">Every formula derived from the problem it solves — nothing asserted before it is motivated. Builds directly on <a href="part-0-foundations.html">Part 0</a>'s functions, vectors, matrices, exponentials, derivatives, and expected value; assumes no machine learning at all. Ten of the derivations below are live: change them and watch the argument hold.</p>
   <div class="legend">
     <span><span class="swatch" style="background:var(--fwd)"></span><b>forward</b></span>
     <span><span class="swatch" style="background:var(--back)"></span><b>backward</b></span>
@@ -202,8 +204,8 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <section>
   <div class="eyebrow"><span class="num">00</span><span>How to read this</span><span class="line"></span></div>
   <h2>What is assumed, and what is not</h2>
-  <p><strong>Assumed:</strong> rearranging equations and function notation; summation notation Σ; exponentials and logarithms (refresher below); basic derivatives and the single-variable chain rule.</p>
-  <p><strong>Not assumed:</strong> any linear algebra course — vectors and matrices are built from scratch here. Any probability course — the two facts needed are derived in Box B. Any programming background.</p>
+  <p><strong>Assumed, and built in <a href="part-0-foundations.html">Part 0</a> if you need it:</strong> function notation and rearranging equations; summation notation Σ; vectors, matrices, and the shape rule; exponentials and logarithms; the derivative as a rate of change, with the power and chain rules; expected value E[X] and variance as a probability-weighted average and its spread.</p>
+  <p><strong>Not assumed:</strong> any linear algebra, calculus, or probability course beyond Part 0. Any programming background. Everything below is that toolkit, pointed at one new problem — turning a set of numbers into a working neural network.</p>
   <p>Every section follows the same shape:</p>
   <blockquote><p><strong>The problem</strong> → <strong>the picture</strong> → <strong>building the formula</strong> → <strong>check it on small numbers</strong></p></blockquote>
   <p>If a formula ever seems to fall from the sky, that is a defect in the explanation. Go back to the picture.</p>
@@ -211,25 +213,9 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 </section>
 
 <div class="box">
-  <div class="sub">Box A · refresher</div>
-  <div class="h">Exponentials and logarithms</div>
-  <p style="margin-top:.7rem">These carry more weight here than anything else, so make sure they are solid. <strong>An exponential</strong> answers "what do I get from multiplying e by itself this many times?" — e² = e·e ≈ 7.39, and the curve fills in every value in between, even fractional exponents (e<sup>0.5</sup> ≈ 1.65) and negative ones (e<sup>−1</sup> ≈ 0.37). <strong>A logarithm</strong> asks the reverse question — "e to what power gives me this number?" — so log(7.39) ≈ 2, because e² ≈ 7.39. They undo each other, the same way squaring and square-rooting do.</p>
-
-  <figure class="w" id="explogfig">
-    <div class="head">
-      <span class="title">Exponential and logarithm, undoing each other</span>
-      <div class="ctrls"></div>
-    </div>
-    <div class="body">
-      <div class="slider-row"><label for="el-x">x</label><input type="range" id="el-x" min="-2.5" max="2.5" step="0.1" value="1"><span class="val" id="el-xv">1.0</span></div>
-      <canvas id="explog" width="820" height="360" aria-label="Graph of e to the x and its mirror image, the natural logarithm, with a point and its reflection highlighted"></canvas>
-      <div class="slider-row" style="margin-top:1rem"><label for="el-a">a</label><input type="range" id="el-a" min="0.5" max="8" step="0.5" value="2"><span class="val" id="el-av">2.0</span></div>
-      <div class="slider-row"><label for="el-b">b</label><input type="range" id="el-b" min="0.5" max="8" step="0.5" value="4"><span class="val" id="el-bv">4.0</span></div>
-      <div class="readout" id="el-say"></div>
-    </div>
-    <figcaption>The teal curve is <b>eˣ</b>; the orange curve is <b>log x</b>, its mirror image across the dashed diagonal — a logarithm is defined as "the exponent that produces this number," which is the graph of eˣ read backwards. Drag <b>x</b> and watch the two highlighted points stay mirror images of each other, always. Separately, <b>a</b> and <b>b</b> below make the addition property checkable: whatever numbers they are, <b>log(a) + log(b)</b> and <b>log(a×b)</b> always land on exactly the same value — the fact the whole cross-entropy derivation rests on.</figcaption>
-  </figure>
-
+  <div class="sub">Recall from Part 0 §6</div>
+  <div class="h">Exponentials and logarithms, applied here</div>
+  <p style="margin-top:.7rem">Every property below was built and checked on real numbers in <a href="part-0-foundations.html">Part 0</a>. Here is why each one earns its place in this document specifically:</p>
   <table>
     <tr><th>Property</th><th>Why it matters here</th></tr>
     <tr><td class="shape">e<sup>x</sup> &gt; 0 for every real x</td><td>This is what makes softmax possible (§5)</td></tr>
@@ -244,76 +230,35 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 </div>
 
 <div class="box">
-  <div class="sub">Box B · refresher</div>
+  <div class="sub">Recall from Part 0 §10</div>
   <div class="h">The only two probability facts you need</div>
-  <p style="margin-top:.7rem">Skip if you have done a stats course. Otherwise this box unlocks §9 and §11, which are otherwise the two hardest parts of the document.</p>
-  <p><strong>Variance</strong> measures spread: the average squared distance from the mean. Its square root, the standard deviation, is the typical size of a deviation.</p>
-  <p><strong>Fact 1 — for independent quantities, variances add.</strong> Note it is <em>variances</em> that add, not standard deviations. So adding up n independent things each with variance 1 gives variance n, and typical size <strong>√n</strong> — not n.</p>
+  <p style="margin-top:.7rem">Both are built and checked (drunkard's-walk widget included) in <a href="part-0-foundations.html">Part 0</a>. Restated here because §9 and §11 lean on them directly:</p>
+  <p><strong>Fact 1 — for independent quantities, variances add,</strong> so a sum of n independent unit-variance terms has typical size <strong>√n</strong>, not n:</p>
   <span class="eq">Var(X + Y) = Var(X) + Var(Y)</span>
-  <p>Why √n and not n? Because the terms have random signs and partially cancel.</p>
-
-  <figure class="w" id="rwfig">
-    <div class="head">
-      <span class="title">The drunkard's walk · why spread grows like √n</span>
-      <div class="ctrls"><button class="fwd" id="rw-run">Resample</button></div>
-    </div>
-    <div class="body">
-      <div class="slider-row"><label for="rw-n">n steps</label><input type="range" id="rw-n" min="1" max="400" step="1" value="64"><span class="val" id="rw-nv">64</span></div>
-      <canvas id="rw" width="820" height="230" aria-label="Histogram of random walk endpoints after n steps"></canvas>
-      <div class="readout" id="rw-say"></div>
-    </div>
-    <figcaption>Two thousand drunks each take n random steps, left or right. After 400 steps almost nobody is 400 away — the typical distance is about <b>20</b>. The measured spread tracks <b>√n</b> and ignores <b>n</b> entirely. This is the whole argument behind the √d<sub>k</sub> in attention, and behind He initialization.</figcaption>
-  </figure>
-
-  <p><strong>Fact 2 — for independent quantities with mean zero, variances multiply:</strong> Var(XY) = Var(X)·Var(Y). With zero means, Var(XY) = E[X²Y²], and independence splits that into E[X²]E[Y²].</p>
-  <p style="margin-bottom:0">These two facts appear at exactly two places: the √d<sub>k</sub> scaling (§11) and weight initialization (§9). Both times the reasoning is identical — <em>we are summing n independent products, so the spread grows like √n, so divide by √n to undo it.</em></p>
+  <p style="margin-bottom:0"><strong>Fact 2 — for independent quantities with mean zero, variances multiply:</strong> Var(XY) = Var(X)·Var(Y). Both facts show up at exactly two places below — the √d<sub>k</sub> scaling (§11) and weight initialization (§9) — and both times the reasoning is identical: <em>summing n independent products makes the spread grow like √n, so divide by √n to undo it.</em></p>
 </div>
 
 <!-- ============ PART 1 ============ -->
 <section>
   <div class="eyebrow"><span class="num">01</span><span>Representing things</span><span class="line"></span></div>
-  <h2>Why vectors exist</h2>
-  <p><strong>The problem.</strong> Computers only do arithmetic, but we want to work with people, photos, and sentences. So step one is always: turn the thing into numbers.</p>
-  <p>One number is never enough. A person is a <em>collection</em> of measurements. A photo is millions of brightness values. A word is a few hundred numbers encoding its meaning.</p>
-  <p><strong>The picture.</strong> A vector is a filled-in form — drop the labels, fix the order, and <span class="mono">[34, 52000, 8]</span> is a person. There is a second reading that matters later: three numbers are also <strong>coordinates</strong>, a location in space. So every data point is simultaneously a form <em>and</em> a point. That duality is what lets us ask geometric questions.</p>
+  <h2>Every input is a vector</h2>
+  <p>Recall from <a href="part-0-foundations.html">Part 0 §3</a>: a vector is a filled-in form, and a filled-in form is also a set of coordinates — a point in space. A network never sees a "digit" or a "word." It sees exactly this duality, applied concretely: 784 pixel brightnesses for one handwritten digit, a few hundred numbers for one word's meaning, twelve measurements for one house. Every architecture in this document starts from the same first move — turn the thing into a vector — before a single weight gets multiplied.</p>
 </section>
 
 <section>
   <div class="eyebrow"><span class="num">02</span><span>The core operation</span><span class="line"></span></div>
   <h2>The dot product measures agreement</h2>
-  <p><strong>The problem.</strong> I have a list of things I care about and a list of what is present. How much do they agree?</p>
-  <p>A spam filter cares about: the word "free" (+2), sender in contacts (−3), exclamation marks (+1). An email arrives with "free" (1), sender unknown (0), four marks (4):</p>
-  <span class="eq">(2)(1) + (−3)(0) + (1)(4) = 6</span>
-  <p><em>Why multiply the pairs rather than add them?</em> Because we want a score that is large only when both are large <strong>and</strong> pointing the same way. Care a lot but the feature is absent? Contributes nothing. Care negatively and the feature is present? Pulls the score down. Multiplication is the operation encoding <em>"both of these must hold for it to count."</em></p>
-  <span class="eq">w · x = Σᵢ wᵢxᵢ &nbsp;&nbsp;&nbsp; two vectors in, one number out</span>
-
-  <figure class="w" id="dotfig">
-    <div class="head">
-      <span class="title">Alignment · drag either arrow</span>
-      <div class="ctrls"><button id="dot-reset">Reset</button></div>
-    </div>
-    <div class="body">
-      <canvas id="dot" width="820" height="330" style="cursor:grab" aria-label="Two draggable vectors showing the dot product as alignment"></canvas>
-      <div class="readout" id="dot-say"></div>
-    </div>
-    <figcaption>Swing the arrows together and the dot product grows. Cross <b>90°</b> and it flips sign — perpendicular means <em>unrelated</em>, exactly zero. This one number saying "how much do these two agree" is the whole of attention: every word will ask every other word this question.</figcaption>
-  </figure>
-
-  <p><strong>The geometric reading.</strong> Define length by Pythagoras, ‖a‖ = √(Σaᵢ²). Then:</p>
-  <span class="eq">a · b = ‖a‖ ‖b‖ cos θ</span>
-  <p>You can see why in 2D: rotate the axes so <strong>a</strong> points along x. Then a = (‖a‖, 0) and b = (‖b‖cos θ, ‖b‖sin θ), and the dot product is ‖a‖‖b‖cos θ + 0. Rotating does not change dot products, so this holds generally.</p>
+  <p>Recall from <a href="part-0-foundations.html">Part 0 §4</a>: <span class="mono">w · x = Σᵢ wᵢxᵢ</span> is one number measuring how much two vectors agree — large when both point the same way, zero when perpendicular, negative when opposed.</p>
+  <span class="eq">a · b = ‖a‖ ‖b‖ cos θ &nbsp;&nbsp;&nbsp; (geometric reading, Part 0 §4)</span>
+  <p style="margin-bottom:0">This one number is the whole of attention: every word will ask every other word exactly this question — "how much do you and I agree?" — and §11 builds the entire mechanism out of that single operation, repeated in a particular pattern.</p>
 </section>
 
 <section>
   <div class="eyebrow"><span class="num">03</span><span>Doing it in bulk</span><span class="line"></span></div>
-  <h2>Matrices, and the shape rule that derives itself</h2>
-  <p>One dot product gives one verdict; I want several. Three questions means three "what I care about" lists, stacked as rows of a grid. That grid is a <strong>matrix</strong>.</p>
-  <blockquote><p>Each row of a weight matrix is one question. Multiplying by the matrix asks every question at once.</p></blockquote>
-  <span class="eq">(Wx)ᵢ = Σⱼ Wᵢⱼ xⱼ</span>
-  <p>Matrix multiplication is <strong>not a new operation</strong> — it is bookkeeping for many dot products at once, which is also why GPUs matter.</p>
-  <p><strong>The shape rule.</strong> People memorise (m×n)(n×p) = (m×p). You do not need to. Every output entry is a dot product between a row of the first and a column of the second — and a dot product needs both lists the <em>same length</em>, so the inner dimensions must match. You get one output per (row, column) pair, so the result is (rows of first) × (columns of second).</p>
-  <p><strong>Two more operations, needed in §8.</strong> <strong>Transpose</strong> Aᵀ flips the grid across its diagonal. <strong>Outer product</strong> goes the opposite way from a dot product — two vectors give a whole <em>matrix</em>, a column (2×1) times a row (1×3) giving 2×3. That is the shape of a weight matrix, which is why it appears in the backward pass. <strong>Elementwise product</strong> ⊙ multiplies matching entries.</p>
-  <p><strong>The layer, and the bias.</strong> A layer is <span class="mono">z = Wx + b</span>. Without <strong>b</strong>, an all-zero input must produce zero and every question's tipping point is stuck at the origin — the same reason school algebra went from y = mx to y = mx + c.</p>
+  <h2>A layer is a matrix of questions</h2>
+  <p>Recall from <a href="part-0-foundations.html">Part 0 §5</a>: stacking several "what I care about" vectors as rows of a matrix lets one multiplication ask all of them at once, <span class="mono">(Wx)ᵢ = Σⱼ Wᵢⱼxⱼ</span> — and the shape rule, transpose, and outer product built there all reappear here, especially in §8's backward pass.</p>
+  <blockquote><p>Each row of a weight matrix is one question. Multiplying by the matrix asks every question at once. That is what a layer <em>is</em>.</p></blockquote>
+  <p style="margin-bottom:0"><strong>The layer, and the bias.</strong> A layer is <span class="mono">z = Wx + b</span> — Part 0's generic <span class="mono">Wx + b</span> constant term, with a name now: <strong>b</strong> stops every question's tipping point from being stuck at the origin, the same job <span class="mono">+c</span> did for a line.</p>
 </section>
 
 <section>
@@ -323,6 +268,23 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <span class="eq wide">W₂(W₁x + b₁) + b₂ = (W₂W₁)x + (W₂b₁ + b₂) = W′x + b′</span>
   <p><strong>One layer.</strong> Not weaker than two — mathematically identical to one. A thousand layers still collapse. A linear layer can only stretch, rotate and shift space; do that twice and straight lines are still straight. But the boundary between spam and not-spam is not a straight line.</p>
   <p>So put a kink between them: <span class="mono">ReLU(x) = max(0, x)</span>, applied to each entry independently. One bend at the origin is enough — bend enough straight pieces and you trace any curve, and now the algebra above gets stuck at step one.</p>
+
+  <figure class="w" id="kinkfig">
+    <div class="head">
+      <span class="title">Straight line vs. bent line · same network, one switch</span>
+      <div class="ctrls">
+        <button class="att on" id="kink-relu">ReLU (kink)</button>
+        <button id="kink-linear">Linear (no kink)</button>
+        <button id="kink-reroll">Reroll weights</button>
+      </div>
+    </div>
+    <div class="body">
+      <canvas id="kink" width="820" height="300" aria-label="Plot of a small 1-6-1 network's output curve, either a straight line with no nonlinearity or a piecewise-linear curve with ReLU kinks marked"></canvas>
+      <div class="readout" id="kink-say"></div>
+    </div>
+    <figcaption>Same six-hidden-unit network, same random weights — only the activation switches. In <b>Linear</b> mode the curve is exactly one straight line, always, no matter how many times you reroll the weights: the collapse equation above, made visible. Switch to <b>ReLU</b> and each hidden unit that crosses zero in this range contributes one dashed kink — the curve is still made of straight pieces, but now it can bend at each one.</figcaption>
+  </figure>
+
   <table>
     <tr><th>Function</th><th>Derivative</th><th>The story</th></tr>
     <tr><td class="shape">ReLU max(0,x)</td><td class="shape">1 if x&gt;0, else 0</td><td>Cheapest kink. Derivative exactly 1 on the positive side — see §9 for why that is the point. Can "die" at zero.</td></tr>
@@ -420,23 +382,16 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <div class="eyebrow"><span class="num">07</span><span>Learning</span><span class="line"></span></div>
   <h2>The chain rule is the whole game</h2>
   <p>There are millions of knobs. For each we want to know: <strong>if I nudge this one up slightly, does the loss rise or fall, and by how much?</strong> That is the entire learning problem, and "how does output change when input changes" is precisely a derivative.</p>
-  <p>Read <span class="mono">df/dx = 3</span> as a <strong>sensitivity dial</strong>: nudge x by 0.01 and f rises by about 0.03. Collect the partial derivative for every parameter into one vector and you have the <strong>gradient</strong> — a <em>blame list</em>. Its key property: the gradient points in the direction of steepest increase. (Why: the change in L from a small step d is the dot product ∇L · d, and a dot product is largest when the vectors point the same way.) We want to decrease the loss, so we go the other way.</p>
+  <p>Recall the gradient from <a href="part-0-foundations.html">Part 0 §9</a>: one partial derivative per parameter, collected into a vector — a <em>blame list</em> with millions of entries instead of two. Its key property still holds exactly as built there: the gradient points in the direction of steepest increase, because the change in L from a small step d is the dot product ∇L · d, and a dot product is largest when the vectors point the same way. We want to decrease the loss, so we go the other way.</p>
 
   <p><strong>The problem the chain rule solves.</strong> The loss depends on the last layer directly — easy. But the first layer's weights affect the loss only through a long chain. How do we trace responsibility down a chain?</p>
 
-  <figure class="w" id="gearfig">
-    <div class="head">
-      <span class="title">Rates multiply along a chain</span>
-      <div class="ctrls"><button class="fwd on" id="gear-run">Pause</button></div>
-    </div>
-    <div class="body">
-      <div class="slider-row"><label for="g1">du/dx</label><input type="range" id="g1" min="0.3" max="3" step="0.1" value="3"><span class="val" id="g1v">3.0</span></div>
-      <div class="slider-row"><label for="g2">dy/du</label><input type="range" id="g2" min="0.3" max="3" step="0.1" value="2"><span class="val" id="g2v">2.0</span></div>
-      <svg id="gear" viewBox="0 0 640 210" role="img" aria-label="Three connected gears turning at multiplied rates"></svg>
-      <div class="readout" id="gear-say"></div>
-    </div>
-    <figcaption>Gear A turns B three times as fast; B turns C twice as fast; so one turn of A is <b>six</b> turns of C. Rates along a chain multiply — and a neural network is literally a chain of functions, so the influence of the first layer's weights on the loss is the product of every local sensitivity along the path. <b>Backpropagation is this, organised.</b> There is no second idea.</figcaption>
-  </figure>
+  <div class="box">
+    <div class="sub">Recall from Part 0 §8</div>
+    <div class="h">Rates along a chain multiply</div>
+    <p style="margin-top:.8rem"><span class="mono">d/dx f(g(x)) = f′(g(x)) · g′(x)</span> — nudging x nudges g(x) at rate g′(x), and that nudge in turn nudges f at rate f′(g(x)). Two rates back to back multiply.</p>
+    <p style="margin-bottom:0">A network's first-layer weights influence the loss only through a chain: weight → neuron → next layer → ⋯ → loss. Each arrow is one local rate; the influence of the first weight on the final loss is every one of those rates multiplied together, exactly as in Part 0's <span class="mono">h(x) = (2x+1)²</span> example — just with hundreds of arrows in the chain instead of two. <strong>Backpropagation is this, organised.</strong> There is no second idea.</p>
+  </div>
 
   <h3>Where the transpose comes from</h3>
   <p>Take y = Wx + b, with blame δ arriving from above. Forward, the wiring is <span class="mono">yᵢ = Σⱼ Wᵢⱼxⱼ</span>: input j connects to output i through a wire of strength Wᵢⱼ.</p>
@@ -639,29 +594,21 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <p><strong>KV caching.</strong> When generating one token at a time, earlier tokens' keys and values never change — so cache them. Each new token then costs O(nd) rather than O(n²d). The cache holds 2 × n<sub>layers</sub> × n × d numbers, which becomes the real memory ceiling for long-context serving, and is exactly why <strong>Grouped-Query Attention</strong> (heads sharing K and V) was invented.</p>
   <p><strong>Out the other end.</strong> Stack L blocks, apply a final LayerNorm, project to vocabulary size. Softmax gives a probability for every possible next token; cross-entropy against the actual next token gives the loss; backprop gives gradients for all several billion parameters; Adam applies a tiny update. Repeat a few million times. That is a language model, and every piece was built above.</p>
 
-  <figure class="w" id="loopfig">
-    <div class="head">
-      <span class="title">The whole model, one loop</span>
-      <div class="ctrls">
-        <button class="att" id="loop-step">Next stage</button>
-        <button id="loop-reset">Reset</button>
-      </div>
+  <div class="box">
+    <div class="sub">Checkpoint</div>
+    <div class="h">The whole model, one loop</div>
+    <div class="chain" id="loop-chain" style="margin-top:.8rem">
+      <span class="tag att">tokens</span><span class="arrow">→</span>
+      <span class="tag att">embed + PE</span><span class="arrow">→</span>
+      <span class="tag att">block × L (§11)</span><span class="arrow">→</span>
+      <span class="tag att">final LN → vocab</span><span class="arrow">→</span>
+      <span class="tag fwd">softmax</span><span class="arrow">→</span>
+      <span class="tag loss">cross-entropy</span><span class="arrow">→</span>
+      <span class="tag back">backprop (§7-8)</span><span class="arrow">→</span>
+      <span class="tag back">Adam update (§9)</span>
     </div>
-    <div class="body">
-      <div class="chain" id="loop-chain">
-        <span class="tag att dim" data-i="0">tokens</span><span class="arrow">→</span>
-        <span class="tag att dim" data-i="1">embed + PE</span><span class="arrow">→</span>
-        <span class="tag att dim" data-i="2">block × L (§11)</span><span class="arrow">→</span>
-        <span class="tag att dim" data-i="3">final LN → vocab</span><span class="arrow">→</span>
-        <span class="tag fwd dim" data-i="4">softmax</span><span class="arrow">→</span>
-        <span class="tag loss dim" data-i="5">cross-entropy</span><span class="arrow">→</span>
-        <span class="tag back dim" data-i="6">backprop (§7-8)</span><span class="arrow">→</span>
-        <span class="tag back dim" data-i="7">Adam update (§9)</span>
-      </div>
-      <div class="readout" id="loop-say">Press <b>Next stage</b> to walk one training step of a full language model, start to finish.</div>
-    </div>
-    <figcaption>Every stage above is something a section of this page already derived — nothing here is new. This is the one diagram that shows them all wired into a single loop: an MLP (§1-9) with one extra idea bolted on (§10-11), repeated for however many blocks fit your compute budget, and trained with the exact same forward → loss → backward → update rhythm as the very first neuron in §2. Loop back to <span class="mono">tokens</span> and it is training step two.</figcaption>
-  </figure>
+    <p style="margin-bottom:0">Every stage above is something a section of this page already derived — nothing here is new. It is an MLP (§1-9) with one extra idea bolted on (§10-11), repeated for however many blocks fit your compute budget, and trained with the exact same forward → loss → backward → update rhythm as the very first neuron in §2. Loop back to <span class="mono">tokens</span> and it is training step two.</p>
+  </div>
 </section>
 
 <!-- ============ REFERENCE ============ -->
@@ -845,175 +792,68 @@ function softmax(z){ var m=Math.max.apply(null,z); var e=z.map(function(v){retur
   render();
 })();
 
-/* ===== RANDOM WALK ===== */
+/* ===== KINKS ===== */
 (function(){
-  var cv=gid("rw"); if(!cv) return;
-  var ctx=cv.getContext("2d"), say=gid("rw-say"), sl=gid("rw-n");
-  function run(){
-    var n=parseInt(sl.value,10); gid("rw-nv").textContent=n;
-    var T=1500, out=[], sum=0, sq=0;
-    for(var t=0;t<T;t++){ var s=0; for(var i=0;i<n;i++) s+=(Math.random()<0.5?-1:1); out.push(s); sum+=s; sq+=s*s; }
-    var sd=Math.sqrt(sq/T-(sum/T)*(sum/T));
-    draw(out,n,sd);
-    say.innerHTML="n = <b>"+n+"</b> &nbsp;·&nbsp; measured spread = <b class='big' style='color:#0B8B8B'>"+fmt(sd,1)+
-      "</b> &nbsp;·&nbsp; √n = <b>"+fmt(Math.sqrt(n),1)+"</b> &nbsp;·&nbsp; n = <b style='color:#B31E55'>"+n+"</b>"+
-      "<br>The spread tracks √n. Variances add, so a sum of n unit-variance terms has variance n and typical size √n.";
-  }
-  function draw(out,n,sd){
-    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
-    var lim=Math.max(4,3.2*Math.sqrt(n)), B=41, bins=new Array(B).fill(0);
-    out.forEach(function(v){ var b=Math.round((v+lim)/(2*lim)*(B-1)); if(b>=0&&b<B) bins[b]++; });
-    var mx=Math.max.apply(null,bins)||1;
-    function px(i){ return 40+i/(B-1)*(W-70); }
-    for(var i=0;i<B;i++){
-      var h=bins[i]/mx*(H-70);
-      ctx.fillStyle="#0B8B8B"; ctx.globalAlpha=.72;
-      ctx.fillRect(px(i)-((W-70)/B)/2, H-34-h, (W-70)/B-1, h);
-    }
-    ctx.globalAlpha=1;
-    ctx.strokeStyle="#8399A8"; ctx.beginPath(); ctx.moveTo(30,H-34); ctx.lineTo(W-20,H-34); ctx.stroke();
-    function mark(v,col,lab){
-      if(Math.abs(v)>lim) return;
-      var x=px((v+lim)/(2*lim)*(B-1));
-      ctx.strokeStyle=col; ctx.setLineDash([4,3]); ctx.lineWidth=1.4;
-      ctx.beginPath(); ctx.moveTo(x,26); ctx.lineTo(x,H-34); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle=col; ctx.font="11px 'IBM Plex Mono',monospace"; ctx.fillText(lab,x+4,22);
-    }
-    mark(sd,"#15222E","±spread "+fmt(sd,1)); mark(-sd,"#15222E","");
-    mark(n,"#B31E55","n = "+n); mark(-n,"#B31E55","");
-    ctx.fillStyle="#8399A8"; ctx.font="11px 'IBM Plex Mono',monospace";
-    ctx.fillText("distance from start after "+n+" steps", W/2-95, H-12);
-  }
-  sl.oninput=run; gid("rw-run").onclick=run; run();
-})();
-
-/* ===== EXP / LOG ===== */
-(function(){
-  var cv=gid("explog"); if(!cv) return;
-  var ctx=cv.getContext("2d");
-  var sx=gid("el-x"), sa=gid("el-a"), sb=gid("el-b"), say=gid("el-say");
-  function draw(){
-    var x=parseFloat(sx.value); gid("el-xv").textContent=fmt(x,1);
-    var a=parseFloat(sa.value); gid("el-av").textContent=fmt(a,1);
-    var b=parseFloat(sb.value); gid("el-bv").textContent=fmt(b,1);
-    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
-    var x0=-2.5,x1=12.5,y0=-2.5,y1=12.5;
-    function px(v){ return 46+(v-x0)/(x1-x0)*(W-66); }
-    function py(v){ return H-40-(v-y0)/(y1-y0)*(H-60); }
-    grid(ctx,W,H,15,15,x0,x1,y0,y1,px,py);
-    ctx.strokeStyle="#8399A8"; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(px(x0),py(0)); ctx.lineTo(px(x1),py(0)); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(px(0),py(y0)); ctx.lineTo(px(0),py(y1)); ctx.stroke();
-    ctx.strokeStyle="#CBD8E0"; ctx.setLineDash([4,3]); ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(px(x0),py(x0)); ctx.lineTo(px(x1),py(x1)); ctx.stroke();
-    ctx.setLineDash([]);
-
-    ctx.strokeStyle="#0B8B8B"; ctx.lineWidth=2.6; ctx.beginPath();
-    var first=true;
-    for(var i=0;i<=300;i++){
-      var xv=x0+(x1-x0)*i/300, yv=Math.exp(xv);
-      if(yv>y1+1){ first=true; continue; }
-      if(first){ ctx.moveTo(px(xv),py(yv)); first=false; } else ctx.lineTo(px(xv),py(yv));
-    }
-    ctx.stroke();
-
-    ctx.strokeStyle="#D8811C"; ctx.lineWidth=2.6; ctx.beginPath();
-    first=true;
-    for(var j=0;j<=300;j++){
-      var xv2=x0+(x1-x0)*j/300;
-      if(xv2<=0.02) continue;
-      var yv2=Math.log(xv2);
-      if(yv2<y0-1) continue;
-      if(first){ ctx.moveTo(px(xv2),py(yv2)); first=false; } else ctx.lineTo(px(xv2),py(yv2));
-    }
-    ctx.stroke();
-
-    var ex=Math.exp(x);
-    ctx.fillStyle="#0B8B8B";
-    ctx.beginPath(); ctx.arc(px(x),py(ex),5,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle="#D8811C";
-    ctx.beginPath(); ctx.arc(px(ex),py(x),5,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle="#5A4A9F"; ctx.setLineDash([3,3]); ctx.lineWidth=1.2;
-    ctx.beginPath(); ctx.moveTo(px(x),py(ex)); ctx.lineTo(px(ex),py(x)); ctx.stroke();
-    ctx.setLineDash([]);
-
-    ctx.fillStyle="#8399A8"; ctx.font="11px 'IBM Plex Mono',monospace";
-    ctx.fillText("eˣ",px(2.2)+6,py(Math.exp(2.2)));
-    ctx.fillText("log x",px(11)+4,py(Math.log(11))-8);
-
-    var logSum=Math.log(a)+Math.log(b), logProd=Math.log(a*b);
-    say.innerHTML="e<sup>"+fmt(x,1)+"</sup> = <b>"+fmt(ex,2)+"</b> &nbsp;·&nbsp; log("+fmt(ex,2)+") = <b>"+fmt(Math.log(ex),1)+"</b> — undoing each other."+
-      "<br>log("+fmt(a,1)+") + log("+fmt(b,1)+") = <b>"+fmt(logSum,3)+"</b> &nbsp;·&nbsp; log("+fmt(a,1)+"×"+fmt(b,1)+") = <b>"+fmt(logProd,3)+"</b> — same number, always.";
-  }
-  sx.oninput=draw; sa.oninput=draw; sb.oninput=draw; draw();
-})();
-
-/* ===== DOT PRODUCT ===== */
-(function(){
-  var cv=gid("dot"); if(!cv) return;
-  var ctx=cv.getContext("2d"), say=gid("dot-say");
-  var a={x:2.4,y:1.4}, b={x:1.2,y:2.6}, drag=null;
-  function px(x){ return cv.width/2+x*52; }
-  function py(y){ return cv.height/2-y*52; }
-  function inv(mx,my){ return {x:(mx-cv.width/2)/52, y:(cv.height/2-my)/52}; }
-  function arrow(v,col,lab){
-    ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=2.6;
-    ctx.beginPath(); ctx.moveTo(px(0),py(0)); ctx.lineTo(px(v.x),py(v.y)); ctx.stroke();
-    var ang=Math.atan2(-(py(v.y)-py(0)),px(v.x)-px(0));
-    ctx.beginPath();
-    ctx.moveTo(px(v.x),py(v.y));
-    ctx.lineTo(px(v.x)-11*Math.cos(ang-0.4), py(v.y)+11*Math.sin(ang-0.4));
-    ctx.lineTo(px(v.x)-11*Math.cos(ang+0.4), py(v.y)+11*Math.sin(ang+0.4));
-    ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.arc(px(v.x),py(v.y),9,0,Math.PI*2); ctx.globalAlpha=.18; ctx.fill(); ctx.globalAlpha=1;
-    ctx.font="13px 'IBM Plex Mono',monospace";
-    ctx.fillText(lab,px(v.x)+13,py(v.y)-6);
-  }
-  function draw(){
-    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
-    ctx.strokeStyle="#E2EAEF"; ctx.lineWidth=1;
-    for(var gx=-7;gx<=7;gx++){ ctx.beginPath(); ctx.moveTo(px(gx),0); ctx.lineTo(px(gx),H); ctx.stroke(); }
-    for(var gy=-3;gy<=3;gy++){ ctx.beginPath(); ctx.moveTo(0,py(gy)); ctx.lineTo(W,py(gy)); ctx.stroke(); }
-    ctx.strokeStyle="#8399A8";
-    ctx.beginPath(); ctx.moveTo(0,py(0)); ctx.lineTo(W,py(0)); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(px(0),0); ctx.lineTo(px(0),H); ctx.stroke();
-    var dot=a.x*b.x+a.y*b.y;
-    var la=Math.hypot(a.x,a.y), lb=Math.hypot(b.x,b.y);
-    var cos=dot/(la*lb||1), ang=Math.acos(Math.max(-1,Math.min(1,cos)))*180/Math.PI;
-    ctx.strokeStyle=dot>=0?"#0B8B8B":"#B31E55"; ctx.globalAlpha=.25; ctx.lineWidth=15;
-    ctx.beginPath(); ctx.arc(px(0),py(0),42,-Math.atan2(a.y,a.x),-Math.atan2(b.y,b.x),
-      ((Math.atan2(b.y,b.x)-Math.atan2(a.y,a.x)+2*Math.PI)%(2*Math.PI))>Math.PI);
-    ctx.stroke(); ctx.globalAlpha=1;
-    arrow(a,"#0B8B8B","a"); arrow(b,"#5A4A9F","b");
-    var col=dot>=0?"#0B8B8B":"#B31E55";
-    say.innerHTML="a = ["+fmt(a.x,1)+", "+fmt(a.y,1)+"] &nbsp; b = ["+fmt(b.x,1)+", "+fmt(b.y,1)+"]<br>"+
-      "a · b = "+fmt(a.x,1)+"×"+fmt(b.x,1)+" + "+fmt(a.y,1)+"×"+fmt(b.y,1)+
-      " = <span class='big' style='color:"+col+"'>"+fmt(dot,2)+"</span><br>"+
-      "‖a‖‖b‖cos θ = "+fmt(la,2)+" × "+fmt(lb,2)+" × cos("+fmt(ang,0)+"°) = <b>"+fmt(la*lb*cos,2)+"</b> &nbsp; ✓ same number<br>"+
-      "<b style='color:"+col+"'>"+(ang<85?"aligned — they agree":ang<95?"perpendicular — unrelated, ≈ 0":"opposed — they disagree")+"</b>";
-  }
-  function pos(e){
-    var r=cv.getBoundingClientRect(), t=e.touches?e.touches[0]:e;
-    return { x:(t.clientX-r.left)*(cv.width/r.width), y:(t.clientY-r.top)*(cv.height/r.height) };
-  }
-  function down(e){
-    var p=pos(e), va=inv(p.x,p.y);
-    drag=(Math.hypot(va.x-a.x,va.y-a.y)<Math.hypot(va.x-b.x,va.y-b.y))?"a":"b";
-    move(e);
-  }
-  function move(e){
-    if(!drag) return;
-    e.preventDefault();
-    var p=pos(e), v=inv(p.x,p.y);
-    v.x=Math.max(-6.5,Math.min(6.5,v.x)); v.y=Math.max(-2.6,Math.min(2.6,v.y));
-    if(drag==="a") a=v; else b=v;
+  var cv=gid("kink"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("kink-say");
+  var H=6, w1=[], b1=[], w2=[], b2=0, kinkMode=true;
+  function reroll(){
+    w1=[]; b1=[]; w2=[];
+    for(var i=0;i<H;i++){ w1.push((Math.random()*2-1)*1.4); b1.push((Math.random()*2-1)*3); w2.push((Math.random()*2-1)*1.3); }
+    b2=(Math.random()*2-1)*0.6;
     draw();
   }
-  cv.addEventListener("mousedown",down); cv.addEventListener("touchstart",down,{passive:false});
-  window.addEventListener("mousemove",move); window.addEventListener("touchmove",move,{passive:false});
-  window.addEventListener("mouseup",function(){drag=null;}); window.addEventListener("touchend",function(){drag=null;});
-  gid("dot-reset").onclick=function(){ a={x:2.4,y:1.4}; b={x:1.2,y:2.6}; draw(); };
-  draw();
+  function y(x){
+    var s=b2;
+    for(var i=0;i<H;i++){
+      var z=w1[i]*x+b1[i];
+      var h=kinkMode ? Math.max(0,z) : z;
+      s+=w2[i]*h;
+    }
+    return s;
+  }
+  function draw(){
+    var W=cv.width,Hh=cv.height; ctx.clearRect(0,0,W,Hh);
+    var x0=-4,x1=4,N=300,ys=[],xs=[];
+    for(var k=0;k<=N;k++){ var xv=x0+(x1-x0)*k/N; xs.push(xv); ys.push(y(xv)); }
+    var ymin=Math.min.apply(null,ys), ymax=Math.max.apply(null,ys);
+    if(ymax-ymin<0.5){ var mid=(ymax+ymin)/2; ymin=mid-0.5; ymax=mid+0.5; }
+    var pad=(ymax-ymin)*0.12; ymin-=pad; ymax+=pad;
+    function px(v){ return 46+(v-x0)/(x1-x0)*(W-66); }
+    function py(v){ return Hh-34-(v-ymin)/(ymax-ymin)*(Hh-54); }
+    ctx.strokeStyle="#E2EAEF"; ctx.lineWidth=1;
+    for(var gx=-4;gx<=4;gx++){ ctx.beginPath(); ctx.moveTo(px(gx),py(ymin)); ctx.lineTo(px(gx),py(ymax)); ctx.stroke(); }
+    ctx.strokeStyle="#8399A8"; ctx.beginPath(); ctx.moveTo(px(x0),py(0)); ctx.lineTo(px(x1),py(0)); ctx.stroke();
+
+    var kinks=0;
+    if(kinkMode){
+      ctx.strokeStyle="#D8811C"; ctx.setLineDash([4,3]); ctx.lineWidth=1.3;
+      for(var i=0;i<H;i++){
+        if(Math.abs(w1[i])<0.05 || Math.abs(w2[i])<0.05) continue;
+        var xk=-b1[i]/w1[i];
+        if(xk<x0||xk>x1) continue;
+        kinks++;
+        ctx.beginPath(); ctx.moveTo(px(xk),py(ymin)); ctx.lineTo(px(xk),py(ymax)); ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
+
+    ctx.strokeStyle="#0B8B8B"; ctx.lineWidth=2.6; ctx.beginPath();
+    xs.forEach(function(xv,i){ var yy=py(ys[i]); if(i===0) ctx.moveTo(px(xv),yy); else ctx.lineTo(px(xv),yy); });
+    ctx.stroke();
+
+    var yL=y(x0), yR=y(x1), yMidLine=(yL+yR)/2, yMidActual=y(0), straight=Math.abs(yMidLine-yMidActual)<1e-6;
+    if(kinkMode){
+      say.innerHTML="<b>ReLU</b> — "+kinks+" of "+H+" hidden units contribute a visible kink (dashed) in this range. Each straight segment between kinks has its own slope; the curve overall is not one line.";
+    } else {
+      say.innerHTML="<b>Linear</b> — y(−4) = "+fmt(yL,2)+", y(4) = "+fmt(yR,2)+", midpoint of that line = "+fmt(yMidLine,2)+", actual y(0) = "+fmt(yMidActual,2)+" — "+
+        (straight?"<b style='color:#0B8B8B'>identical, to full precision</b>: exactly one straight line.":"off — floating point only, still a line.");
+    }
+  }
+  gid("kink-relu").onclick=function(){ kinkMode=true; this.classList.add("on"); gid("kink-linear").classList.remove("on"); draw(); };
+  gid("kink-linear").onclick=function(){ kinkMode=false; this.classList.add("on"); gid("kink-relu").classList.remove("on"); draw(); };
+  gid("kink-reroll").onclick=reroll;
+  reroll();
 })();
 
 /* ===== SOFTMAX DERIVATION ===== */
@@ -1125,67 +965,6 @@ function softmax(z){ var m=Math.max.apply(null,z); var e=z.map(function(v){retur
       : "Adjust the sliders.";
   }
   gid("su-p").oninput=update; gid("su-q").oninput=update; update();
-})();
-
-/* ===== CHAIN RULE GEARS ===== */
-(function(){
-  var svg=gid("gear"); if(!svg) return;
-  var say=gid("gear-say"), running=!REDUCED, t=0, raf=null;
-  var NS="http://www.w3.org/2000/svg";
-  var cfg=[{x:110,r:64,col:"#0B8B8B",lab:"x"},{x:300,r:52,col:"#5A4A9F",lab:"u"},{x:470,r:40,col:"#D8811C",lab:"y"}];
-  var groups=[];
-  cfg.forEach(function(c){
-    var g=document.createElementNS(NS,"g");
-    var circ=document.createElementNS(NS,"circle");
-    circ.setAttribute("cx",0); circ.setAttribute("cy",0); circ.setAttribute("r",c.r);
-    circ.setAttribute("fill","none"); circ.setAttribute("stroke",c.col); circ.setAttribute("stroke-width",2.4);
-    g.appendChild(circ);
-    for(var i=0;i<12;i++){
-      var a=i/12*Math.PI*2;
-      var l=document.createElementNS(NS,"line");
-      l.setAttribute("x1",Math.cos(a)*(c.r-11)); l.setAttribute("y1",Math.sin(a)*(c.r-11));
-      l.setAttribute("x2",Math.cos(a)*c.r); l.setAttribute("y2",Math.sin(a)*c.r);
-      l.setAttribute("stroke",c.col); l.setAttribute("stroke-width",3.4);
-      g.appendChild(l);
-    }
-    var mk=document.createElementNS(NS,"line");
-    mk.setAttribute("x1",0); mk.setAttribute("y1",0); mk.setAttribute("x2",0); mk.setAttribute("y2",-c.r+6);
-    mk.setAttribute("stroke",c.col); mk.setAttribute("stroke-width",2.4);
-    g.appendChild(mk);
-    var outer=document.createElementNS(NS,"g");
-    outer.setAttribute("transform","translate("+c.x+",100)");
-    outer.appendChild(g);
-    var tx=document.createElementNS(NS,"text");
-    tx.setAttribute("x",c.x); tx.setAttribute("y",190); tx.setAttribute("text-anchor","middle");
-    tx.setAttribute("fill",c.col); tx.setAttribute("font-family","IBM Plex Mono, monospace");
-    tx.setAttribute("font-size","13"); tx.textContent=c.lab;
-    svg.appendChild(outer); svg.appendChild(tx);
-    groups.push(g);
-  });
-  var tot=document.createElementNS(NS,"text");
-  tot.setAttribute("x",560); tot.setAttribute("y",100); tot.setAttribute("fill","#15222E");
-  tot.setAttribute("font-family","IBM Plex Mono, monospace"); tot.setAttribute("font-size","13");
-  svg.appendChild(tot);
-
-  function rates(){
-    var r1=parseFloat(gid("g1").value), r2=parseFloat(gid("g2").value);
-    gid("g1v").textContent=fmt(r1,1); gid("g2v").textContent=fmt(r2,1);
-    return [1,r1,r1*r2];
-  }
-  function frame(){
-    var r=rates();
-    groups.forEach(function(g,i){ g.setAttribute("transform","rotate("+(t*r[i]*40)+")"); });
-    if(running) t+=0.006;
-    var p=r[2];
-    tot.textContent="dy/dx = "+fmt(p,2)+"×";
-    say.innerHTML="du/dx = <b>"+fmt(r[1],1)+"</b> &nbsp;×&nbsp; dy/du = <b>"+fmt(parseFloat(gid("g2").value),1)+
-      "</b> &nbsp;=&nbsp; dy/dx = <span class='big' style='color:#D8811C'>"+fmt(p,2)+
-      "</span><br>One turn of x is "+fmt(p,2)+" turns of y. Rates along a chain multiply — that is the whole of backpropagation.";
-    raf=requestAnimationFrame(frame);
-  }
-  gid("gear-run").onclick=function(){ running=!running; this.textContent=running?"Pause":"Play"; this.classList.toggle("on",running); };
-  gid("g1").oninput=function(){}; gid("g2").oninput=function(){};
-  frame();
 })();
 
 /* ===== BACKPROP STEPS ===== */
@@ -1460,34 +1239,6 @@ function softmax(z){ var m=Math.max.apply(null,z); var e=z.map(function(v){retur
               : "<b>The feed-forward network is the bottleneck here</b>, not attention — the nuance most people miss. Attention only takes over once n exceeds d.");
   }
   sn.oninput=draw; sd.oninput=draw; draw();
-})();
-
-/* ===== WHOLE-MODEL LOOP ===== */
-(function(){
-  var btn=gid("loop-step"); if(!btn) return;
-  var say=gid("loop-say");
-  var chain=gid("loop-chain").querySelectorAll(".tag");
-  var steps=[
-    "<b>Tokens.</b> A sequence of integers, one per word-ish chunk (§10).",
-    "<b>Embed + positional encoding.</b> Each token becomes a vector; the sine/cosine fingerprint (§10) is added so position survives.",
-    "<b>L transformer blocks.</b> Each one: multi-head attention gathers context across positions, the FFN thinks about what was gathered, both behind residual connections (§11).",
-    "<b>Final LayerNorm, then a linear projection to vocabulary size.</b> One raw score per possible next token.",
-    "<b>Softmax (§5).</b> Scores become a probability distribution over the whole vocabulary.",
-    "<b>Cross-entropy (§6).</b> Compare that distribution to the actual next token — one number's worth of wrongness.",
-    "<b>Backprop (§7-8).</b> The chain rule assigns blame to every one of several billion parameters, in one backward sweep.",
-    "<b>Adam update (§9).</b> Every parameter nudges a tiny amount downhill. Then it is training step two, back at tokens."
-  ];
-  var cur=-1;
-  function apply(){
-    chain.forEach(function(t,i){ t.classList.toggle("dim", i!==cur); });
-    say.innerHTML = cur===-1
-      ? "Press <b>Next stage</b> to walk one training step of a full language model, start to finish."
-      : steps[cur];
-    btn.textContent = cur>=steps.length-1 ? "Restart" : "Next stage";
-  }
-  btn.onclick=function(){ cur = cur>=steps.length-1 ? -1 : cur+1; apply(); };
-  gid("loop-reset").onclick=function(){ cur=-1; apply(); };
-  apply();
 })();
 
 })();

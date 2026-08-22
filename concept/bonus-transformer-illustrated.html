@@ -123,6 +123,7 @@ svg text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 <body>
 <div class="wrap">
     <nav class="progress" aria-label="Course progress">
+    <a href="part-0-foundations.html">0 · Foundations</a>
     <a href="part-1-maths.html">1 · Maths</a>
     <a href="part-2-build.html">2 · Build</a>
     <a href="part-3-examples.html">3 · Examples</a>
@@ -133,6 +134,7 @@ svg text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
     <a href="part-4-pytorch.html">4 · PyTorch</a>
     <a href="part-5-architecture.html">5 · Architecture</a>
     <a href="part-6-build-gpt.html">6 · Build a GPT</a>
+    <a href="references.html">References</a>
   </nav>
 
   <header>
@@ -141,7 +143,7 @@ svg text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   </header>
 
   <div class="intro-note">
-    <b>How to use this page:</b> pick a mode below, then step through with <b>Next</b> or <b>Play</b>. Steps 1–13 (Text → Final prediction) are identical in every mode; the last few steps show what happens differently after that — predicting the next word (Inference) vs. learning from the correct answer (Training / Fine-tuning). Hover any diagram element for a definition.
+    <b>How to use this page:</b> pick a mode below, then step through with <b>Next</b> or <b>Play</b>. Steps 1–12 (Text → Final prediction) are identical in every mode; the last few steps show what happens differently after that — predicting the next word (Inference) vs. learning from the correct answer (Training / Fine-tuning). Hover any diagram element for a definition.
   </div>
   <div class="color-legend">
     <span><span class="sw" style="background:rgba(117,185,255,.75)"></span>positive value</span>
@@ -188,7 +190,6 @@ svg text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   <div class="toggles">
     <label><input type="checkbox" id="toggleEq" checked> Show equations</label>
     <label><input type="checkbox" id="toggleVals" checked> Show matrix values</label>
-    <label><input type="checkbox" id="toggleVec" checked> Show vector space</label>
     <label><input type="checkbox" id="togglePy"> Show PyTorch code</label>
   </div>
 
@@ -533,10 +534,9 @@ const TERM_DEFS = {
 function fmt(v){ return v.toFixed(2); }
 function tokColor(i){ return ["#75b9ff","#a78bfa","#f5b84b","#8be28b","#f0857a","#5eead4"][i%6]; }
 
-let showEq = true, showVals = true, showVec = true, showPy = false;
+let showEq = true, showVals = true, showPy = false;
 document.getElementById("toggleEq").onchange = e => { showEq = e.target.checked; render(); };
 document.getElementById("toggleVals").onchange = e => { showVals = e.target.checked; render(); };
-document.getElementById("toggleVec").onchange = e => { showVec = e.target.checked; render(); };
 document.getElementById("togglePy").onchange = e => { showPy = e.target.checked; render(); };
 
 /* ---------- per-step render functions ---------- */
@@ -645,19 +645,6 @@ function divergingBarChart(x,y,w,h,labels,values,opts){
     // never collides with the row labels.
     stage.appendChild(txt(bw>=0 ? mid+bw+8 : mid-8, by+barH/2+4, (values[i]>=0?"+":"")+fmt(values[i]), "axis-lbl"))
       .setAttribute("text-anchor", bw>=0 ? "start":"end");
-  });
-}
-
-function scatter2D(cx,cy,r,points,opts){
-  opts = opts || {};
-  stage.appendChild(el("line",{x1:cx-r,y1:cy,x2:cx+r,y2:cy,stroke:"#2a3a63"}));
-  stage.appendChild(el("line",{x1:cx,y1:cy-r,x2:cx,y2:cy+r,stroke:"#2a3a63"}));
-  stage.appendChild(txt(cx+r-4,cy+16,"dim 1","axis-lbl"));
-  stage.appendChild(txt(cx+8,cy-r+4,"dim 2","axis-lbl"));
-  points.forEach((p,i)=>{
-    const px = cx + p[0]*r*0.8, py = cy - p[1]*r*0.8;
-    stage.appendChild(el("circle",{cx:px,cy:py,r:7,fill:tokColor(i),stroke:"#0a1128","stroke-width":1.5}));
-    stage.appendChild(txt(px, py-12, SENTENCE[i]+" ("+i+")", "axis-lbl")).setAttribute("text-anchor","middle");
   });
 }
 
@@ -818,18 +805,6 @@ const STEP_POSENC = {
     lineChart(560,70,380,280, series, SENTENCE.map((w,i)=>i));
   }
 };
-const STEP_VECSPACE = {
-  title:"Vector space", math:["each row of X is a point in ℝ⁴ (shown here in 2D)"],
-  explain:"Plotting the first two of the four dimensions as x/y: each token is a point. Related words end up closer together purely from the numbers you just saw.",
-  why:"This is a 2D slice of a 4D space, drawn only because 4D can't be drawn directly — nothing about the math changes. (It's also an arbitrary slice: this picks dimensions 1 and 2 specifically. Two tokens that look close here could sit far apart in dimensions 3–4, and vice versa.)",
-  render(t){
-    if(!showVec){ stage.appendChild(txt(500,240,"(vector-space view hidden — toggle it on above)","axis-lbl")).setAttribute("text-anchor","middle"); return; }
-    const X = X0();
-    const pts = X.map(v=>[v[0]*1.1-0.5, v[1]*1.1-0.5]);
-    scatter2D(500,240,170, pts.map((p,i)=>[p[0]*t, p[1]*t]));
-  }
-};
-
 const STEP_QKV = {
   title:"Multi-head Q / K / V",
   math:["Q_h = XW_Q^h,  K_h = XW_K^h,  V_h = XW_V^h   (per head h)","d_model="+D+" split into "+NUM_HEADS+" heads of d_head="+D_HEAD],
@@ -1003,37 +978,6 @@ const STEP_FFN = {
     stage.appendChild(el("line",{x1:gx,y1:gy,x2:gx,y2:gy+gh,stroke:"#2a3a63"}));
     stage.appendChild(el("path",{d:`M${gx},${gy+gh} L${gx+gw/2},${gy+gh} L${gx+gw},${gy}`,stroke:"#f5b84b","stroke-width":2,fill:"none"}));
     stage.appendChild(txt(gx+gw/2,gy+gh+16,"ReLU: y=max(0,x)","axis-lbl")).setAttribute("text-anchor","middle");
-  }
-};
-
-const STEP_GEOMETRIC = {
-  title:"Geometric transformation", math:["W₁ rotates/scales; ReLU bends the result"],
-  explain:"In vector space, matrix multiplication moves points; the nonlinearity bends that movement so it isn't just one flat transformation.",
-  why:"This is the exact same curve-fitting idea from the curve-fitting sandbox — just happening inside a much higher-dimensional space here.",
-  render(t){
-    if(showVec){
-      const X = X0();
-      const {residual1} = attentionBlock(X);
-      const {residual2} = ffnBlock(residual1);
-      const before = X.map(v=>[v[0]*1.1-0.5, v[1]*1.1-0.5]);
-      const after = residual2.map(v=>[v[0]*1.1-0.5, v[1]*1.1-0.5]);
-      const lerp = before.map((p,i)=>[ p[0]+(after[i][0]-p[0])*t, p[1]+(after[i][1]-p[1])*t ]);
-      scatter2D(280,220,150,lerp);
-      stage.appendChild(txt(280,390,"points drift as they pass through W₁, ReLU, W₂","axis-lbl")).setAttribute("text-anchor","middle");
-    }
-    const cx=680,cy=220,w=260,h=260;
-    stage.appendChild(el("line",{x1:cx-w/2,y1:cy+h/2,x2:cx+w/2,y2:cy+h/2,stroke:"#2a3a63"}));
-    stage.appendChild(el("line",{x1:cx-w/2,y1:cy+h/2,x2:cx-w/2,y2:cy-h/2,stroke:"#2a3a63"}));
-    const pts = [[-90,60],[-50,10],[-10,-30],[30,-50],[70,-40],[100,10]];
-    pts.forEach(p=> stage.appendChild(el("circle",{cx:cx+p[0],cy:cy-p[1]*0.6,r:4,fill:"#f5b84b"})) );
-    let d = "M"+(cx-100)+","+(cy-30);
-    for(let i=0;i<=20;i++){
-      const xx = -100 + i*10;
-      const yy = Math.sin(xx/40)*40*t;
-      d += " L"+(cx+xx)+","+(cy-yy-20);
-    }
-    stage.appendChild(el("path",{d,stroke:"#75b9ff","stroke-width":2,fill:"none"}));
-    stage.appendChild(txt(cx,cy+h/2+24,"same idea: learned parameters bend a fit to the data","axis-lbl")).setAttribute("text-anchor","middle");
   }
 };
 
@@ -1369,22 +1313,16 @@ function fullPipelineStep(mode){
   return {
     title:"The full pipeline",
     math:[stagesN.join(" → ")],
-    explain:"Every stage above, in one row. The glowing dot is one representation, moving through the exact sequence of transformations you just walked through.",
+    explain:"Every stage you just walked through, in one row — the recap, not a new idea.",
     why:"THE CORE IDEA: "+coreIdea,
     render(t){
       const x0=60, x1=940, y=240;
       stage.appendChild(el("line",{x1:x0,y1:y,x2:x1,y2:y,stroke:"#1c2947","stroke-width":3}));
       stagesN.forEach((s,i)=>{
         const x = x0 + i*(x1-x0)/(stagesN.length-1);
-        stage.appendChild(el("circle",{cx:x,cy:y,r:5,fill:"#2a3a63"}));
+        stage.appendChild(el("circle",{cx:x,cy:y,r:6,fill:"#75b9ff"}));
         stage.appendChild(txt(x,y+26,s,"axis-lbl")).setAttribute("text-anchor","middle");
       });
-      const px = x0 + t*(x1-x0);
-      stage.appendChild(el("circle",{cx:px,cy:y,r:10,fill:"#75b9ff"})).setAttribute("filter","url(#glow)");
-      const defs = el("defs",{});
-      const f = el("filter",{id:"glow"}); f.appendChild(el("feGaussianBlur",{stdDeviation:4,result:"b"}));
-      const merge = el("feMerge",{}); merge.appendChild(el("feMergeNode",{in:"b"})); merge.appendChild(el("feMergeNode",{in:"SourceGraphic"}));
-      f.appendChild(merge); defs.appendChild(f); stage.appendChild(defs);
       stage.appendChild(txt(500,340,"THE CORE IDEA","tok-lbl")).setAttribute("text-anchor","middle");
       const words = coreIdea.match(/.{1,58}(\s|$)/g) || [coreIdea];
       words.forEach((w,i)=> stage.appendChild(txt(500,368+i*20,w.trim(),"axis-lbl")).setAttribute("text-anchor","middle"));
@@ -1393,8 +1331,8 @@ function fullPipelineStep(mode){
 }
 
 function buildSteps(mode){
-  const head = [STEP_TEXT, STEP_TOKENIZATION, STEP_EMBEDDINGS, STEP_POSENC, STEP_VECSPACE];
-  const attn = [STEP_QKV, STEP_SCORES, STEP_SOFTMAX, STEP_ATTNOUT, STEP_RESIDUAL1, STEP_FFN, STEP_GEOMETRIC, STEP_STACKED, STEP_FINALPRED];
+  const head = [STEP_TEXT, STEP_TOKENIZATION, STEP_EMBEDDINGS, STEP_POSENC];
+  const attn = [STEP_QKV, STEP_SCORES, STEP_SOFTMAX, STEP_ATTNOUT, STEP_RESIDUAL1, STEP_FFN, STEP_STACKED, STEP_FINALPRED];
   const tail = mode==="inference" ? [STEP_AUTOREGRESSIVE] : [STEP_LOSS, STEP_BACKPROP, stepWeightUpdate(mode)];
   return [...head, ...attn, ...tail, fullPipelineStep(mode)];
 }

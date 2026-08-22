@@ -123,6 +123,7 @@
 <body>
 <div class="wrap">
     <nav class="progress" aria-label="Course progress">
+    <a href="part-0-foundations.html">0 · Foundations</a>
     <a href="part-1-maths.html">1 · Maths</a>
     <a href="part-2-build.html">2 · Build</a>
     <a href="part-3-examples.html">3 · Examples</a>
@@ -133,6 +134,7 @@
     <a href="part-4-pytorch.html">4 · PyTorch</a>
     <a href="part-5-architecture.html">5 · Architecture</a>
     <a href="part-6-build-gpt.html">6 · Build a GPT</a>
+    <a href="references.html">References</a>
   </nav>
 
   <header class="titlebar">
@@ -154,7 +156,7 @@
     <span><span class="sw" style="background:#c86428"></span>negative weight</span>
   </div>
 
-  <div class="callout"><span class="calloutIcon">🧪</span><div><b>Every gradient here is hand-derived, no autograd</b> — embedding, positional encoding, causal multi-head attention, LayerNorm, the feed-forward network, all backpropagated by formulas from <a href="part-1-maths.html" style="color:#bfe3ff">Part 1</a> and <a href="part-3-examples.html" style="color:#bfe3ff">Part 3</a>. Numerically gradient-checked to <span class="formula">~1e-8</span> before this page shipped, the same standard every <span class="formula">examples/*.py</span> file on this site holds itself to.</div></div>
+  <div class="callout"><span class="calloutIcon">🧪</span><div><b>Every gradient here is hand-derived, no autograd</b> — embedding, positional encoding, causal multi-head attention, LayerNorm, the feed-forward network, all backpropagated by formulas from <a href="part-1-maths.html" style="color:#bfe3ff">Part 1</a> and <a href="part-3-examples.html" style="color:#bfe3ff">Part 3</a>. Each one is numerically gradient-checked against finite differences to within <span class="formula">~1e-8</span>, so the weight and loss curves below are the real thing, not a stand-in.</div></div>
 
   <div class="card" style="margin-bottom:14px">
     <div class="sectionHead"><span class="badge">·</span><div><b>Training corpus</b><div class="sectionSub">A fixed, small, character-level corpus — same sentences <code>examples/05_tiny_gpt.py</code> trains on — kept small enough that every weight matrix below stays legible.</div></div></div>
@@ -272,7 +274,7 @@
   </div>
 
   <footer>
-    <p>This is Part 6's exact architecture (embedding + sinusoidal PE, causal multi-head attention, LayerNorm, feed-forward, residuals) trained live instead of read as code — see <a href="part-6-build-gpt.html">Part 6</a> for the PyTorch version and <a href="part-3-examples.html">Part 3</a> for the same hand-derived-attention approach at a smaller scale. Inference-mode generation (sampling from this live model with temperature/top-k/top-p) is a planned follow-up to this page.</p>
+    <p>This is Part 6's exact architecture (embedding + sinusoidal PE, causal multi-head attention, LayerNorm, feed-forward, residuals) trained live instead of read as code — see <a href="part-6-build-gpt.html">Part 6</a> for the PyTorch version and <a href="part-3-examples.html">Part 3</a> for the same hand-derived-attention approach at a smaller scale. For sampling text out of a trained model with temperature, top-k, and top-p, see <a href="part-6-build-gpt.html">Part 6</a>'s generation widget.</p>
   </footer>
 </div>
 
@@ -282,9 +284,8 @@
 
 /* =========================================================================
    ENGINE — hand-derived Transformer forward + backward. No framework.
-   Every gradient here was numerically verified before this page shipped
-   (central-difference check against every parameter tensor, ~1e-8 max
-   relative error) — see the callout above.
+   Every gradient is numerically verified (central-difference check against
+   every parameter tensor, ~1e-8 max relative error) — see the callout above.
    ========================================================================= */
 function zeros(rows, cols){ var m=new Array(rows); for(var i=0;i<rows;i++) m[i]=new Array(cols).fill(0); return m; }
 function randMatrix(rows, cols, scale, rng){ var m=zeros(rows,cols); for(var i=0;i<rows;i++) for(var j=0;j<cols;j++) m[i][j]=(rng()*2-1)*scale; return m; }
@@ -657,8 +658,6 @@ function trainOneStep(lr){
   return {loss:back.loss, conf:meanConf};
 }
 
-function currentLR(){ return Math.pow(10, -3 + (10-parseInt(gid("lr").value,10))*-0.05) ; }
-// simpler: map slider 1..20 to a sensible LR range directly
 function lrFromSlider(){
   var v = parseInt(gid("lr").value,10); // 1..20
   return 0.0005 + (v-1) * (0.01-0.0005)/19;

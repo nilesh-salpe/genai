@@ -53,6 +53,7 @@
 <body>
 <div class="wrap">
     <nav class="progress" aria-label="Course progress">
+    <a href="part-0-foundations.html">0 · Foundations</a>
     <a href="part-1-maths.html">1 · Maths</a>
     <a href="part-2-build.html">2 · Build</a>
     <a href="part-3-examples.html">3 · Examples</a>
@@ -63,6 +64,7 @@
     <a href="part-4-pytorch.html">4 · PyTorch</a>
     <a href="part-5-architecture.html">5 · Architecture</a>
     <a href="part-6-build-gpt.html">6 · Build a GPT</a>
+    <a href="references.html">References</a>
   </nav>
   <header class="titlebar">
     <div>
@@ -127,13 +129,10 @@
         <div class="legend" id="outputLegend"></div><div class="small" style="margin-top:6px">Target = what we want. Prediction = what the network currently produces.</div>
       </div>
 
-      <div class="two">
-        <div class="card diagram"><div class="sectionHead compact"><span class="badge">4</span><div><b>Inside the network</b><div class="sectionSub">Features are combined — not fitted independently. Wire color is sign (green positive, orange negative), thickness is magnitude relative to the largest weight in the network — watch them reorganize as training runs.</div></div></div><canvas id="netCanvas" aria-label="Diagram of the network's layers and connections, wires colored by weight sign and weighted by magnitude, updating live during training"></canvas></div>
-        <div class="card conceptCard">
-          <div class="bigConcept"><span>ReLU intuition</span><strong>many simple pieces → one flexible function</strong></div>
-          <div class="miniFlow"><span>weighted sum</span><span>→</span><span>ReLU</span><span>→</span><span>piece</span><span>+</span><span>piece</span><span>→</span><span>prediction</span></div>
-          <div class="explain">With ReLU, each neuron creates a simple piece such as <span class="codeish">max(0, wx+b)</span>. Many neurons combine those pieces. For many features, the true function lives in higher dimensions; the slice graph above lets us see one 2D view at a time.</div>
-        </div>
+      <div class="card conceptCard">
+        <div class="sectionHead compact"><span class="badge">4</span><div><b>ReLU intuition</b><div class="sectionSub">many simple pieces → one flexible function</div></div></div>
+        <div class="miniFlow"><span>weighted sum</span><span>→</span><span>ReLU</span><span>→</span><span>piece</span><span>+</span><span>piece</span><span>→</span><span>prediction</span></div>
+        <div class="explain">With ReLU, each neuron creates a simple piece such as <span class="codeish">max(0, wx+b)</span>. Many neurons combine those pieces — that's what the dashed kink lines in the slice graph above are marking. For many features, the true function lives in higher dimensions; the slice graph lets us see one 2D view at a time.</div>
       </div>
     </main>
   </div>
@@ -312,29 +311,7 @@ function updateFeatureKnobs(){
   box.querySelectorAll('input[data-slice]').forEach(el=>el.addEventListener('input',()=>{const j=+el.dataset.slice;sliceVals[j]=+el.value;$(`sliceV${j}`).textContent=sliceVals[j].toFixed(2);drawSlice();}));
 }
 
-function drawNet(){
-  const {ctx,w,h}=resizeCanvas($('netCanvas'));ctx.clearRect(0,0,w,h);ctx.fillStyle='#0c1426';ctx.fillRect(0,0,w,h);
-  const sizes=[cfg.inputs,...Array(cfg.layers).fill(cfg.neurons),cfg.outputs], names=['Input',...Array.from({length:cfg.layers},(_,i)=>`Hidden ${i+1}`),'Output'];
-  const x0=58,x1=w-58, dx=(x1-x0)/(sizes.length-1); let pts=[];
-  sizes.forEach((s,l)=>{const x=x0+l*dx;const gap=Math.min(23,(h-78)/(s+1));const total=(s-1)*gap;const y0=(h-total)/2-2;pts.push([]);for(let i=0;i<s;i++)pts[l].push({x,y:y0+i*gap});});
-  let maxAbs=1e-6;
-  net.forEach(L=>L.W.forEach(row=>row.forEach(v=>{const a=Math.abs(v); if(a>maxAbs)maxAbs=a;})));
-  for(let l=0;l<pts.length-1;l++){
-    const L=net[l];
-    for(let i=0;i<pts[l].length;i++){
-      for(let j=0;j<pts[l+1].length;j++){
-        const a=pts[l][i], b=pts[l+1][j], wgt=L.W[i][j], mag=Math.abs(wgt)/maxAbs;
-        ctx.strokeStyle=wgt>=0?`rgba(110,231,183,${0.12+0.7*mag})`:`rgba(216,129,28,${0.12+0.7*mag})`;
-        ctx.lineWidth=0.5+2.5*mag;
-        ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
-      }
-    }
-  }
-  pts.forEach((layer,l)=>layer.forEach((p,i)=>{ctx.beginPath();ctx.arc(p.x,p.y,7,0,2*Math.PI);ctx.fillStyle=l===0?'#7ab8ff':l===pts.length-1?'#74e0ad':'#b0a5ff';ctx.fill();ctx.strokeStyle='#dbe6ff';ctx.lineWidth=1;ctx.stroke();}));
-  ctx.fillStyle='#c7d3ea';ctx.font='12px system-ui';ctx.textAlign='center';pts.forEach((layer,l)=>ctx.fillText(names[l],layer[0].x,24));
-  ctx.fillStyle='#8fa0bd';ctx.font='11px system-ui';if(pts.length>=2){ctx.fillText('combine', (pts[0][0].x+pts[1][0].x)/2, h-12);}if(pts.length>=3){ctx.fillText('learn', (pts[pts.length-2][0].x+pts[pts.length-1][0].x)/2, h-12);}
-}
-function redraw(){drawInputs();drawFormulas();drawOutputs();drawSlice();drawNet();$('stepM').textContent=step.toLocaleString();$('lossM').textContent=isFinite(lastLoss)?lastLoss.toFixed(5):'—';}
+function redraw(){drawInputs();drawFormulas();drawOutputs();drawSlice();$('stepM').textContent=step.toLocaleString();$('lossM').textContent=isFinite(lastLoss)?lastLoss.toFixed(5):'—';}
 function loop(){if(running){for(let k=0;k<cfg.speed;k++)trainOne();redraw();raf=requestAnimationFrame(loop)}}
 function sync(){
   cfg.inputs=+$('dimension').value;cfg.outputs=+$('outputs').value;cfg.layers=+$('layers').value;cfg.neurons=+$('neurons').value;cfg.lr=+$('lr').value/1000;cfg.speed=+$('speed').value;cfg.act=$('act').value;

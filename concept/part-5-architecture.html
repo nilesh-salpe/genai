@@ -134,13 +134,20 @@ p code,li code,td code{background:#E2EAEF;padding:.08em .35em;font-size:.85em;bo
 .node.lit-att{fill:var(--attn);stroke:var(--attn)}
 .edge{stroke:var(--rule);stroke-width:1.6;fill:none;transition:stroke .3s,stroke-width .3s}
 .edge.on-fwd{stroke:var(--fwd);stroke-width:2.4}
-.edge.on-att{stroke:var(--attn);stroke-width:2.4}
+.edge.on-att{stroke:var(--attn);stroke-width:2.4;stroke-dasharray:6 5;animation:wireflow .7s linear infinite}
+@keyframes wireflow{to{stroke-dashoffset:-22}}
 .box{stroke:var(--ink-3);stroke-width:1.4;fill:none;transition:stroke .3s}
 .box.on{stroke:var(--attn);stroke-width:2}
 .lbl{font-family:"IBM Plex Mono",monospace;font-size:11px;fill:var(--ink-3)}
 .lbl.hd{font-size:12px;fill:var(--ink);font-weight:500}
 .lbl.c-fwd{fill:var(--fwd)}
 .lbl.c-att{fill:var(--attn)}
+.stepdot{fill:#fff;stroke:var(--ink-3);stroke-width:1.4;transition:fill .3s,stroke .3s}
+.stepdot.on{fill:var(--attn);stroke:var(--attn)}
+.stepdot.done{fill:var(--attn-soft);stroke:var(--attn)}
+.stepnum{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;fill:var(--ink-3);text-anchor:middle;dominant-baseline:middle;pointer-events:none}
+.stepnum.on,.stepnum.done{fill:#fff}
+.stepnum.done{fill:var(--attn)}
 
 details{max-width:var(--measure);margin:1.3rem 0;border-top:1px solid var(--rule);padding-top:.8rem}
 summary{cursor:pointer;font-family:"Space Grotesk",sans-serif;font-weight:500;font-size:.9rem}
@@ -178,6 +185,7 @@ footer .nextprev{display:flex;justify-content:space-between;gap:1rem;flex-wrap:w
 <div class="shell">
 
 <nav class="progress" aria-label="Course progress">
+  <a href="part-0-foundations.html">0 · Foundations</a>
   <a href="part-1-maths.html">1 · Maths</a>
   <a href="part-2-build.html">2 · Build</a>
   <a href="part-3-examples.html">3 · Examples</a>
@@ -188,10 +196,11 @@ footer .nextprev{display:flex;justify-content:space-between;gap:1rem;flex-wrap:w
   <a href="part-4-pytorch.html">4 · PyTorch</a>
   <a href="part-5-architecture.html" class="here">5 · Architecture</a>
   <a href="part-6-build-gpt.html">6 · Build a GPT</a>
+  <a href="references.html">References</a>
 </nav>
 
 <header class="top">
-  <p class="kicker">Course · part five of six</p>
+  <p class="kicker">Course · part five of seven</p>
   <h1>One block wasn't <em>the whole paper</em></h1>
   <p class="standfirst">Part 1 built one flavor of transformer block — the causal, decoder-only kind every current LLM uses. "Attention Is All You Need" actually proposed something larger: two stacks talking to each other, because translation needs a fundamentally different shape than next-word prediction. This part fills in what Part 1 left out — encoder vs. decoder, the wire between them, why the paper mattered, and how a trained model finally turns numbers back into words.</p>
   <div class="legend">
@@ -293,15 +302,15 @@ footer .nextprev{display:flex;justify-content:space-between;gap:1rem;flex-wrap:w
 
   <figure class="w" id="crossfig">
     <div class="head">
-      <span class="title">Where cross-attention's Q, K, V actually come from</span>
+      <span class="title">Where cross-attention's Q, K, V actually come from · <span id="cr-step">step 0 of 3</span></span>
       <div class="ctrls">
-        <button class="att" id="cr-run">Run one decoder step</button>
+        <button class="att" id="cr-run">Start: encoder finishes →</button>
         <button id="cr-reset">Reset</button>
       </div>
     </div>
     <div class="body">
       <svg id="cr" viewBox="0 0 640 260" role="img" aria-label="Diagram of encoder and decoder stacks connected by cross-attention"></svg>
-      <div class="readout" id="cr-say">Press <b>Run one decoder step</b> to watch K, V, and Q arrive at the cross-attention layer.</div>
+      <div class="readout" id="cr-say">Press <b>Start</b> to walk K, V, and Q into the cross-attention layer, one arrival at a time.</div>
     </div>
     <figcaption>K and V are <b>not</b> computed once and reused verbatim — every decoder block has its own cross-attention layer with its own learned K/V projections, all reading from the same encoder output. Q is the only piece that changes as generation proceeds, because it comes from whatever the decoder has generated so far.</figcaption>
   </figure>
@@ -626,33 +635,52 @@ function softmaxArr(v){
   var outArrow = arrow(490, 180, 490, 210, "outarrow");
   label(490, 225, "→ feed-forward → next block", "lbl");
 
+  function stepDot(x, y, n){
+    var g = el("g", {});
+    var c = el("circle", { cx: x, cy: y, r: 10 });
+    c.setAttribute("class", "stepdot");
+    var t = el("text", { x: x, y: y + 1 });
+    t.setAttribute("class", "stepnum");
+    t.textContent = n;
+    g.appendChild(c); g.appendChild(t);
+    svg.appendChild(g);
+    return { circle: c, text: t, setState: function(cls){ c.setAttribute("class", "stepdot" + (cls ? " " + cls : "")); t.setAttribute("class", "stepnum" + (cls ? " " + cls : "")); } };
+  }
+  var dot1 = stepDot(40, 40, "1");
+  var dot2 = stepDot(380, 40, "2");
+  var dot3 = stepDot(410, 130, "3");
+
+  var STEPS = [
+    { boxes: [], edges: [], btn: "Start: encoder finishes →", stepLbl: "step 0 of 3",
+      say: "Press <b>Start</b> to walk K, V, and Q into the cross-attention layer, one arrival at a time." },
+    { boxes: [encBox], edges: [kv], dot: dot1, btn: "Next: decoder produces Q →", stepLbl: "step 1 of 3",
+      say: "<b>Step 1 — K, V leave the encoder.</b> The encoder has already finished; its output becomes fixed K and V, computed once for this input sentence and shared by every decoder block. Watch them travel the wire toward cross-attention." },
+    { boxes: [encBox, decBox], edges: [kv, qarr], dot: dot2, btn: "Next: fuse in cross-attention →", stepLbl: "step 2 of 3",
+      say: "<b>Step 2 — Q leaves the decoder.</b> The decoder's masked self-attention runs on whatever it has generated so far, producing this block's Query — \"what am I trying to say next.\" K/V from step 1 are still arriving; now Q joins them." },
+    { boxes: [encBox, decBox, crossBox], edges: [kv, qarr, outArrow], dot: dot3, btn: "Reset · start over", stepLbl: "step 3 of 3 — fused",
+      say: "<b>Step 3 — cross-attention fuses them.</b> This Q is scored against the encoder's K, softmaxed, and used to weight the encoder's V — the decoder pulling exactly the source-sentence content it needs for this position. Every box that fed this moment is still lit, because every one of them is still live: the encoder's K/V, the decoder's Q." }
+  ];
+
   var state = 0;
-  function reset(){
-    state = 0;
+  function render(){
     [encBox, decBox, crossBox].forEach(function(b){ b.setAttribute("class", "box"); });
-    kv.setAttribute("class", "edge"); qarr.setAttribute("class", "edge"); outArrow.setAttribute("class", "edge");
-    say.innerHTML = "Press <b>Run one decoder step</b> to watch K, V, and Q arrive at the cross-attention layer.";
+    [kv, qarr, outArrow].forEach(function(e){ e.setAttribute("class", "edge"); });
+    [dot1, dot2, dot3].forEach(function(d){ d.setState(""); });
+    var s = STEPS[state];
+    s.boxes.forEach(function(b){ b.setAttribute("class", "box on"); });
+    s.edges.forEach(function(e){ e.setAttribute("class", "edge on-att"); });
+    for (var i = 0; i < state; i++) STEPS[i].dot && STEPS[i].dot.setState("done");
+    if (s.dot) s.dot.setState("on");
+    gid("cr-run").textContent = s.btn;
+    gid("cr-step").textContent = s.stepLbl;
+    say.innerHTML = s.say;
   }
   gid("cr-run").onclick = function(){
-    state = (state + 1) % 4;
-    if (state === 0){ reset(); return; }
-    [encBox, decBox, crossBox].forEach(function(b){ b.setAttribute("class", "box"); });
-    kv.setAttribute("class", "edge"); qarr.setAttribute("class", "edge"); outArrow.setAttribute("class", "edge");
-    if (state === 1){
-      encBox.setAttribute("class", "box on");
-      kv.setAttribute("class", "edge on-att");
-      say.innerHTML = "<b>Step 1.</b> The encoder has already finished — its output is fixed K and V, computed once for this input sentence, shared by every decoder block.";
-    } else if (state === 2){
-      decBox.setAttribute("class", "box on");
-      qarr.setAttribute("class", "edge on-att");
-      say.innerHTML = "<b>Step 2.</b> The decoder's masked self-attention runs on whatever it has generated so far, producing this block's Query — \"what am I trying to say next.\"";
-    } else if (state === 3){
-      crossBox.setAttribute("class", "box on");
-      kv.setAttribute("class", "edge on-att"); qarr.setAttribute("class", "edge on-att"); outArrow.setAttribute("class", "edge on-att");
-      say.innerHTML = "<b>Step 3.</b> Cross-attention fuses them: this Q is scored against the encoder's K, softmaxed, and used to weight the encoder's V — the decoder pulling exactly the source-sentence content it needs for this position.";
-    }
+    state = (state + 1) % STEPS.length;
+    render();
   };
-  reset();
+  gid("cr-reset").onclick = function(){ state = 0; render(); };
+  render();
 })();
 
 /* ============ TEMPERATURE / TOP-K / TOP-P ============ */

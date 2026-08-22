@@ -145,6 +145,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <div class="shell">
 
 <nav class="progress" aria-label="Course progress">
+  <a href="part-0-foundations.html">0 · Foundations</a>
   <a href="part-1-maths.html">1 · Maths</a>
   <a href="part-2-build.html">2 · Build</a>
   <a href="part-3-examples.html" class="here">3 · Examples</a>
@@ -155,10 +156,11 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <a href="part-4-pytorch.html">4 · PyTorch</a>
   <a href="part-5-architecture.html">5 · Architecture</a>
   <a href="part-6-build-gpt.html">6 · Build a GPT</a>
+  <a href="references.html">References</a>
 </nav>
 
 <header class="top">
-  <p class="kicker">Course · part three of six</p>
+  <p class="kicker">Course · part three of seven</p>
   <h1>Three models, <em>watched while they learn</em></h1>
   <p class="standfirst">The maths guide derives the formulas. The build guide assembles one model. This page is four more, ordered easiest to hardest — a spiral classifier, a small convolutional network, a minimal attention layer, and causal self-attention predicting what comes next — each a real, hand-derived NumPy implementation you can run yourself, plus a shrunk-down live version below that trains in your browser when you press Run.</p>
   <div class="legend">
@@ -212,7 +214,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <section>
   <div class="eyebrow"><span class="num">02</span><span>Why convolutions exist</span><span class="line"></span></div>
   <h2>One learned filter, doing what a dense layer can't</h2>
-  <p>A vertical stripe and a horizontal stripe are the same pattern, just rotated — obvious to an eye, because an eye looks at the whole 2D shape at once. A model that flattened the image first never got that view; it sees 64 numbers in a row, with no notion that some of them used to be stacked in a column. Part two §08 ("The dense layer never sees a picture") argues that flattening an image throws away which pixels were neighbours, and that a convolution fixes this by sliding one small set of weights over every position instead. Here's that filter actually learning: a single 3×3 kernel, trained to tell vertical stripes from horizontal ones — something a dense layer can only do by memorising pixel positions, and a conv filter does by learning one small, reusable pattern.</p>
+  <p>A vertical stripe and a horizontal stripe are the same pattern, just rotated — obvious to an eye, because an eye looks at the whole 2D shape at once. A model that flattened the image first never got that view; it sees 64 numbers in a row, with no notion that some of them used to be stacked in a column. Part two §08 ("The dense layer never sees a picture") argues that flattening an image throws away which pixels were neighbours, and that a convolution fixes this by <strong>weight sharing</strong>: sliding the same small set of weights over every position, instead of learning a separate one per pixel. Here's that filter actually learning: a single 3×3 kernel, trained to tell vertical stripes from horizontal ones — something a dense layer can only do by memorising pixel positions, and a conv filter does by learning one small, reusable pattern and reusing it everywhere.</p>
 
   <figure class="w" id="convfig">
     <div class="head">

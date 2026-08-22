@@ -206,6 +206,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <div class="shell">
 
 <nav class="progress" aria-label="Course progress">
+  <a href="part-0-foundations.html">0 · Foundations</a>
   <a href="part-1-maths.html">1 · Maths</a>
   <a href="part-2-build.html" class="here">2 · Build</a>
   <a href="part-3-examples.html">3 · Examples</a>
@@ -216,10 +217,11 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <a href="part-4-pytorch.html">4 · PyTorch</a>
   <a href="part-5-architecture.html">5 · Architecture</a>
   <a href="part-6-build-gpt.html">6 · Build a GPT</a>
+  <a href="references.html">References</a>
 </nav>
 
 <header class="top">
-  <p class="kicker">Course · part two of six</p>
+  <p class="kicker">Course · part two of seven</p>
   <h1>Fundamentals of neural networks: <em>actually</em> build one</h1>
   <p class="standfirst">The companion guide derives the formulas. This one assembles them into a working digit classifier — every shape, every parameter, and a complete implementation in about sixty lines of NumPy. Twelve of the ideas below are live: change them and watch what happens.</p>
   <div class="legend">
@@ -228,6 +230,8 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     <span><span class="swatch" style="background:var(--loss)"></span><b>loss</b> — how wrong we were</span>
   </div>
 </header>
+
+<p class="note">Here is the finished machine. You are not meant to follow it yet — §1 starts from a single fitted line and builds up to exactly this.</p>
 
 <figure class="w" id="netfig">
   <div class="head">
@@ -263,6 +267,43 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <p>What makes it <em>neural</em> is that the function has millions of adjustable numbers inside it, and we don't set them by hand. We show it examples and let an optimization procedure find them.</p>
 
   <p>So there are only ever two questions: <strong>what shape is the function</strong>, and <strong>how do we fit it</strong>. Sections 1–3 answer the first; sections 4–6 answer the second.</p>
+
+  <p>Three words carry the whole document, and it is worth pinning them down before anything else:</p>
+  <ul>
+    <li><strong>Training</strong> is fitting the function's numbers to data — searching for the m's and c's and W's that make the function's output match the data it's shown, by repeatedly measuring how wrong it is and nudging every number to be less wrong.</li>
+    <li><strong>Inference</strong> is everything that happens <em>after</em> training: the numbers are frozen, and you plug in a brand-new input and evaluate the same equation once, forward, to get an answer.</li>
+    <li><strong>Learning</strong> is the word for the iterative part of training itself — not one fit, but a loop of small equation-driven adjustments, each one nudging every number slightly toward a better fit, repeated thousands of times.</li>
+  </ul>
+
+  <p>The smallest possible example of all three, with no neural network vocabulary at all, is fitting a line: <span class="mono">y = mx + c</span> is a function with exactly two adjustable numbers. Given some (x, y) points, <strong>training</strong> means searching for the m and c that make the line pass as close to all of them as possible; <strong>inference</strong> means plugging a new x into that one fixed line; <strong>learning</strong> means the loop that gets you there — start with a guess for m and c, measure how far off the line is, nudge both a little in the direction that reduces the error, repeat. Everything below is that same loop, just with a curvier function and 109,386 numbers instead of two. Watch it happen on a function curvy enough to need more than a line, before any of the machinery behind it is explained:</p>
+
+  <figure class="w" id="fitfig">
+    <div class="head">
+      <span class="title">Watch it learn · fitting a curve</span>
+      <div class="ctrls">
+        <button class="fwd" id="fit-play">Run</button>
+        <button id="fit-step">Step</button>
+        <button id="fit-reset">Reset</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="slider-row"><label for="fit-lr">learning rate η</label><input type="range" id="fit-lr" min="0.05" max="0.6" step="0.05" value="0.2"><span class="val" id="fit-lrv">0.20</span></div>
+      <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-start">
+        <div style="flex:0 0 240px">
+          <div class="mlabel">The network &nbsp;(1→6→6→1, 61 parameters)</div>
+          <svg id="fit-net" viewBox="0 0 240 260" role="img" aria-label="Diagram of a small network's weights changing as it trains, wires colored by sign and weighted by magnitude"></svg>
+        </div>
+        <div style="flex:1;min-width:280px">
+          <div class="mlabel">The fit</div>
+          <canvas id="fit-plot" width="520" height="260" aria-label="Plot of a target curve and the network's current output curve as it trains"></canvas>
+        </div>
+      </div>
+      <div class="readout" id="fit-say"></div>
+    </div>
+    <figcaption>One input, one output, two hidden layers of six neurons each — 61 wires and biases in total, the same kind of knob as the 109,386 the rest of this document builds up to, just few enough to see. Every wire is a weight: <b style="color:#0B8B8B">teal</b> is positive, <b style="color:#D8811C">orange</b> is negative, thickness is magnitude. Press <b>Run</b> and watch the dashed target curve get traced by the solid one — that is training, live — while the wires sort themselves into the pattern that draws it. <b>Reset</b> scrambles the 61 numbers back to random — the fit collapses to noise, because nothing has been learned yet. This one input feature is deliberately the easy case — the <a href="bonus-curve-fitting.html">standalone sandbox</a> lets you push the same idea to 2, 3, or 4 input features at once.</figcaption>
+  </figure>
+
+  <p>Nothing about <em>why</em> it moves the way it does has been explained yet — that is the rest of this document. Sections 2–5 build the shape of the function you just watched fit; sections 6–9 build the "nudge every number a little" step exactly, in equations, and section 7 runs the identical exercise on the real 784→128→64→10 model.</p>
 </section>
 
 <section>
@@ -621,33 +662,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 
   <p class="note">Parameters are the ~109k weights and biases the loop <em>learns</em>. Hyperparameters are learning rate, batch size, epochs, and layer widths — a handful of numbers <em>you</em> choose before training starts.</p>
 
-  <p>That loop in words is abstract. Here it is happening, on a network small enough that every parameter is a wire you can watch move — the same 784→128→64→10 idea shrunk to 1→6→6→1, so the layers and neurons stay visible while it learns.</p>
-
-  <figure class="w" id="fitfig">
-    <div class="head">
-      <span class="title">Watch it learn · fitting a curve</span>
-      <div class="ctrls">
-        <button class="fwd" id="fit-play">Run</button>
-        <button id="fit-step">Step</button>
-        <button id="fit-reset">Reset</button>
-      </div>
-    </div>
-    <div class="body">
-      <div class="slider-row"><label for="fit-lr">learning rate η</label><input type="range" id="fit-lr" min="0.05" max="0.6" step="0.05" value="0.2"><span class="val" id="fit-lrv">0.20</span></div>
-      <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-start">
-        <div style="flex:0 0 240px">
-          <div class="mlabel">The network &nbsp;(1→6→6→1, 61 parameters)</div>
-          <svg id="fit-net" viewBox="0 0 240 260" role="img" aria-label="Diagram of a small network's weights changing as it trains, wires colored by sign and weighted by magnitude"></svg>
-        </div>
-        <div style="flex:1;min-width:280px">
-          <div class="mlabel">The fit</div>
-          <canvas id="fit-plot" width="520" height="260" aria-label="Plot of a target curve and the network's current output curve as it trains"></canvas>
-        </div>
-      </div>
-      <div class="readout" id="fit-say"></div>
-    </div>
-    <figcaption>One input, one output, two hidden layers of six neurons each — 61 wires and biases in total, the same knobs as the 109,386 in the real model, just few enough to see. Every wire is a weight: <b style="color:#0B8B8B">teal</b> is positive, <b style="color:#D8811C">orange</b> is negative, thickness is magnitude. Press <b>Run</b> and watch the dashed target curve get traced by the solid one, while the wires sort themselves into the pattern that draws it. <b>Reset</b> scrambles the 61 numbers back to random — the fit collapses to noise, because nothing has been learned yet. This one input feature is deliberately the easy case — the <a href="bonus-curve-fitting.html">standalone sandbox</a> lets you push the same idea to 2, 3, or 4 input features at once.</figcaption>
-  </figure>
+  <p>That loop in words is abstract — but you already watched it in the flesh, back in §1's curve-fitting widget, before you knew what a neuron or a matrix was. Everything §2 through §8 added since then was <em>shape</em>: what the function looks like inside. This section's He initialization is the last missing piece of <em>how it learns</em> — the starting condition that decides whether that loop even gets moving.</p>
 
   <h3>Overfitting and the three splits</h3>
   <p><strong>Overfitting is when the model memorizes the training examples instead of learning the pattern.</strong> With 109,386 parameters and 60,000 images there is ample capacity to just remember answers — which gives perfect training accuracy and useless real-world accuracy.</p>

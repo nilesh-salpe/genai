@@ -180,6 +180,7 @@ footer .nextprev{display:flex;justify-content:space-between;gap:1rem;flex-wrap:w
 <div class="shell">
 
 <nav class="progress" aria-label="Course progress">
+  <a href="part-0-foundations.html">0 · Foundations</a>
   <a href="part-1-maths.html">1 · Maths</a>
   <a href="part-2-build.html">2 · Build</a>
   <a href="part-3-examples.html">3 · Examples</a>
@@ -190,10 +191,11 @@ footer .nextprev{display:flex;justify-content:space-between;gap:1rem;flex-wrap:w
   <a href="part-4-pytorch.html" class="here">4 · PyTorch</a>
   <a href="part-5-architecture.html">5 · Architecture</a>
   <a href="part-6-build-gpt.html">6 · Build a GPT</a>
+  <a href="references.html">References</a>
 </nav>
 
 <header class="top">
-  <p class="kicker">Course · part four of six</p>
+  <p class="kicker">Course · part four of seven</p>
   <h1>The same machine, <em>now with autograd</em></h1>
   <p class="standfirst">Part 2 hand-derived every gradient and wrote a 60-line backward pass. That was the point — you cannot trust a tool you haven't built once yourself. This part is what you'd actually reach for afterward: PyTorch, which does the exact same chain-rule bookkeeping automatically, so a new architecture costs you a new <span class="mono">forward()</span> method instead of a new derivation. Nothing here is a new idea — every widget below runs the identical arithmetic you already traced by hand.</p>
   <div class="legend">
@@ -356,31 +358,15 @@ footer .nextprev{display:flex;justify-content:space-between;gap:1rem;flex-wrap:w
   <h2>The training loop, translated</h2>
   <p>Part 2 §8 gave you this loop in words: forward, loss, backward, update, repeat. Nothing about that changes — PyTorch just gives each step a name.</p>
 
-  <figure class="w" id="loopfig">
-    <div class="head">
-      <span class="title">One training step, five calls</span>
-      <div class="ctrls">
-        <button class="fwd" id="loop-step">Step</button>
-        <button id="loop-reset">Reset</button>
-      </div>
-    </div>
-    <div class="body">
-      <div class="chain" id="loop-chain">
-        <span class="tag fwd dim" data-i="0">forward</span><span class="arrow">→</span>
-        <span class="tag loss dim" data-i="1">loss</span><span class="arrow">→</span>
-        <span class="tag back dim" data-i="2">backward</span><span class="arrow">→</span>
-        <span class="tag neutral dim" data-i="3">step</span><span class="arrow">→</span>
-        <span class="tag neutral dim" data-i="4">zero_grad</span>
-      </div>
-      <pre id="loop-code" style="margin-top:1rem"></pre>
-      <div class="readout" id="loop-say">Press <b>Step</b> to fire each call in order, on one mini-batch.</div>
-    </div>
-    <figcaption>The last call is the one people forget. <span class="mono">.backward()</span> <em>adds</em> new gradients onto whatever is already sitting in <span class="mono">.grad</span> — it does not overwrite. Skip <span class="mono">zero_grad()</span> and every batch's gradient piles on top of the last one, silently. Training still runs, the loss curve just never makes sense.</figcaption>
-  </figure>
+  <pre>pred = model(X)              # forward — one pass through every layer
+loss = criterion(pred, y)    # loss — compare against the true labels
+loss.backward()              # backward — autograd fills in every .grad
+optimizer.step()             # update — each parameter moves against its gradient
+optimizer.zero_grad()        # reset — clear .grad before the next batch</pre>
 
   <div class="callout trap">
-    <p class="h">Gradients accumulate by design</p>
-    <p>This is not a bug you're protecting against — it's the mechanism gradient accumulation (a real, occasionally useful technique for simulating a larger batch size on limited memory) deliberately exploits. The default assumption in an ordinary loop is that you don't want that, so <span class="mono">optimizer.zero_grad()</span> runs every single step, without exception.</p>
+    <p class="h">The last call is the one people forget</p>
+    <p><span class="mono">.backward()</span> <em>adds</em> new gradients onto whatever is already sitting in <span class="mono">.grad</span> — it does not overwrite. Skip <span class="mono">zero_grad()</span> and every batch's gradient piles on top of the last one, silently; training still runs, the loss curve just never makes sense. This is not a bug you're protecting against — it's the mechanism gradient accumulation (a real, occasionally useful technique for simulating a larger batch size on limited memory) deliberately exploits. The default assumption in an ordinary loop is that you don't want that, so <span class="mono">optimizer.zero_grad()</span> runs every single step, without exception.</p>
   </div>
 </section>
 
@@ -727,43 +713,6 @@ function gid(id){ return document.getElementById(id); }
     apply();
   };
   gid("code-reset").onclick = function(){ cur = -1; apply(); };
-  apply();
-})();
-
-/* ============ TRAINING LOOP CHAIN ============ */
-(function(){
-  var btn = gid("loop-step");
-  if (!btn) return;
-  var say = gid("loop-say");
-  var codeEl = gid("loop-code");
-  var chain = gid("loop-chain").querySelectorAll(".tag");
-  var steps = [
-    { code: "pred = model(X)", text: "<b>Forward.</b> The batch runs through every layer once, producing predictions." },
-    { code: "loss = criterion(pred, y)", text: "<b>Loss.</b> Predictions are compared against the true labels — one scalar number." },
-    { code: "loss.backward()", text: "<b>Backward.</b> Autograd walks the graph built during the forward pass and fills in every tracked tensor's .grad." },
-    { code: "optimizer.step()", text: "<b>Update.</b> Every parameter moves a small distance opposite its gradient." },
-    { code: "optimizer.zero_grad()", text: "<b>Reset.</b> Clears .grad on every parameter so next batch's backward() doesn't add onto this one's." }
-  ];
-  var cur = -1;
-  function apply(){
-    chain.forEach(function(t, i){
-      t.classList.toggle("dim", i !== cur);
-      t.classList.toggle("on", i === cur);
-    });
-    if (cur === -1){
-      codeEl.textContent = "";
-      say.innerHTML = "Press <b>Step</b> to fire each call in order, on one mini-batch.";
-    } else {
-      codeEl.textContent = steps[cur].code;
-      say.innerHTML = steps[cur].text;
-    }
-    btn.textContent = cur >= steps.length - 1 ? "Restart" : "Step";
-  }
-  btn.onclick = function(){
-    cur = cur >= steps.length - 1 ? -1 : cur + 1;
-    apply();
-  };
-  gid("loop-reset").onclick = function(){ cur = -1; apply(); };
   apply();
 })();
 
