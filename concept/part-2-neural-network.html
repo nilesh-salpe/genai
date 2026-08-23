@@ -436,11 +436,11 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <section>
   <div class="eyebrow"><span class="num">10</span><span>What goes wrong</span><span class="line"></span></div>
   <h2>Vanishing gradients, and the fix</h2>
-  <p>Deep stacks multiply many local derivatives together via the chain rule. Sigmoid's derivative never exceeds 0.25 — stack ten sigmoid layers and the gradient shrinks by up to <span class="mono">0.25¹⁰ ≈ 10⁻⁶</span> before it reaches the first layer, which then barely updates at all. ReLU's derivative is exactly 1 on the positive side, so signal passes through undamaged — and a <strong>residual connection</strong>, <span class="mono">x + F(x)</span>, adds a guaranteed <span class="mono">+1</span> to the derivative regardless of what <span class="mono">F</span> does, a bypass road the gradient can always travel.</p>
+  <p>Deep stacks multiply many local derivatives together via the chain rule. Sigmoid's derivative never exceeds 0.25 — stack ten sigmoid layers and the gradient shrinks by up to <span class="mono">0.25¹⁰ ≈ 10⁻⁶</span> before it reaches the first layer, which then barely updates at all. ReLU's derivative is exactly 1 wherever it's active, so the activation itself adds <em>no</em> extra shrinkage — what's left to shrink the signal is only the weight matrices it passes through, which rarely preserve magnitude exactly. A <strong>residual connection</strong>, <span class="mono">x + F(x)</span>, adds a guaranteed <span class="mono">+1</span> to the derivative on top of that, regardless of what <span class="mono">F</span> computes — a bypass road the gradient can always travel.</p>
 
   <figure class="w" id="vanfig">
     <div class="head">
-      <span class="title">Gradient reaching layer 1, by depth · pick an activation</span>
+      <span class="title">One gradient, relayed backward through the stack</span>
       <div class="ctrls">
         <button class="on" id="van-sig">Sigmoid</button>
         <button id="van-relu">ReLU</button>
@@ -448,10 +448,12 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
       </div>
     </div>
     <div class="body">
-      <canvas id="van" width="820" height="260" aria-label="Log-scale chart of gradient magnitude reaching the first layer as network depth increases"></canvas>
+      <div class="slider-row"><label for="van-depth">layers traveled</label><input type="range" id="van-depth" min="0" max="19" step="1" value="0"><span class="val" id="van-depthv">0</span></div>
+      <div class="ctrls" style="margin-bottom:.7rem"><button class="fwd" id="van-play">▶ Play</button><button id="van-reset">Reset</button></div>
+      <canvas id="van" width="820" height="300" aria-label="Animated relay of a gradient signal traveling backward through layers, fading as it goes, with a bypass path for the residual case"></canvas>
       <div class="readout" id="van-say"></div>
     </div>
-    <figcaption>Watch <b>Sigmoid</b> collapse to essentially zero by depth 15 — those early layers have stopped learning. <b>ReLU</b> survives far longer; <b>ReLU + residual</b> barely decays at all. This one trick is most of why 100-layer networks are trainable at all.</figcaption>
+    <figcaption>The loss starts at the right, full strength. Drag the slider (or press <b>Play</b>) and watch it get relayed backward, layer by layer — each arrow is one multiplication. <b>Sigmoid</b> fades to invisible before layer 10; <b>ReLU</b> fades slowly; <b>ReLU + residual</b>'s bypass lane (drawn above the chain) carries it almost undiminished all the way to layer 1. This one trick is most of why 100-layer networks are trainable at all.</figcaption>
   </figure>
 </section>
 
@@ -1523,42 +1525,84 @@ function el(tag, attrs){
 (function(){
   var cv=gid("van"); if(!cv) return;
   var ctx=cv.getContext("2d"), say=gid("van-say");
-  var mode="sig";
-  function grad(depth){
-    if(mode==="sig") return Math.pow(0.22,depth);
-    if(mode==="relu") return Math.pow(0.85,depth);
-    return Math.pow(0.98,depth);
-  }
+  var depthSl=gid("van-depth"), depthV=gid("van-depthv");
+  var N=20; // boxes drawn, layer N = output (loss side), layer 1 = input side
+  var mode="sig", playing=false, timer=null;
+  var RATE={sig:0.25, relu:0.85, res:0.98};
+  var COL={sig:"#B31E55", relu:"#8399A8", res:"#0B8B8B"};
+  var LABEL={sig:"Sigmoid", relu:"ReLU", res:"ReLU + residual"};
+
+  function mag(d){ return Math.pow(RATE[mode], d); }
+
   function draw(){
     var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
-    var x0=0,x1=30,y0=1e-8,y1=1.2;
-    function px(v){ return 50+(v-x0)/(x1-x0)*(W-70); }
-    function py(v){ var lv=Math.log10(Math.max(v,1e-8)); var l0=Math.log10(y0),l1=Math.log10(y1); return H-30-(lv-l0)/(l1-l0)*(H-50); }
-    ctx.strokeStyle="#E2EAEF"; ctx.lineWidth=1;
-    for(var gx=0;gx<=30;gx+=5){ ctx.beginPath(); ctx.moveTo(px(gx),py(y1)); ctx.lineTo(px(gx),py(y0)); ctx.stroke(); }
-    ["sig","relu","res"].forEach(function(m){
-      ctx.strokeStyle = m==="sig"?"#B31E55":m==="relu"?"#8399A8":"#0B8B8B";
-      ctx.lineWidth = m===mode?2.8:1;
-      ctx.globalAlpha = m===mode?1:0.35;
-      ctx.beginPath();
-      for(var d=0;d<=30;d++){
-        var g = m==="sig"?Math.pow(0.22,d):m==="relu"?Math.pow(0.85,d):Math.pow(0.98,d);
-        var xx=px(d), yy=py(g);
-        if(d===0) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy);
+    var d=Number(depthSl.value);
+    var pad=42, boxW=(W-2*pad)/N, boxY=100, boxH=56;
+    var curIdx = N - d; // 1-indexed box currently holding the pulse (N..1 as d rises)
+
+    ctx.fillStyle="#8399A8"; ctx.font="11px 'IBM Plex Mono',monospace"; ctx.textAlign="left";
+    ctx.fillText("← backward pass · layer "+N+" (loss) travelling toward layer 1 (input)",pad,26);
+
+    if(mode==="res"){
+      ctx.strokeStyle="#0B8B8B"; ctx.globalAlpha=.55; ctx.lineWidth=2; ctx.setLineDash([2,4]);
+      ctx.beginPath(); ctx.moveTo(pad+boxW*(N-0.5), boxY-22); ctx.lineTo(pad+boxW*0.5, boxY-22); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha=1;
+      ctx.fillStyle="#0B8B8B"; ctx.font="10px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+      ctx.fillText("+1 bypass — always full strength",pad+boxW*N/2,boxY-30);
+    }
+
+    for(var i=1;i<=N;i++){
+      var x=pad+(i-1)*boxW;
+      var reached = i>=curIdx;
+      var m = reached ? mag(N-i) : null;
+      var op = reached ? Math.max(0.06, Math.pow(Math.min(m,1),0.12)) : 0.16;
+      ctx.globalAlpha=op;
+      ctx.fillStyle = i===curIdx ? COL[mode] : (reached?COL[mode]:"#CBD8E0");
+      ctx.fillRect(x+3,boxY,boxW-6,boxH);
+      ctx.globalAlpha=1;
+      ctx.strokeStyle="#CBD8E0"; ctx.lineWidth=1; ctx.strokeRect(x+3,boxY,boxW-6,boxH);
+      if(i===N||i===1||i===curIdx){
+        ctx.fillStyle="#8399A8"; ctx.font="10px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+        ctx.fillText(String(i),x+boxW/2,boxY+boxH+14);
       }
-      ctx.stroke();
-    });
-    ctx.globalAlpha=1;
-    ctx.fillStyle="#8399A8"; ctx.font="11px 'IBM Plex Mono',monospace";
-    ctx.fillText("gradient magnitude (log scale)",8,20);
-    ctx.fillText("depth",W/2-16,H-10);
-    var g30 = grad(30);
-    say.innerHTML = mode==="sig"
-      ? "<b>Sigmoid</b> — gradient at depth 30 ≈ <b>"+g30.toExponential(2)+"</b>, essentially zero. Early layers have stopped learning."
-      : mode==="relu"
-      ? "<b>ReLU</b> — gradient at depth 30 ≈ <b>"+fmt(g30,4)+"</b>. Decays, but survives far longer than sigmoid."
-      : "<b>ReLU + residual</b> — gradient at depth 30 ≈ <b>"+fmt(g30,3)+"</b>. The +1 bypass keeps it close to full strength.";
+    }
+
+    // pulse marker + multiplier label at current position
+    var px_=pad+(curIdx-1)*boxW+boxW/2;
+    var curMag = mag(d);
+    var r = 5+16*Math.pow(Math.max(curMag,0),0.12);
+    ctx.beginPath(); ctx.arc(px_,boxY+boxH/2,r,0,2*Math.PI);
+    ctx.fillStyle=COL[mode]; ctx.globalAlpha=Math.max(0.1,Math.pow(Math.min(curMag,1),0.12)); ctx.fill();
+    ctx.globalAlpha=1; ctx.strokeStyle=COL[mode]; ctx.lineWidth=2; ctx.stroke();
+
+    ctx.fillStyle="#15222E"; ctx.font="bold 12px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+    ctx.fillText(d===0?"1 (start)":curMag.toExponential(1),px_,boxY-8);
+    if(curIdx>1){
+      ctx.fillStyle="#8399A8"; ctx.font="10px 'IBM Plex Mono',monospace";
+      ctx.fillText("×"+RATE[mode],px_-boxW/2,boxY+boxH+30);
+    }
+
+    depthV.textContent=String(d);
+    var expr = "1 × "+RATE[mode]+"^"+d+" ≈ "+(curMag<1e-4?curMag.toExponential(2):fmt(curMag,4));
+    say.innerHTML = "<b>"+LABEL[mode]+"</b> — after <b>"+d+"</b> layer"+(d===1?"":"s")+" backward: "+expr
+      + (mode==="sig" ? (d>=10?" — essentially zero; those early layers have stopped learning.":"")
+        : mode==="relu" ? " — decaying, but no cliff."
+        : " — barely moved from 1.");
   }
+
+  function stopPlay(){ playing=false; clearInterval(timer); gid("van-play").textContent="▶ Play"; }
+  gid("van-play").onclick=function(){
+    if(playing){ stopPlay(); return; }
+    if(Number(depthSl.value)>=Number(depthSl.max)) depthSl.value=0;
+    playing=true; this.textContent="⏸ Pause";
+    timer=setInterval(function(){
+      var d=Number(depthSl.value);
+      if(d>=Number(depthSl.max)){ stopPlay(); return; }
+      depthSl.value=d+1; draw();
+    },350);
+  };
+  gid("van-reset").onclick=function(){ stopPlay(); depthSl.value=0; draw(); };
+  depthSl.oninput=draw;
   gid("van-sig").onclick=function(){ mode="sig"; this.classList.add("on"); gid("van-relu").classList.remove("on"); gid("van-res").classList.remove("on"); draw(); };
   gid("van-relu").onclick=function(){ mode="relu"; this.classList.add("on"); gid("van-sig").classList.remove("on"); gid("van-res").classList.remove("on"); draw(); };
   gid("van-res").onclick=function(){ mode="res"; this.classList.add("on"); gid("van-sig").classList.remove("on"); gid("van-relu").classList.remove("on"); draw(); };
