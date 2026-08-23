@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SPR2FRFBQ1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SPR2FRFBQ1');
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLMs From Scratch v2 — The Big Picture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF2F5; --card:#FFFFFF; --ink:#15222E; --ink-2:#4B5F6E; --ink-3:#8399A8; --rule:#CBD8E0;
+  --fwd:#0B8B8B; --fwd-soft:#D3EDED;
+  --back:#D8811C; --back-soft:#F8E7CE;
+  --loss:#B31E55; --loss-soft:#F7DDE7;
+  --attn:#5A4A9F; --attn-soft:#E2DDF2;
+  --measure:34rem; --wide:52rem;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background-color:var(--paper);
+  background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);
+  background-size:28px 28px;background-position:-1px -1px;
+  color:var(--ink);font-family:"Spectral",Georgia,serif;font-size:17px;line-height:1.68}
+body::before{content:"";position:fixed;inset:0;background:var(--paper);opacity:.82;pointer-events:none;z-index:0}
+.shell{position:relative;z-index:1;max-width:var(--wide);margin:0 auto;padding:0 1.25rem 6rem}
+h1,h2,h3,.eyebrow,.ui,button,label,.tag{font-family:"Space Grotesk",system-ui,sans-serif}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+header.top{padding:4.5rem 0 2rem;max-width:var(--measure)}
+.kicker{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 1.4rem}
+h1{font-size:clamp(2rem,5.6vw,3.2rem);line-height:1.03;letter-spacing:-.03em;font-weight:700;margin:0 0 1.1rem}
+h1 em{font-style:normal;color:var(--attn)}
+.standfirst{font-size:1.12rem;color:var(--ink-2);margin:0 0 2rem}
+.progress{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin:0 0 3rem;padding:.85rem .95rem;background:var(--card);border:1px solid var(--rule);font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.02em;max-width:var(--wide)}
+.progress a{color:var(--ink-2);text-decoration:none;padding:.28rem .6rem;border:1px solid var(--rule);border-radius:2px;white-space:nowrap;transition:border-color .15s,background .15s,color .15s}
+.progress a:hover{border-color:var(--ink);color:var(--ink)}
+.progress a.here{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+.progress a.todo{color:var(--ink-3);border-style:dashed;pointer-events:none}
+section{margin:4.5rem 0 0}
+.eyebrow{display:flex;align-items:baseline;gap:.85rem;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.5rem}
+.eyebrow .num{font-family:"IBM Plex Mono",monospace;color:var(--fwd);font-weight:600}
+.eyebrow .line{flex:1;height:1px;background:var(--rule)}
+h2{font-size:clamp(1.4rem,3.4vw,1.95rem);line-height:1.15;letter-spacing:-.02em;margin:.1rem 0 1.1rem;font-weight:700;max-width:var(--measure)}
+h3{font-size:1.05rem;letter-spacing:-.01em;margin:2.2rem 0 .6rem;font-weight:600}
+p{margin:0 0 1.1rem;max-width:var(--measure)}
+ul,ol{max-width:var(--measure);padding-left:1.15rem;margin:0 0 1.1rem}
+li{margin-bottom:.4rem}
+strong{font-weight:600}
+blockquote{margin:1.6rem 0;padding:.2rem 0 .2rem 1.3rem;border-left:3px solid var(--fwd);max-width:var(--measure);font-size:1.04rem}
+blockquote.a{border-left-color:var(--attn)}
+figure.w{margin:2.5rem 0;background:var(--card);border:1px solid var(--rule);max-width:var(--wide)}
+figure.w .head{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.7rem 1.1rem;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+figure.w .title{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+figure.w .body{padding:1.2rem 1.1rem}
+figure.w figcaption{padding:.75rem 1.1rem 1rem;font-size:.85rem;color:var(--ink-2);border-top:1px dashed var(--rule)}
+figure.w figcaption b{color:var(--ink);font-weight:600}
+.ctrls{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+button{font-size:.78rem;font-weight:500;padding:.42rem .85rem;border:1px solid var(--ink);background:var(--card);color:var(--ink);cursor:pointer;border-radius:2px;transition:background .15s,color .15s}
+button:hover{background:var(--ink);color:var(--card)}
+button:focus-visible{outline:2px solid var(--fwd);outline-offset:2px}
+button.fwd{border-color:var(--fwd);color:var(--fwd)} button.fwd:hover{background:var(--fwd);color:#fff}
+button.att{border-color:var(--attn);color:var(--attn)} button.att:hover{background:var(--attn);color:#fff}
+button[disabled]{opacity:.35;cursor:not-allowed}
+canvas{display:block;max-width:100%}
+.readout{font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--ink-2);margin-top:.7rem;line-height:1.65}
+.readout b{color:var(--ink);font-weight:600}
+.box{max-width:var(--wide);margin:2rem 0;padding:1.3rem 1.4rem;background:var(--card);border:1px solid var(--rule);border-top:3px solid var(--fwd)}
+.box .h{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:.2rem}
+.box .sub{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.9rem}
+.roadmap{display:grid;gap:.7rem;max-width:var(--wide);margin:1.5rem 0}
+.rstep{display:grid;grid-template-columns:2.6rem 1fr;gap:1rem;align-items:start;padding:.9rem 1rem;background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--fwd)}
+.rstep .n{font-family:"IBM Plex Mono",monospace;font-size:1.3rem;font-weight:600;color:var(--fwd)}
+.rstep .t{font-weight:600;margin-bottom:.15rem}
+.rstep .d{font-size:.9rem;color:var(--ink-2)}
+footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-size:.85rem;color:var(--ink-3);max-width:var(--measure)}
+@media (max-width:640px){body{font-size:16px}.shell{padding:0 1rem 4rem}figure.w .body{padding:1rem .8rem}.rstep{grid-template-columns:2rem 1fr}}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms !important;animation-duration:.01ms !important}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<nav class="progress" aria-label="Course progress">
+  <a href="part-0-big-picture.html" class="here">0 · Big Picture</a>
+  <a href="#" class="todo">1 · Foundations</a>
+  <a href="#" class="todo">2 · Neural Network</a>
+  <a href="#" class="todo">3 · Examples</a>
+  <a href="#" class="todo">4 · Attention</a>
+  <a href="#" class="todo">5 · Transformer</a>
+  <a href="#" class="todo">6 · LLM</a>
+  <a href="#" class="todo">7 · Illustrated</a>
+</nav>
+
+<header class="top">
+  <p class="kicker">v2 · part zero of seven · no maths yet</p>
+  <h1>What are we actually <em>building</em>?</h1>
+  <p class="standfirst">Before a single formula, this page answers one question in plain language: what is a neural network, what does "training" mean, and what does a Transformer add that makes it able to write? No equations. No code. Just the shape of the idea — so that when the maths arrives in Part 1, you already know what it's *for*.</p>
+</header>
+
+<section>
+  <div class="eyebrow"><span class="num">01</span><span>The machine</span><span class="line"></span></div>
+  <h2>A neural network is a box that guesses, and gets corrected</h2>
+  <p>Picture a box with a row of dials on the front, an input slot, and an output slot. Drop a number in, and depending on where the dials are set, a number comes out. That's the whole machine. Nothing inside it is smart — it's just dials turning inputs into outputs.</p>
+  <p>The trick is not the box. The trick is what happens when the box is <strong>wrong</strong>. Show it an input where you already know the right answer, compare its guess to that answer, and nudge every dial a tiny bit in the direction that would have made the guess less wrong. Do that millions of times, on millions of examples, and the dials settle into positions where the box is usually right — not because anyone told it the rule, but because it was nudged toward "less wrong" so many times that it found one.</p>
+
+  <figure class="w" id="boxfig">
+    <div class="head">
+      <span class="title">A box that learns · press train</span>
+      <div class="ctrls">
+        <button class="fwd" id="box-train">Train 40 rounds</button>
+        <button id="box-reset">Reset</button>
+      </div>
+    </div>
+    <div class="body">
+      <canvas id="box" width="820" height="260" aria-label="A box with adjustable dials, an input, an output, and a wrongness meter that shrinks as it is trained"></canvas>
+      <div class="readout" id="box-say">The dials start random. Press <b>Train</b> and watch the guess drift toward the target, and the wrongness meter shrink.</div>
+    </div>
+    <figcaption>There's no formula on this page yet — just the shape of the idea. Each round: guess, compare to the right answer, nudge every dial a little toward "less wrong." <b>Part 1</b> gives that nudge an actual name and an actual formula; <b>Part 2</b> builds a real one of these out of real numbers.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">02</span><span>Scaling it up</span><span class="line"></span></div>
+  <h2>A language model is the same box, guessing the next word</h2>
+  <p>Swap the input: instead of one number, feed in a stretch of text. Swap the output: instead of one number, ask for a guess at whatever word comes next. Everything else is identical — guess, compare to the word that actually came next, nudge the dials toward "less wrong." Do this across most of the readable internet, with a box that has billions of dials instead of a handful, and the box gets remarkably good at guessing the next word.</p>
+  <p>That's a <strong>large language model</strong>. Not a plan, not a lookup table of facts, not a mind that decided what to say — a very large version of the same guess-compare-nudge machine from above, trained on one relentless task: predict what comes next. Everything that looks like reasoning or knowledge is a side effect of getting extremely good at that one task, at a scale large enough for patterns of grammar, fact, and argument to become the most efficient way to keep guessing correctly.</p>
+  <p>Your phone's keyboard already does a tiny version of this every time it suggests the next word. An LLM is that same instinct, scaled up by roughly a billion.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">03</span><span>The missing piece</span><span class="line"></span></div>
+  <h2>Why "guess the next word" isn't enough on its own</h2>
+  <p>Guessing the next word requires using everything said so far — but not all of it equally. In <em>"The trophy didn't fit in the suitcase because <strong>it</strong> was too small,"</em> the word <span class="mono">it</span> only makes sense once you've weighed <span class="mono">trophy</span> against <span class="mono">suitcase</span> and decided which one "small" plausibly describes. A model that reads left to right and treats every earlier word the same has no way to do that weighing.</p>
+  <p>The fix — the specific idea a <strong>Transformer</strong> adds — is to let every word look at every other word in the sentence and decide, for itself, how much each one matters right now. Try it below: click a word and watch which other words it leans on.</p>
+
+  <figure class="w" id="attnfig">
+    <div class="head">
+      <span class="title">Every word looks at every other word · click a word</span>
+      <div class="ctrls"><button id="attn-reset">Reset</button></div>
+    </div>
+    <div class="body">
+      <svg id="attnsvg" viewBox="0 0 820 190" role="img" aria-label="A sentence where clicking a word draws lines to the other words it depends on, with thicker lines for stronger dependence"></svg>
+      <div class="readout" id="attn-say">Click <b>it</b> and watch the line to <b>trophy</b> thicken — that's the word this one leans on to mean anything.</div>
+    </div>
+    <figcaption>There's no formula behind these line weights yet — they're hand-picked to show the shape of the idea. <b>Part 4</b> replaces "hand-picked" with an actual number, computed the same way for every sentence, ever: a dot product, a softmax, done once per pair of words. This one mechanism — <strong>attention</strong> — is most of what makes a Transformer a Transformer.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">04</span><span>Why maths, then</span><span class="line"></span></div>
+  <h2>Intuition tells you what happens. Maths lets you build it.</h2>
+  <p>Everything above is true, and everything above is also something you could only ever watch happen to someone else's model. "Nudge the dials toward less wrong" isn't a recipe until you can say exactly which direction is "less wrong" for each of billions of dials, computed in a way a computer can actually carry out — and that requires the specific tools the rest of this course builds: how to measure "wrong" as a single number, how to find the direction that shrinks it fastest, and how to turn "look at every other word" into an actual computation instead of a hand-drawn picture.</p>
+  <p>None of it is exotic. Every piece is built from arithmetic you already have, one small idea at a time, each one checked against numbers you can verify by hand before it's trusted. That's the whole method of this course: <strong>intuition, then the maths that makes it real, then the numbers that prove it.</strong></p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">05</span><span>Where this goes</span><span class="line"></span></div>
+  <h2>The road ahead</h2>
+  <div class="roadmap">
+    <div class="rstep"><div class="n">1</div><div><div class="t">Foundations</div><div class="d">The plain maths every later part leans on — functions, vectors, matrices, derivatives, probability. No neural network in sight yet.</div></div></div>
+    <div class="rstep"><div class="n">2</div><div><div class="t">Neural Network</div><div class="d">Turn "nudge the dials" into an actual formula, and build a real one from scratch — the box from Part 1, made of real numbers.</div></div></div>
+    <div class="rstep"><div class="n">3</div><div><div class="t">Examples</div><div class="d">Watch that same machine solve a handful of different problems, so the idea stops being abstract.</div></div></div>
+    <div class="rstep"><div class="n">4</div><div><div class="t">Attention</div><div class="d">Turn "every word looks at every other word" into a real computation — the exact mechanism a Transformer runs.</div></div></div>
+    <div class="rstep"><div class="n">5</div><div><div class="t">Transformer</div><div class="d">Assemble attention into the full architecture every current LLM is built from.</div></div></div>
+    <div class="rstep"><div class="n">6</div><div><div class="t">LLM</div><div class="d">Build a small, real, working language model — tokenizer, training loop, and all — and watch it learn to write.</div></div></div>
+    <div class="rstep"><div class="n">7</div><div><div class="t">Illustrated</div><div class="d">A step-by-step walkthrough of everything above, running on one real sentence, start to finish.</div></div></div>
+  </div>
+  <p><a href="#">Continue to Part 1 — the maths every later part leans on →</a></p>
+</section>
+
+<footer>
+  <p>Reduced-motion preferences are respected throughout; every animation degrades to its final state.</p>
+</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+var REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function gid(i){ return document.getElementById(i); }
+function el(tag, attrs){
+  var e = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (var k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+
+/* ===== THE BOX THAT LEARNS ===== */
+(function(){
+  var cv = gid("box"); if (!cv) return;
+  var ctx = cv.getContext("2d"), say = gid("box-say");
+  var DIALS = 5;
+  var target = 0.78;
+  var dials, guess, round, training, timer;
+
+  function reset(){
+    dials = []; for (var i=0;i<DIALS;i++) dials.push(Math.random());
+    guess = dials.reduce(function(a,b){return a+b;},0) / DIALS;
+    round = 0; training = false;
+    clearInterval(timer);
+    draw();
+  }
+  function step(){
+    var err = target - guess;
+    for (var i=0;i<DIALS;i++) dials[i] += err * (0.15 + Math.random()*0.1);
+    guess = Math.max(0, Math.min(1, dials.reduce(function(a,b){return a+b;},0) / DIALS));
+    round++;
+  }
+  function draw(){
+    var W=cv.width, H=cv.height; ctx.clearRect(0,0,W,H);
+    var bx=280, by=40, bw=260, bh=170;
+    ctx.strokeStyle="#15222E"; ctx.lineWidth=2; ctx.strokeRect(bx,by,bw,bh);
+    ctx.fillStyle="#8399A8"; ctx.font="11px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+    ctx.fillText("THE BOX", bx+bw/2, by-10);
+
+    /* dials */
+    var dw = bw/DIALS;
+    for (var i=0;i<DIALS;i++){
+      var cx = bx + dw*i + dw/2, cy = by+bh/2, r=16;
+      ctx.strokeStyle="#CBD8E0"; ctx.lineWidth=1.4;
+      ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+      var ang = -Math.PI/2 + (dials[i]-0.5)*Math.PI*1.6;
+      ctx.strokeStyle="#0B8B8B"; ctx.lineWidth=2.4;
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(ang)*r*0.85, cy+Math.sin(ang)*r*0.85); ctx.stroke();
+    }
+
+    /* input arrow */
+    ctx.strokeStyle="#8399A8"; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(60,by+bh/2); ctx.lineTo(bx-6,by+bh/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx-6,by+bh/2); ctx.lineTo(bx-16,by+bh/2-6); ctx.lineTo(bx-16,by+bh/2+6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle="#15222E"; ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+    ctx.fillText("input", 100, by+bh/2-14);
+
+    /* output arrow + guess bar */
+    var ex = bx+bw+6;
+    ctx.strokeStyle="#8399A8";
+    ctx.beginPath(); ctx.moveTo(ex,by+bh/2); ctx.lineTo(ex+60,by+bh/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ex+60,by+bh/2); ctx.lineTo(ex+50,by+bh/2-6); ctx.lineTo(ex+50,by+bh/2+6); ctx.closePath(); ctx.fill();
+    ctx.fillText("output", ex+30, by+bh/2-14);
+
+    /* target + guess bar under the box */
+    var gy = by+bh+38, gx0=bx, gx1=bx+bw;
+    ctx.strokeStyle="#CBD8E0"; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(gx0,gy); ctx.lineTo(gx1,gy); ctx.stroke();
+    var tx = gx0 + target*(gx1-gx0);
+    ctx.strokeStyle="#D8811C"; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(tx,gy-9); ctx.lineTo(tx,gy+9); ctx.stroke();
+    ctx.fillStyle="#D8811C"; ctx.textAlign="center"; ctx.font="10px 'IBM Plex Mono',monospace";
+    ctx.fillText("target", tx, gy+24);
+    var qx = gx0 + guess*(gx1-gx0);
+    ctx.fillStyle="#0B8B8B";
+    ctx.beginPath(); ctx.arc(qx,gy,6,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#0B8B8B"; ctx.fillText("guess", qx, gy-16);
+
+    /* wrongness meter */
+    var wy = gy+50, ww=bw;
+    var err = Math.abs(target-guess);
+    ctx.strokeStyle="#CBD8E0"; ctx.lineWidth=1; ctx.strokeRect(gx0,wy,ww,14);
+    ctx.fillStyle = err>0.15 ? "#B31E55" : err>0.05 ? "#D8811C" : "#0B8B8B";
+    ctx.fillRect(gx0+1,wy+1,Math.max(0,(ww-2)*Math.min(1,err/0.6)),12);
+    ctx.fillStyle="#8399A8"; ctx.textAlign="left"; ctx.font="10px 'IBM Plex Mono',monospace";
+    ctx.fillText("wrongness", gx0, wy-6);
+
+    say.innerHTML = round===0
+      ? "Round <b>0</b>. Dials are random — the guess (teal dot) has no reason to be near the target (orange mark) yet."
+      : "Round <b>"+round+"</b>. Guess = <b>"+guess.toFixed(2)+"</b>, target = <b>"+target.toFixed(2)+"</b>, wrongness = <b>"+err.toFixed(3)+"</b>. Every round nudged each dial a little toward less wrong — nothing more exotic than that.";
+  }
+  gid("box-train").onclick = function(){
+    if (training) return;
+    training = true;
+    if (REDUCED){ for (var i=0;i<40;i++) step(); training=false; draw(); return; }
+    var n=0;
+    timer = setInterval(function(){
+      step(); draw(); n++;
+      if (n>=40){ clearInterval(timer); training=false; }
+    }, 45);
+  };
+  gid("box-reset").onclick = reset;
+  reset();
+})();
+
+/* ===== ATTENTION, NO FORMULA ===== */
+(function(){
+  var svg = gid("attnsvg"); if (!svg) return;
+  var say = gid("attn-say");
+  var WORDS = ["The","trophy","didn't","fit","in","the","suitcase","because","it","was","too","small"];
+  /* hand-picked weights per source word index -> {targetIdx: weight 0..1}, illustrative only */
+  var WEIGHTS = {
+    8: {1: 0.85, 6: 0.15, 9: 0.25, 11: 0.3},   /* "it" -> mostly "trophy" */
+    1: {8: 0.3, 3: 0.4},
+    6: {3: 0.2, 9: 0.15},
+    11:{1: 0.35, 6: 0.2, 9: 0.3}
+  };
+  var positions = [], y = 100, x = 20, gap = 8;
+  var wordEls = [];
+
+  function layout(){
+    positions = []; x = 20;
+    WORDS.forEach(function(w){
+      positions.push(x);
+      x += w.length * 9.5 + 26;
+    });
+  }
+  function render(activeIdx){
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    layout();
+    var maxX = positions[positions.length-1] + 40;
+    svg.setAttribute("viewBox", "0 0 " + Math.max(820, maxX) + " 190");
+
+    /* lines first, under the words */
+    if (activeIdx !== null && WEIGHTS[activeIdx]){
+      var w = WEIGHTS[activeIdx];
+      Object.keys(w).forEach(function(k){
+        var j = parseInt(k,10), weight = w[k];
+        var x1 = positions[activeIdx] + WORDS[activeIdx].length*4.5, x2 = positions[j] + WORDS[j].length*4.5;
+        var midY = y - 34 - weight*40;
+        var path = el("path", {
+          d: "M "+x1+" "+(y-8)+" Q "+((x1+x2)/2)+" "+midY+" "+x2+" "+(y-8),
+          stroke: "#5A4A9F", "stroke-width": (1 + weight*5), fill: "none", opacity: 0.35 + weight*0.55
+        });
+        svg.appendChild(path);
+      });
+    }
+
+    WORDS.forEach(function(w, i){
+      var isActive = i === activeIdx;
+      var isTarget = activeIdx !== null && WEIGHTS[activeIdx] && WEIGHTS[activeIdx][i] !== undefined;
+      var t = el("text", { x: positions[i], y: y, "font-family": "IBM Plex Mono, monospace", "font-size": "15", cursor: "pointer" });
+      t.setAttribute("fill", isActive ? "#5A4A9F" : isTarget ? "#15222E" : "#8399A8");
+      if (isActive) t.setAttribute("font-weight", "600");
+      t.textContent = w;
+      t.addEventListener("click", function(){ render(i); say.innerHTML = sayFor(i); });
+      svg.appendChild(t);
+    });
+  }
+  function sayFor(i){
+    if (!WEIGHTS[i]) return "<b>"+WORDS[i]+"</b> doesn't lean on anything special here — try <b>it</b> instead.";
+    var w = WEIGHTS[i], best = null, bestW = -1;
+    Object.keys(w).forEach(function(k){ if (w[k] > bestW){ bestW = w[k]; best = parseInt(k,10); } });
+    return "<b>"+WORDS[i]+"</b> leans most heavily on <b>"+WORDS[best]+"</b> (thickest line) to figure out what it refers to — a lighter line means a weaker, but still nonzero, dependence.";
+  }
+  render(null);
+  gid("attn-reset").onclick = function(){ render(null); say.innerHTML = "Click <b>it</b> and watch the line to <b>trophy</b> thicken — that's the word this one leans on to mean anything."; };
+})();
+})();
+</script>
+</body>
+</html>
