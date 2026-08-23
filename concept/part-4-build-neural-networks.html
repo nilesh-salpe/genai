@@ -83,8 +83,8 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <nav class="progress" aria-label="Course progress">
   <a href="part-0-big-picture.html">0 · Big Picture</a>
   <a href="part-1-foundations.html">1 · Foundations</a>
-  <a href="part-2-pytorch.html">2 · PyTorch</a>
-  <a href="part-3-neural-network.html">3 · Neural Network</a>
+  <a href="part-2-neural-network.html">2 · Neural Network</a>
+  <a href="part-3-pytorch.html">3 · PyTorch</a>
   <a href="part-4-build-neural-networks.html" class="here">4 · Build NNs</a>
   <a href="part-5-transformer-architecture.html">5 · Transformer Arch.</a>
   <a href="part-6-llm.html">6 · LLM</a>
@@ -95,7 +95,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <header class="top">
   <p class="kicker">v2 · part four of nine</p>
   <h1>Build Neural Networks: <em>four problems</em></h1>
-  <p class="standfirst">Nothing new gets built on this page — every formula is from Part 3. What changes is the problem: a decision boundary that isn't a line, an image instead of a table of numbers, and two flavors of "which of these matters right now" that quietly rehearse Part 5's attention before it has a name. Each example follows the same template: the problem, the outcome, the example itself, why a plain formula can't do it, the solution in brief, and the runnable notebook behind it.</p>
+  <p class="standfirst">Nothing new gets built on this page — every formula is from Part 2. What changes is the problem: a decision boundary that isn't a line, an image instead of a table of numbers, and two flavors of "which of these matters right now" that quietly rehearse Part 5's attention before it has a name. Each example follows the same template: the problem, the outcome, the example itself, why a plain formula can't do it, the solution in brief, and the runnable notebook behind it.</p>
 </header>
 
 <section>
@@ -105,8 +105,8 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     <tr><th>What is the problem</th><td>Two classes of points, arranged as interleaved spirals — no straight line separates them, no matter how it's angled.</td></tr>
     <tr><th>What is the outcome</th><td>A trained network that draws a <em>curved</em> decision boundary — both spiral arms correctly separated, at an accuracy a straight-line classifier structurally cannot reach.</td></tr>
     <tr><th>The example</th><td>A synthetic 2D dataset: points sampled along two spiral arms, colored by class. Purely visual, so the decision boundary can be watched directly.</td></tr>
-    <tr><th>Why a neural network is needed</th><td>A network with a kink (Part 3 §05) can bend its decision boundary to match; a purely linear model — logistic regression, or a network with no activation — provably tops out far below what a kinked network reaches here, no matter how it's trained.</td></tr>
-    <tr><th>The solution, briefly</th><td>A small ReLU network, trained with Part 3's exact backprop and softmax + cross-entropy. Watch the shaded decision region fold itself around both spiral arms as training proceeds.</td></tr>
+    <tr><th>Why a neural network is needed</th><td>A network with a kink (Part 2 §05) can bend its decision boundary to match; a purely linear model — logistic regression, or a network with no activation — provably tops out far below what a kinked network reaches here, no matter how it's trained.</td></tr>
+    <tr><th>The solution, briefly</th><td>A small ReLU network, trained with Part 2's exact backprop and softmax + cross-entropy. Watch the shaded decision region fold itself around both spiral arms as training proceeds.</td></tr>
     <tr><th>Notebook</th><td><a href="code/01_mlp_spiral_classifier.ipynb">01_mlp_spiral_classifier.ipynb</a> — the full version, gradient-checked against numerical differentiation.</td></tr>
   </table>
 
@@ -155,7 +155,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     <tr><th>What is the problem</th><td>Imagine a lookup table where you don't know which row your answer is in — you only know what its label should match. A plain array lookup needs a known position; this needs a <em>comparison</em> against every label.</td></tr>
     <tr><th>What is the outcome</th><td>A mechanism that retrieves the value paired with the best-matching key — by content, not position — and blends smoothly when more than one key is a partial match.</td></tr>
     <tr><th>The example</th><td>Three stored (key, value) pairs and one query, all 2D vectors so they can be dragged and watched directly.</td></tr>
-    <tr><th>Why a neural network is needed</th><td>This is a genuinely new operation, not a bigger version of §01–§02's machinery: score the query against every key with a dot product (Part 1 §04), softmax the scores into weights (Part 3 §06), then return the <strong>weighted average</strong> of the values — not the single best match, a blend weighted by how well each key matched.</td></tr>
+    <tr><th>Why a neural network is needed</th><td>This is a genuinely new operation, not a bigger version of §01–§02's machinery: score the query against every key with a dot product (Part 1 §04), softmax the scores into weights (Part 2 §06), then return the <strong>weighted average</strong> of the values — not the single best match, a blend weighted by how well each key matched.</td></tr>
     <tr><th>The solution, briefly</th><td>Drag the query near a key and its weight climbs toward 1 while the others fall toward 0. Drag it equidistant from two keys and the output blends them.</td></tr>
     <tr><th>Notebook</th><td><a href="code/03_mini_attention_retrieval.ipynb">03_mini_attention_retrieval.ipynb</a> — full embeddings, Wq/Wk/Wv, output projection, gradient-checked exactly.</td></tr>
   </table>
@@ -201,7 +201,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <section>
   <div class="eyebrow"><span class="num">05</span><span>Onward</span><span class="line"></span></div>
   <h2>What Part 5 formalizes</h2>
-  <p>The spiral and the filter were Part 3's machinery on new shapes of data. The retrieval example and the causal mask were rehearsals — the exact arithmetic and the exact rule Part 5 is about to name properly, derive from scratch, and assemble into the mechanism every current LLM runs.</p>
+  <p>The spiral and the filter were Part 2's machinery on new shapes of data. The retrieval example and the causal mask were rehearsals — the exact arithmetic and the exact rule Part 5 is about to name properly, derive from scratch, and assemble into the mechanism every current LLM runs.</p>
   <p><a href="part-5-transformer-architecture.html">Continue to Part 5 — the Transformer, derived →</a></p>
 </section>
 

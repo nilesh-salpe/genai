@@ -91,8 +91,8 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <nav class="progress" aria-label="Course progress">
   <a href="part-0-big-picture.html" class="here">0 · Big Picture</a>
   <a href="part-1-foundations.html">1 · Foundations</a>
-  <a href="part-2-pytorch.html">2 · PyTorch</a>
-  <a href="part-3-neural-network.html">3 · Neural Network</a>
+  <a href="part-2-neural-network.html">2 · Neural Network</a>
+  <a href="part-3-pytorch.html">3 · PyTorch</a>
   <a href="part-4-build-neural-networks.html">4 · Build NNs</a>
   <a href="part-5-transformer-architecture.html">5 · Transformer Arch.</a>
   <a href="part-6-llm.html">6 · LLM</a>
@@ -124,7 +124,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
       <canvas id="box" width="820" height="260" aria-label="A box with adjustable dials, an input, an output, and a wrongness meter that shrinks as it is trained"></canvas>
       <div class="readout" id="box-say">The dials start random. Press <b>Train</b> and watch the guess drift toward the target, and the wrongness meter shrink.</div>
     </div>
-    <figcaption>There's no formula on this page yet — just the shape of the idea. Each round: guess, compare to the right answer, nudge every dial a little toward "less wrong." <b>Part 1</b> gives that nudge an actual name and an actual formula; <b>Part 3</b> builds a real one of these out of real numbers.</figcaption>
+    <figcaption>There's no formula on this page yet — just the shape of the idea. Each round: guess, compare to the right answer, nudge every dial a little toward "less wrong." <b>Part 1</b> gives that nudge an actual name and an actual formula; <b>Part 2</b> builds a real one of these out of real numbers.</figcaption>
   </figure>
 </section>
 
@@ -168,11 +168,12 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <div class="roadmap">
     <div class="rstep"><div class="n">1</div><div><div class="t">Foundations</div><div class="d">The plain maths every later part leans on — functions, vectors, matrices, derivatives, probability. No neural network in sight yet.</div></div></div>
     <div class="rstep"><div class="n">2</div><div><div class="t">Neural Network</div><div class="d">Turn "nudge the dials" into an actual formula, and build a real one from scratch — the box from Part 1, made of real numbers.</div></div></div>
-    <div class="rstep"><div class="n">3</div><div><div class="t">Examples</div><div class="d">Watch that same machine solve a handful of different problems, so the idea stops being abstract.</div></div></div>
-    <div class="rstep"><div class="n">4</div><div><div class="t">Attention</div><div class="d">Turn "every word looks at every other word" into a real computation — the exact mechanism a Transformer runs.</div></div></div>
-    <div class="rstep"><div class="n">5</div><div><div class="t">Transformer</div><div class="d">Assemble attention into the full architecture every current LLM is built from.</div></div></div>
+    <div class="rstep"><div class="n">3</div><div><div class="t">PyTorch</div><div class="d">The practical tool, automating the backward pass Part 2 just wrote by hand.</div></div></div>
+    <div class="rstep"><div class="n">4</div><div><div class="t">Build Neural Networks</div><div class="d">Watch that same machine solve a handful of different problems, so the idea stops being abstract.</div></div></div>
+    <div class="rstep"><div class="n">5</div><div><div class="t">Transformer Architecture</div><div class="d">Turn "every word looks at every other word" into a real computation, then assemble it into the full architecture every current LLM is built from.</div></div></div>
     <div class="rstep"><div class="n">6</div><div><div class="t">LLM</div><div class="d">Build a small, real, working language model — tokenizer, training loop, and all — and watch it learn to write.</div></div></div>
     <div class="rstep"><div class="n">7</div><div><div class="t">Illustrated</div><div class="d">A step-by-step walkthrough of everything above, running on one real sentence, start to finish.</div></div></div>
+    <div class="rstep"><div class="n">8</div><div><div class="t">References</div><div class="d">The papers and explainers this course draws on, for going past what any one part covers.</div></div></div>
   </div>
   <p><a href="part-1-foundations.html">Continue to Part 1 — the maths every later part leans on →</a></p>
 </section>

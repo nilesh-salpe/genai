@@ -73,8 +73,8 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <nav class="progress" aria-label="Course progress">
   <a href="part-0-big-picture.html">0 · Big Picture</a>
   <a href="part-1-foundations.html">1 · Foundations</a>
-  <a href="part-2-pytorch.html">2 · PyTorch</a>
-  <a href="part-3-neural-network.html">3 · Neural Network</a>
+  <a href="part-2-neural-network.html">2 · Neural Network</a>
+  <a href="part-3-pytorch.html">3 · PyTorch</a>
   <a href="part-4-build-neural-networks.html">4 · Build NNs</a>
   <a href="part-5-transformer-architecture.html">5 · Transformer Arch.</a>
   <a href="part-6-llm.html">6 · LLM</a>
@@ -202,23 +202,23 @@ var STEPS=[
     say:"\"Sat\" asks a query; every token's key gets scored against it via a dot product, scaled by √d_k (Part 5 §03) — Part 1 §4's \"agreement\" measure, computed for every pair at once.",
     render:function(){ clear(); var scores=K.map(function(k){ return (Q[2][0]*k[0]+Q[2][1]*k[1])/Math.sqrt(2); }); bars(60,40,W-120,180,TOKENS,scores.map(function(s){return s+2;}),2); ctx.fillStyle="#8399A8"; ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="left"; ctx.fillText("raw scores for query = \"sat\" (shifted for display; only gaps matter)",40,20); } },
 
-  { label:"Self-attention: softmax", part:"Part 3 §02 · Part 5 §03",
-    say:"Softmax turns those scores into a proper probability distribution — Part 3 §02's exact formula, reused unchanged. \"Sat\" ends up attending to itself and \"cat\" more than \"the.\"",
+  { label:"Self-attention: softmax", part:"Part 2 §02 · Part 5 §03",
+    say:"Softmax turns those scores into a proper probability distribution — Part 2 §02's exact formula, reused unchanged. \"Sat\" ends up attending to itself and \"cat\" more than \"the.\"",
     render:function(){ clear(); bars(60,40,W-120,180,TOKENS,wRow,wRow.indexOf(Math.max.apply(null,wRow))); ctx.fillStyle="#8399A8"; ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="left"; ctx.fillText("attention weights (sum to 1.00)",40,20); } },
 
   { label:"Self-attention: weighted sum", part:"Part 4 §03 · Part 5 §03",
     say:"Multiply those weights into each token's value and add — Part 4 §03's retrieval widget, run for real. \"Sat\"'s new representation is a blend of every token's value, weighted by how much it matched.",
     render:function(){ clear(); TOKENS.forEach(function(t,i){ ctx.fillStyle="#8399A8"; ctx.font="13px 'IBM Plex Mono',monospace"; ctx.textAlign="left"; ctx.fillText(fmt(wRow[i],2)+" × value("+t+" = "+V[i]+")"+(i<2?"  +":"  ="),60,60+i*30); }); ctx.fillStyle="#5A4A9F"; ctx.font="20px 'IBM Plex Mono',monospace"; ctx.fillText(fmt(attnOut,2),60,60+3*30+10); } },
 
-  { label:"Residual + LayerNorm", part:"Part 3 §06 · Part 5 §06",
-    say:"The attention output is added back to \"sat\"'s original vector (Part 3 §06's fix for vanishing gradients), then rescaled to a stable mean and spread (LayerNorm) before the next stage sees it.",
+  { label:"Residual + LayerNorm", part:"Part 2 §06 · Part 5 §06",
+    say:"The attention output is added back to \"sat\"'s original vector (Part 2 §06's fix for vanishing gradients), then rescaled to a stable mean and spread (LayerNorm) before the next stage sees it.",
     render:function(){ clear(); vecBars(160,110,EMB[2],"#0B8B8B"); ctx.fillStyle="#8399A8"; ctx.font="18px serif"; ctx.fillText("+",280,105); vecBars(320,110,[attnOut*0.3,attnOut*0.2,attnOut*0.1],"#5A4A9F"); ctx.fillStyle="#8399A8"; ctx.font="18px serif"; ctx.fillText("→",460,105); vecBars(520,110,[0.3,-0.4,0.2],"#D8811C"); ctx.fillStyle="#8399A8"; ctx.font="11px 'IBM Plex Mono',monospace"; ctx.fillText("normalized",500,140); } },
 
-  { label:"Feed-forward + residual", part:"Part 3 §01 · Part 5 §06",
-    say:"A small two-layer network with a kink in the middle (Part 3 §01's exact machine) processes each position independently, wrapped in its own residual connection — the second half of one Transformer block.",
+  { label:"Feed-forward + residual", part:"Part 2 §01 · Part 5 §06",
+    say:"A small two-layer network with a kink in the middle (Part 2 §01's exact machine) processes each position independently, wrapped in its own residual connection — the second half of one Transformer block.",
     render:function(){ clear(); ctx.fillStyle="#8399A8"; ctx.font="13px 'IBM Plex Mono',monospace"; ctx.textAlign="center"; ctx.fillText("x → Linear → ReLU → Linear → +x",W/2,150); ctx.strokeStyle="#5A4A9F"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(150,180); ctx.lineTo(650,180); ctx.stroke(); } },
 
-  { label:"Project to vocabulary", part:"Part 3 §02 · Part 6 §3",
+  { label:"Project to vocabulary", part:"Part 2 §02 · Part 6 §3",
     say:"After N blocks (just one, here), a final linear layer scores every vocabulary word, and softmax turns those logits into a real probability distribution over what comes next.",
     render:function(){ clear(); bars(40,40,W-80,180,VOCAB,FINAL_PROBS,FINAL_PROBS.indexOf(Math.max.apply(null,FINAL_PROBS))); ctx.fillStyle="#8399A8"; ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="left"; ctx.fillText("P(next word | \"the cat sat\")",40,20); } },
 

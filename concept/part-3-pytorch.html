@@ -103,8 +103,8 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <nav class="progress" aria-label="Course progress">
   <a href="part-0-big-picture.html">0 · Big Picture</a>
   <a href="part-1-foundations.html">1 · Foundations</a>
-  <a href="part-2-pytorch.html" class="here">2 · PyTorch</a>
-  <a href="part-3-neural-network.html">3 · Neural Network</a>
+  <a href="part-2-neural-network.html">2 · Neural Network</a>
+  <a href="part-3-pytorch.html" class="here">3 · PyTorch</a>
   <a href="part-4-build-neural-networks.html">4 · Build NNs</a>
   <a href="part-5-transformer-architecture.html">5 · Transformer Arch.</a>
   <a href="part-6-llm.html">6 · LLM</a>
@@ -113,16 +113,16 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 </nav>
 
 <header class="top">
-  <p class="kicker">v2 · part two of nine</p>
-  <h1>The practical <em>tool</em>, before the from-scratch build</h1>
-  <p class="standfirst">Part 1 derives every formula a network needs, by hand. Part 3 will write a full network's backward pass, also by hand. This page sits between them: the tool a working engineer actually reaches for, so that when Part 3 opens the hood completely, you already know exactly what shape you're aiming for — and exactly how much a framework is doing for you.</p>
+  <p class="kicker">v2 · part three of nine</p>
+  <h1>The practical <em>tool</em>, not from scratch</h1>
+  <p class="standfirst">Part 2 just built a real neural network from nothing but arithmetic — including its backward pass, written out by hand, every gradient derived and checked. This page shows you the tool a working engineer actually reaches for: the same architecture, the same training loop, with the calculus automated.</p>
 </header>
 
 <section>
   <div class="eyebrow"><span class="num">01</span><span>Why a framework, at all</span><span class="line"></span></div>
-  <h2>What a from-scratch backward pass costs you</h2>
-  <p>Part 1 derives, by hand, every calculus fact a neural network needs: the derivative, the chain rule, the gradient. Part 3 goes one step further and writes out a full network's <strong>backward pass</strong> — the actual arithmetic that turns "the loss was too high" into "here's exactly how to adjust each of 100,000+ numbers" — using nothing but those hand-derived formulas.</p>
-  <p>That's necessary once: you cannot trust a mechanism you've never opened, and Part 3 opens it completely. It is also <strong>not something you want to repeat by hand every time</strong>. Swap ReLU for GELU, add a residual connection, add attention — and every formula has to be re-derived and the backward pass rewritten, correctly, from scratch, every single time.</p>
+  <h2>What Part 2's from-scratch backward pass cost you</h2>
+  <p>Part 1 derived, by hand, every calculus fact a neural network needs: the derivative, the chain rule, the gradient. Part 2 went one step further and wrote out a full network's <strong>backward pass</strong> — the actual arithmetic that turns "the loss was too high" into "here's exactly how to adjust each of 100,000+ numbers" — using nothing but those hand-derived formulas.</p>
+  <p>That was necessary once: you cannot trust a mechanism you've never opened, and Part 2 opened it completely. It is also <strong>not something you want to repeat by hand every time</strong>. Swap ReLU for GELU, add a residual connection, add attention — and every formula has to be re-derived and the backward pass rewritten, correctly, from scratch, every single time.</p>
   <blockquote><p>PyTorch's one job is to remember how a number was produced, so it can undo that recipe with the chain rule automatically — the same chain rule Part 1 built, just applied by software instead of by hand. This is not a new idea replacing the old one. It is the old one, automated. You still write the <em>forward</em> pass in plain code. You never write <span class="mono">backward()</span> yourself.</p></blockquote>
 </section>
 
@@ -184,7 +184,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
       <svg id="ag" viewBox="0 0 660 190" role="img" aria-label="Diagram of a two-layer network's autograd graph with animated forward and backward passes"></svg>
       <div class="readout" id="ag-say">Nothing has run yet. Press <b>Forward</b> to build the graph, then <b>Backward</b> to walk it in reverse.</div>
     </div>
-    <figcaption><span class="mono">W₁</span>'s two rows give pre-activations <span class="mono">[3, −3]</span> — the second hidden unit is negative, so ReLU zeroes it. Watch <b>W₁</b>'s second row after Backward: it comes back as <b>exactly zero</b>, because that unit contributed nothing on the forward pass and so can carry no blame backward. Part 3 builds this exact backward pass by hand; here, autograd arrives at the same numbers automatically.</figcaption>
+    <figcaption><span class="mono">W₁</span>'s two rows give pre-activations <span class="mono">[3, −3]</span> — the second hidden unit is negative, so ReLU zeroes it. Watch <b>W₁</b>'s second row after Backward: it comes back as <b>exactly zero</b>, because that unit contributed nothing on the forward pass and so can carry no blame backward. This is the same kind of backward pass Part 2 wrote out by hand — here, autograd arrives at the numbers automatically.</figcaption>
   </figure>
 
   <div class="callout">
@@ -198,7 +198,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <h2><span class="mono">nn.Module</span>: architecture as a class</h2>
   <p>Every PyTorch model subclasses <span class="mono">nn.Module</span>. Layers get declared in <span class="mono">__init__</span>; how data flows through them is written once, in a method literally called <span class="mono">forward</span>. Calling <span class="mono">model(x)</span> runs <span class="mono">forward</span> automatically — that's a plain Python mechanism (<span class="mono">__call__</span>), not framework magic.</p>
 
-  <p><strong>A preview of what Part 3 builds by hand.</strong> Below is a <span class="mono">784 → 128 → 64 → 10</span> network — the architecture Part 3 derives from raw arithmetic, one weight matrix and one nonlinearity at a time.</p>
+  <p><strong>The same architecture Part 2 derived by hand,</strong> one weight matrix and one nonlinearity at a time. Below is that <span class="mono">784 → 128 → 64 → 10</span> network again, in five lines:</p>
 
 <pre><code>class MLP(nn.Module):
     def __init__(self):
@@ -218,7 +218,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <section>
   <div class="eyebrow"><span class="num">05</span><span>Fitting it</span><span class="line"></span></div>
   <h2>The training loop, translated</h2>
-  <p>Whatever the architecture, training is always the same five-step pattern — Part 3 spells out <em>forward → loss → backward → update, repeat</em> in full arithmetic; PyTorch just gives each step one call:</p>
+  <p>Whatever the architecture, training is always the same five-step pattern — Part 2 spelled out <em>forward → loss → backward → update, repeat</em> in full arithmetic; PyTorch just gives each step one call:</p>
 <pre><code>pred = model(X)              # forward — one pass through every layer
 loss = criterion(pred, y)    # loss — compare against the true labels
 loss.backward()              # backward — autograd fills in every .grad
@@ -232,8 +232,8 @@ optimizer.zero_grad()        # reset — clear .grad before the next batch</code
 
 <section>
   <div class="eyebrow"><span class="num">06</span><span>Full example</span><span class="line"></span></div>
-  <h2>An MNIST classifier, in PyTorch</h2>
-  <p>Everything above, assembled — a complete, runnable classifier. Same architecture, same ≈109,386 parameters, that Part 3 will build by hand.</p>
+  <h2>Rebuilding Part 2's model, in PyTorch</h2>
+  <p>Everything above, assembled — a complete, runnable classifier. Same architecture, same ≈109,386 parameters, same He initialization Part 2 already built by hand.</p>
 <pre><code>import torch, torch.nn as nn, torch.nn.functional as F
 
 class MLP(nn.Module):
@@ -270,7 +270,7 @@ def evaluate(loader):
     return correct / total</code></pre>
 
   <table>
-    <tr><th>Concept</th><th>Here, PyTorch</th><th>Part 3, NumPy (forward pointer)</th></tr>
+    <tr><th>Concept</th><th>Here, PyTorch</th><th>Part 2, NumPy</th></tr>
     <tr><td>Layer = matrix multiply</td><td class="mono">nn.Linear(in, out)</td><td class="mono">A @ W.T + b</td></tr>
     <tr><td>Backward pass</td><td class="mono">loss.backward()</td><td>~10 lines, hand-derived</td></tr>
     <tr><td>Gradient descent</td><td class="mono">optimizer.step()</td><td class="mono">W -= lr * dW</td></tr>
@@ -355,9 +355,9 @@ model.eval()</code></pre>
 
 <section>
   <div class="eyebrow"><span class="num">12</span><span>Onward</span><span class="line"></span></div>
-  <h2>What Part 3 opens up</h2>
-  <p>A tensor is a NumPy array that can additionally track how it was computed. <span class="mono">requires_grad=True</span> marks what should get a gradient; <span class="mono">.backward()</span> computes it via the chain rule, automatically. Everything above is a tool wrapped around ideas Part 1 already built from arithmetic — what's different is <em>who writes the backward pass</em>. Part 3 opens that hood completely: the same architecture previewed above, derived from nothing but the dot product, the chain rule, and the gradient, with its backward pass written out by hand.</p>
-  <p><a href="part-3-neural-network.html">Continue to Part 3 — build the network itself →</a></p>
+  <h2>What Part 4 assumes from here</h2>
+  <p>A tensor is a NumPy array that can additionally track how it was computed. <span class="mono">requires_grad=True</span> marks what should get a gradient; <span class="mono">.backward()</span> computes it via the chain rule, automatically. Everything above is a tool wrapped around ideas Part 1 and Part 2 already built from arithmetic — what's different is <em>who writes the backward pass</em>. Part 4 points this same NumPy toolkit — not PyTorch — at four more problems, so you keep seeing exactly what's being computed.</p>
+  <p><a href="part-4-build-neural-networks.html">Continue to Part 4 — four worked examples →</a></p>
 </section>
 
 <footer>
@@ -464,7 +464,7 @@ function fmt(v,d){ return Number(v).toFixed(d===undefined?2:d); }
     }
     var say_html;
     if(state==="idle") say_html="Nothing has run yet. Press <b>Forward</b> to build the graph, then <b>Backward</b> to walk it in reverse.";
-    else if(state==="forward") say_html="<b>Forward pass, step "+(fwdStep+1)+"/7.</b> Each op gets silently recorded — this is exactly Part 3's forward pass, just logged as it goes.";
+    else if(state==="forward") say_html="<b>Forward pass, step "+(fwdStep+1)+"/7.</b> Each op gets silently recorded — the same kind of forward pass Part 2 wrote out by hand, just logged as it goes.";
     else say_html = backStep<1
       ? "<b>Backward, step 1.</b> Autograd starts at the loss and walks back — Part 1 §07's chain rule, applied automatically."
       : backStep===1

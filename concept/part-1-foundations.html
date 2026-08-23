@@ -94,8 +94,8 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <nav class="progress" aria-label="Course progress">
   <a href="part-0-big-picture.html">0 · Big Picture</a>
   <a href="part-1-foundations.html" class="here">1 · Foundations</a>
-  <a href="part-2-pytorch.html">2 · PyTorch</a>
-  <a href="part-3-neural-network.html">3 · Neural Network</a>
+  <a href="part-2-neural-network.html">2 · Neural Network</a>
+  <a href="part-3-pytorch.html">3 · PyTorch</a>
   <a href="part-4-build-neural-networks.html">4 · Build NNs</a>
   <a href="part-5-transformer-architecture.html">5 · Transformer Arch.</a>
   <a href="part-6-llm.html">6 · LLM</a>
@@ -106,7 +106,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <header class="top">
   <p class="kicker">v2 · part one of nine</p>
   <h1>The plain <em>maths</em>, before any network</h1>
-  <p class="standfirst">Ten small tools, built from nothing but arithmetic: functions, sums, vectors, matrices, exponentials, derivatives, the chain rule, the gradient, and probability. No neural network appears anywhere on this page — Part 3 puts every one of these to work. If a tool below is already familiar, skim it; the goal is that nothing in Part 3 ever uses a symbol this page didn't first build.</p>
+  <p class="standfirst">Ten small tools, built from nothing but arithmetic: functions, sums, vectors, matrices, exponentials, derivatives, the chain rule, the gradient, and probability. No neural network appears anywhere on this page — Part 2 puts every one of these to work. If a tool below is already familiar, skim it; the goal is that nothing in Part 2 ever uses a symbol this page didn't first build.</p>
 </header>
 
 <section>
@@ -192,7 +192,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     <tr><td class="shape">eˣ &gt; 0 always</td><td>A sum of positive numbers can become proportions</td></tr>
     <tr><td class="shape">eᵃ·eᵇ = eᵃ⁺ᵇ</td><td>Shifting every input the same amount changes no ratio</td></tr>
     <tr><td class="shape">log(ab) = log a + log b</td><td><b>The defining property</b> — turns multiplication into addition</td></tr>
-    <tr><td class="shape">d/dx log x = 1/x</td><td>Used directly in Part 3's loss-function gradient</td></tr>
+    <tr><td class="shape">d/dx log x = 1/x</td><td>Used directly in Part 2's loss-function gradient</td></tr>
   </table>
 </div>
 
@@ -201,7 +201,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <h2>The derivative: how steep, right here</h2>
   <p><span class="mono">f(x) = x²</span> barely moves near <span class="mono">x=0</span> and rockets upward near <span class="mono">x=10</span> — "the derivative" names the steepness at one exact point. Pick two nearby points, draw the line through them (a <strong>secant</strong>), and shrink the gap toward zero: the secant settles onto the <strong>tangent</strong>, and its slope is <span class="mono">f′(x)</span>.</p>
 
-  <p><strong>The core idea.</strong> A derivative answers one question: nudge the input by a tiny amount — does the output go up or down, and how fast? That sign and size are exactly what's needed to improve something without trying every possible value. <strong>Why it matters in practice:</strong> a network starts out with random weights, and training is nothing but repeatedly asking each weight "would increasing you make the loss better or worse, and by roughly how much?" The derivative is the only tool that answers that question directly — Part 3 §11 turns it into the exact update rule used to train every network in this course.</p>
+  <p><strong>The core idea.</strong> A derivative answers one question: nudge the input by a tiny amount — does the output go up or down, and how fast? That sign and size are exactly what's needed to improve something without trying every possible value. <strong>Why it matters in practice:</strong> a network starts out with random weights, and training is nothing but repeatedly asking each weight "would increasing you make the loss better or worse, and by roughly how much?" The derivative is the only tool that answers that question directly — Part 2 §11 turns it into the exact update rule used to train every network in this course.</p>
 
   <figure class="w" id="tanfig">
     <div class="head">
@@ -289,7 +289,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <div class="eyebrow"><span class="num">11</span><span>Onward</span><span class="line"></span></div>
   <h2>What Part 2 and Part 3 assume from here</h2>
   <p>A function as an input/output machine, Σ as an addition loop, vectors and matrices as bundles of numbers with a well-defined way to multiply, exp/log undoing each other, the derivative and chain rule computed without ever taking a limit by hand, the gradient as one partial derivative per input, and probability — including the conditional kind — as the language for "how sure, and does new information change that." Nothing in Part 2 or Part 3 is new machinery; it's these ten tools, pointed at a network for the first time.</p>
-  <p><a href="part-2-pytorch.html">Continue to Part 2 — the practical tool →</a></p>
+  <p><a href="part-2-neural-network.html">Continue to Part 2 — build the network itself →</a></p>
 </section>
 
 <footer>

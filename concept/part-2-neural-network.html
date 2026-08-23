@@ -131,8 +131,8 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <nav class="progress" aria-label="Course progress">
   <a href="part-0-big-picture.html">0 · Big Picture</a>
   <a href="part-1-foundations.html">1 · Foundations</a>
-  <a href="part-2-pytorch.html">2 · PyTorch</a>
-  <a href="part-3-neural-network.html" class="here">3 · Neural Network</a>
+  <a href="part-2-neural-network.html" class="here">2 · Neural Network</a>
+  <a href="part-3-pytorch.html">3 · PyTorch</a>
   <a href="part-4-build-neural-networks.html">4 · Build NNs</a>
   <a href="part-5-transformer-architecture.html">5 · Transformer Arch.</a>
   <a href="part-6-llm.html">6 · LLM</a>
@@ -141,7 +141,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 </nav>
 
 <header class="top">
-  <p class="kicker">v2 · part three of nine</p>
+  <p class="kicker">v2 · part two of nine</p>
   <h1>Neural networks are <em>curve fitting</em></h1>
   <p class="standfirst">A neural network is a function with millions of adjustable numbers, fit to data the same way you'd fit a line through a scatter plot — just with a curvier function. This part builds that idea from the smallest possible case (two numbers, four points) up to a full, working network: the neuron, the layer, why depth needs a kink, softmax, the loss, the forward pass, the backward pass, the training loop, and a complete from-scratch implementation with no framework hiding anything.</p>
 </header>
@@ -672,9 +672,10 @@ def</span> init_params(sizes):
 
 <section>
   <div class="eyebrow"><span class="num">17</span><span>Onward</span><span class="line"></span></div>
-  <h2>What Part 4 assumes from here</h2>
+  <h2>What comes next</h2>
   <p>A neuron is a weighted question; a layer is many neurons; W is (outputs × inputs). Without a kink between layers, depth collapses to one linear function. Softmax turns logits into probabilities; cross-entropy measures surprise at the truth. Backprop assigns blame backward via the chain rule, in one sweep. Gradient descent nudges every weight downhill — the exact same loop as fitting y=ax+b in §02, just with a curvier function and many more numbers.</p>
-  <p><a href="part-4-build-neural-networks.html">Continue to Part 4 — four worked examples →</a></p>
+  <p>Every gradient above was computed by hand, in raw NumPy — necessary once, so you could see exactly where every formula comes from. Part 3 shows you the tool a working engineer actually reaches for, so you never have to write <code>backward()</code> by hand again. Part 4 then points this same machinery at four more problems.</p>
+  <p><a href="part-3-pytorch.html">Continue to Part 3 — the practical tool →</a></p>
 </section>
 
 <footer>

@@ -111,8 +111,8 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <nav class="progress" aria-label="Course progress">
   <a href="part-0-big-picture.html">0 · Big Picture</a>
   <a href="part-1-foundations.html">1 · Foundations</a>
-  <a href="part-2-pytorch.html">2 · PyTorch</a>
-  <a href="part-3-neural-network.html">3 · Neural Network</a>
+  <a href="part-2-neural-network.html">2 · Neural Network</a>
+  <a href="part-3-pytorch.html">3 · PyTorch</a>
   <a href="part-4-build-neural-networks.html">4 · Build NNs</a>
   <a href="part-5-transformer-architecture.html" class="here">5 · Transformer Arch.</a>
   <a href="part-6-llm.html">6 · LLM</a>
@@ -245,9 +245,9 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <section>
   <div class="eyebrow"><span class="num">06</span><span>Assembling the block</span><span class="line"></span></div>
   <h2>Attention wrapped in residuals and normalization</h2>
-  <p>One Transformer block is attention (§03–§05) and a small feed-forward network (two linear layers with a kink between them, exactly Part 3's machine), each wrapped in a <strong>residual connection</strong> and a <strong>layer normalization</strong>:</p>
+  <p>One Transformer block is attention (§03–§05) and a small feed-forward network (two linear layers with a kink between them, exactly Part 2's machine), each wrapped in a <strong>residual connection</strong> and a <strong>layer normalization</strong>:</p>
   <span class="eq">x ← x + Attention(LayerNorm(x)) &nbsp;&nbsp; x ← x + FFN(LayerNorm(x))</span>
-  <p>The residual's <span class="mono">+x</span> is Part 3 §10's fix for vanishing gradients — a guaranteed path back to every earlier layer, however deep the stack. LayerNorm rescales each token's vector to have a stable mean and spread before every sub-layer sees it, so training doesn't have to fight ever-drifting activation scales on top of everything else.</p>
+  <p>The residual's <span class="mono">+x</span> is Part 2 §10's fix for vanishing gradients — a guaranteed path back to every earlier layer, however deep the stack. LayerNorm rescales each token's vector to have a stable mean and spread before every sub-layer sees it, so training doesn't have to fight ever-drifting activation scales on top of everything else.</p>
 
   <figure class="w" id="blockfig">
     <div class="head">
@@ -303,7 +303,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <section>
   <div class="eyebrow"><span class="num">08</span><span>From numbers to a word</span><span class="line"></span></div>
   <h2>Sampling: turning a distribution into a choice</h2>
-  <p>The stack's final layer produces logits over the vocabulary; softmax turns them into a probability distribution (Part 3 §06). Generation still needs to pick <em>one</em> token from that distribution — always the top pick and text gets repetitive; too random and it stops making sense. Three knobs, all reshaping the same distribution before a token is drawn:</p>
+  <p>The stack's final layer produces logits over the vocabulary; softmax turns them into a probability distribution (Part 2 §06). Generation still needs to pick <em>one</em> token from that distribution — always the top pick and text gets repetitive; too random and it stops making sense. Three knobs, all reshaping the same distribution before a token is drawn:</p>
   <table>
     <tr><th>Knob</th><th>What it does</th></tr>
     <tr><td><strong>Temperature</strong></td><td>Divides logits before softmax — below 1 sharpens toward the top pick, above 1 flattens toward uniform</td></tr>
@@ -568,7 +568,7 @@ function el(tag, attrs){
     {b:0, say:"<b>Step 0 — input.</b> One token's vector, arriving at this block."},
     {b:1, say:"<b>Step 1 — LayerNorm.</b> Rescaled to a stable mean and spread before attention sees it."},
     {b:2, say:"<b>Step 2 — Attention.</b> §03's full mechanism, run against every other token in the sequence."},
-    {b:3, say:"<b>Step 3 — residual add.</b> The attention output is added back to the original x — the +1 gradient path from Part 3 §10."},
+    {b:3, say:"<b>Step 3 — residual add.</b> The attention output is added back to the original x — the +1 gradient path from Part 2 §10."},
     {b:4, say:"<b>Step 4 — LayerNorm → feed-forward → residual add.</b> The identical pattern runs again with a feed-forward network in place of attention. What comes out feeds the next block, or becomes the model's final output."}
   ];
   var state=-1;

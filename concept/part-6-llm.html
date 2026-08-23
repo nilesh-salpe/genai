@@ -103,8 +103,8 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <nav class="progress" aria-label="Course progress">
   <a href="part-0-big-picture.html">0 · Big Picture</a>
   <a href="part-1-foundations.html">1 · Foundations</a>
-  <a href="part-2-pytorch.html">2 · PyTorch</a>
-  <a href="part-3-neural-network.html">3 · Neural Network</a>
+  <a href="part-2-neural-network.html">2 · Neural Network</a>
+  <a href="part-3-pytorch.html">3 · PyTorch</a>
   <a href="part-4-build-neural-networks.html">4 · Build NNs</a>
   <a href="part-5-transformer-architecture.html">5 · Transformer Arch.</a>
   <a href="part-6-llm.html" class="here">6 · LLM</a>
@@ -124,8 +124,8 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <table>
     <tr><th>Piece</th><th>Built in</th></tr>
     <tr><td>Embeddings, matrices, the kink, softmax</td><td>Parts 1, 3</td></tr>
-    <tr><td>Cross-entropy loss, gradient descent, backprop</td><td>Part 3</td></tr>
-    <tr><td><span class="mono">nn.Module</span>, the training loop, autograd</td><td>Part 2</td></tr>
+    <tr><td>Cross-entropy loss, gradient descent, backprop</td><td>Part 2</td></tr>
+    <tr><td><span class="mono">nn.Module</span>, the training loop, autograd</td><td>Part 3</td></tr>
     <tr><td>Self-attention, multi-head, positional encoding, √d_k scaling</td><td>Part 5 §02–§05</td></tr>
     <tr><td>The block: attention + residual + norm + feed-forward</td><td>Part 5 §06</td></tr>
     <tr><td>Temperature, top-k, top-p sampling</td><td>Part 5 §08</td></tr>
@@ -223,7 +223,7 @@ class TinyGPT(nn.Module):
 <section>
   <div class="eyebrow"><span class="num">04</span><span>Training it</span><span class="line"></span></div>
   <h2>The same five calls, run on real text</h2>
-  <p>Below, the simplest possible next-character predictor — a lookup table of logits, one row per "current character" — stands in for the full block stack, so the <strong>training loop itself</strong> is fully visible without a full Transformer's backward pass hidden inside it. Forward: read off logits for the current character, softmax them. Loss: cross-entropy against the real next character (Part 3 §07). Backward: gradient of that loss with respect to every logit. Update: nudge them (Part 3 §11). Repeat, on every character of the training text, every epoch.</p>
+  <p>Below, the simplest possible next-character predictor — a lookup table of logits, one row per "current character" — stands in for the full block stack, so the <strong>training loop itself</strong> is fully visible without a full Transformer's backward pass hidden inside it. Forward: read off logits for the current character, softmax them. Loss: cross-entropy against the real next character (Part 2 §07). Backward: gradient of that loss with respect to every logit. Update: nudge them (Part 2 §11). Repeat, on every character of the training text, every epoch.</p>
 
   <figure class="w" id="trainfig">
     <div class="head">
@@ -234,12 +234,12 @@ class TinyGPT(nn.Module):
       <canvas id="train" width="820" height="240" aria-label="Loss curve decreasing over training epochs for a tiny character-level model"></canvas>
       <div class="readout" id="tr-say"></div>
     </div>
-    <figcaption>Same loop as Part 3 §11's descending ball, just on real text instead of a toy quadratic: forward, loss, backward, update, repeat — and the loss actually falls, on a model you can inspect every weight of. §01's widget shows the <em>architecture</em> a real training run like this would sit behind; wiring the two together is exactly what <code>examples/05_tiny_gpt.py</code> does.</figcaption>
+    <figcaption>Same loop as Part 2 §11's descending ball, just on real text instead of a toy quadratic: forward, loss, backward, update, repeat — and the loss actually falls, on a model you can inspect every weight of. §01's widget shows the <em>architecture</em> a real training run like this would sit behind; wiring the two together is exactly what <code>examples/05_tiny_gpt.py</code> does.</figcaption>
   </figure>
 
   <div class="callout">
     <p class="h">A handful of sentences will overfit — and that's fine here</p>
-    <p>Trained on a ~250-character toy corpus, loss falls to near zero and the model reproduces training sentences almost verbatim. That's <strong>overfitting</strong> exactly as Part 3 §13 defined it — memorizing rather than generalizing — and normally a red flag. Here it's expected: the point is watching every mechanism run correctly end to end, not training a model that generalizes to sentences it never saw.</p>
+    <p>Trained on a ~250-character toy corpus, loss falls to near zero and the model reproduces training sentences almost verbatim. That's <strong>overfitting</strong> exactly as Part 2 §13 defined it — memorizing rather than generalizing — and normally a red flag. Here it's expected: the point is watching every mechanism run correctly end to end, not training a model that generalizes to sentences it never saw.</p>
   </div>
 </section>
 
@@ -272,7 +272,7 @@ class TinyGPT(nn.Module):
   <h2>Traps and a cheatsheet</h2>
   <table>
     <tr><th>Symptom</th><th>Likely cause</th></tr>
-    <tr><td>Loss won't drop below ~3 (roughly <span class="mono">ln(vocab_size)</span>)</td><td>Same signature as Part 3's "stuck loss" bug — check the learning rate isn't ~0, and that <span class="mono">y</span> is actually shifted one position from <span class="mono">x</span></td></tr>
+    <tr><td>Loss won't drop below ~3 (roughly <span class="mono">ln(vocab_size)</span>)</td><td>Same signature as Part 2's "stuck loss" bug — check the learning rate isn't ~0, and that <span class="mono">y</span> is actually shifted one position from <span class="mono">x</span></td></tr>
     <tr><td>Shape error inside attention</td><td>Almost always the head-split/merge reshape — trace <span class="mono">(B,T,D) → (B,H,T,D/H) → (B,T,D)</span> by hand</td></tr>
     <tr><td>Generated text is memorized verbatim</td><td>Expected at this corpus size — see §04's callout, not a bug</td></tr>
     <tr><td>Generation crashes past a certain length</td><td>Context exceeded <span class="mono">BLOCK_SIZE</span> — the positional encoding buffer and the causal mask are both sized for a maximum length</td></tr>
@@ -292,7 +292,7 @@ class TinyGPT(nn.Module):
     <summary>Answers</summary>
     <ol>
       <li>Cross-attention exists to fuse a decoder with a separately-encoded second sequence. A decoder-only model, like this one, only ever has one sequence — its own — so there's nothing for cross-attention to connect to.</li>
-      <li>≈12 × 32² × 3 blocks ≈ 36,900, plus a small embedding table and output projection — on the order of 39,000 parameters. Against a ~250-character corpus, that's vastly more parameters than training examples — memorization, not generalization, is the only possible outcome, exactly as Part 3 §13 predicts.</li>
+      <li>≈12 × 32² × 3 blocks ≈ 36,900, plus a small embedding table and output projection — on the order of 39,000 parameters. Against a ~250-character corpus, that's vastly more parameters than training examples — memorization, not generalization, is the only possible outcome, exactly as Part 2 §13 predicts.</li>
       <li>No. Sampling at <span class="mono">T=1.0</span> means every word is chosen with probability equal to its softmax score — more likely than any other single word, but not guaranteed; only greedy decoding (top-k=1) guarantees it.</li>
     </ol>
   </details>
@@ -316,9 +316,9 @@ class TinyGPT(nn.Module):
   <h2>One page's worth of ideas, six parts to build it right</h2>
   <ul>
     <li><b>Part 1</b> derived every formula — dot products through backprop through attention's √d_k — from the problem it solves</li>
-    <li><b>Part 2</b> previewed the practical tool: tensors, autograd, <span class="mono">nn.Module</span>, the training loop</li>
-    <li><b>Part 3</b> opened the hood completely: a hand-written NumPy MLP, with a hand-derived backward pass</li>
-    <li><b>Part 4</b> extended that toolkit to four more models — classification, convolution, retrieval, causal prediction</li>
+    <li><b>Part 2</b> opened the hood completely: a hand-written NumPy MLP, with a hand-derived backward pass</li>
+    <li><b>Part 3</b> showed the practical tool that automates it: tensors, autograd, <span class="mono">nn.Module</span>, the training loop</li>
+    <li><b>Part 4</b> extended the from-scratch toolkit to four more models — classification, convolution, retrieval, causal prediction</li>
     <li><b>Part 5</b> built the full Transformer: the block, encoder vs. decoder, cross-attention, sampling</li>
     <li><b>Part 6</b> — this part — wired all of it into one small, real, decoder-only Transformer, with the whole architecture animated in motion</li>
   </ul>
@@ -577,7 +577,7 @@ function fmt(v,d){ return Number(v).toFixed(d===undefined?2:d); }
       case 4: say="<b>Block 2 — attention.</b> The identical mechanism, run again — but now attending over vectors block 1 already updated, not the raw embeddings."; break;
       case 5: say="<b>Block 2 — feed-forward.</b> Same shape as block 1's, different numbers — every block is architecturally identical."; break;
       case 6: say="<b>Final LayerNorm.</b> One last rescale before the vector leaves the residual stream for good."; break;
-      case 7: say="<b>Logits.</b> One raw score per vocabulary character — unbounded, not yet a probability (Part 3 §06)."; break;
+      case 7: say="<b>Logits.</b> One raw score per vocabulary character — unbounded, not yet a probability (Part 2 §06)."; break;
       case 8: say = sampledChar===null
         ? "<b>Softmax.</b> Turns the logits into a real probability distribution — press <b>Next</b> once more to sample from it."
         : "<b>Sampled \""+(sampledChar===" "?"space":sampledChar)+"\".</b> Drawn from the distribution above, not just the top pick (Part 5 §08) — appended to the context, and the whole pipeline runs again for the next character."; break;

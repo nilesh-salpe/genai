@@ -5,7 +5,7 @@ This repo hosts **"Neural networks and transformers, built from scratch"** — a
 ## Structure
 
 - `concept/index.html` — landing page for the current course, one card per part.
-- `concept/part-0-big-picture.html` … `part-8-references.html` — the nine numbered parts, in order (0 Big Picture, 1 Foundations, 2 PyTorch, 3 Neural Network, 4 Build Neural Networks, 5 Transformer Architecture, 6 LLM, 7 Illustrated, 8 References).
+- `concept/part-0-big-picture.html` … `part-8-references.html` — the nine numbered parts, in order (0 Big Picture, 1 Foundations, 2 Neural Network, 3 PyTorch, 4 Build Neural Networks, 5 Transformer Architecture, 6 LLM, 7 Illustrated, 8 References).
 - `concept/code/`, `concept/examples/` — the Python/notebook implementations several parts link out to.
 - `concept/drafts/` — markdown drafts of course content, written and reviewed before conversion to HTML. When adding a new part or a substantial rewrite, draft it here first.
 - `concept/v1/` — the original seven-part single-track version of the course, archived but still deployed live at `/v1/` (not deleted — existing links to it must keep working). Cross-linked with the current course from both landing pages ("See v1" / "try v2"). Treat `v1/` as frozen: fix only broken links or build-breaking issues there, don't extend its content — new work goes into the numbered parts at `concept/` root.
