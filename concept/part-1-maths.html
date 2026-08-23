@@ -213,7 +213,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 </section>
 
 <div class="box">
-  <div class="sub">Recall from Part 0 §6</div>
+  <div class="sub">Box A · exp &amp; log, from Part 0</div>
   <div class="h">Exponentials and logarithms, applied here</div>
   <p style="margin-top:.7rem">Every property below was built and checked on real numbers in <a href="part-0-foundations.html">Part 0</a>. Here is why each one earns its place in this document specifically:</p>
   <table>
@@ -230,7 +230,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 </div>
 
 <div class="box">
-  <div class="sub">Recall from Part 0 §10</div>
+  <div class="sub">Box B · Recall from Part 0 §10</div>
   <div class="h">The only two probability facts you need</div>
   <p style="margin-top:.7rem">Both are built and checked (drunkard's-walk widget included) in <a href="part-0-foundations.html">Part 0</a>. Restated here because §9 and §11 lean on them directly:</p>
   <p><strong>Fact 1 — for independent quantities, variances add,</strong> so a sum of n independent unit-variance terms has typical size <strong>√n</strong>, not n:</p>
@@ -404,7 +404,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <h3>Using the blame: gradient descent</h3>
   <p>Every parameter now has a number attached — its share of the blame, ∂L/∂w. The direction was already decided two paragraphs up: the gradient points toward steepest <em>increase</em>, and we want the loss to go down, so move every parameter a small step the <em>other</em> way.</p>
   <span class="eq">w ← w − η ∂L/∂w</span>
-  <p>That is the whole algorithm, applied to every parameter, over and over. <span class="mono">η</span> (eta) is the <strong>learning rate</strong> — how big a step to take. Too small and training crawls; too large and each step overshoots the minimum and the loss climbs instead of falling. The build guide's §6 has a live version of this you can push past that point yourself.</p>
+  <p>That is the whole algorithm, applied to every parameter, over and over. <span class="mono">η</span> (eta) is the <strong>learning rate</strong> — how big a step to take. Too small and training crawls; too large and each step overshoots the minimum and the loss climbs instead of falling. Part 2 §6 has a live version of this you can push past that point yourself.</p>
 
   <h3>Discouraging large weights: regularization</h3>
   <p><strong>The problem.</strong> Nothing said so far stops a weight from growing arbitrarily large to fit the training data exactly, memorising it rather than learning the underlying pattern. Gradient descent minimises the loss <em>and only the loss</em> — if a huge weight lowers it, gradient descent will happily produce one.</p>

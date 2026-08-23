@@ -354,7 +354,7 @@ footer .nextprev{display:flex;justify-content:space-between;gap:1rem;flex-wrap:w
     <p>Before softmax runs, every logit gets divided by a <b>temperature</b> value. If you divide by something small, like 0.3, does the resulting probability distribution get <em>more</em> confident (peakier) or <em>less</em>? What about dividing by something large, like 3?</p>
   </details>
 
-  <p><span class="eq">p = softmax(logits / T)</span> — small <span class="mono">T</span> exaggerates the gaps between logits before softmax sees them, so the distribution sharpens toward the single best guess. Large <span class="mono">T</span> compresses the gaps, flattening the distribution toward uniform. This is the same softmax from Part 1 §6, with one extra knob in front of it.</p>
+  <p><span class="eq">p = softmax(logits / T)</span> — small <span class="mono">T</span> exaggerates the gaps between logits before softmax sees them, so the distribution sharpens toward the single best guess. Large <span class="mono">T</span> compresses the gaps, flattening the distribution toward uniform. This is the same softmax from Part 1 §5, with one extra knob in front of it.</p>
 
   <figure class="w" id="tempfig">
     <div class="head">

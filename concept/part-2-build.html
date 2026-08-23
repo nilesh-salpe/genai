@@ -223,7 +223,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <header class="top">
   <p class="kicker">Course · part two of seven</p>
   <h1>Fundamentals of neural networks: <em>actually</em> build one</h1>
-  <p class="standfirst">The companion guide derives the formulas. This one assembles them into a working digit classifier — every shape, every parameter, and a complete implementation in about sixty lines of NumPy. Twelve of the ideas below are live: change them and watch what happens.</p>
+  <p class="standfirst">Part 1 derives the formulas. This one assembles them into a working digit classifier — every shape, every parameter, and a complete implementation in about sixty lines of NumPy. Twelve of the ideas below are live: change them and watch what happens.</p>
   <div class="legend">
     <span><span class="swatch" style="background:var(--fwd)"></span><b>forward</b> — signal travelling in</span>
     <span><span class="swatch" style="background:var(--back)"></span><b>backward</b> — blame travelling out</span>
@@ -689,7 +689,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <p>If you tune hyperparameters against a set, you have indirectly fitted to it and its score is no longer honest. The test set is the one you do not get to iterate against.</p>
 
   <h3>Regularization: taxing large weights</h3>
-  <p>One direct treatment for overfitting, alongside "get more data" and "shrink the model": add a penalty for large weights straight into the loss, so memorising the training set costs something. The build guide's part-1 companion derives it in full — the short version is <span class="mono">L = L<sub>data</sub> + λΣw²</span>, and because that new term differentiates to <span class="mono">2λw</span>, every update step becomes <span class="mono">w ← w − η(∂L<sub>data</sub>/∂w + 2λw)</span>: the usual data-driven nudge, plus a constant small pull toward zero on every weight, every step.</p>
+  <p>One direct treatment for overfitting, alongside "get more data" and "shrink the model": add a penalty for large weights straight into the loss, so memorising the training set costs something. Part 1 §7 derives it in full — the short version is <span class="mono">L = L<sub>data</sub> + λΣw²</span>, and because that new term differentiates to <span class="mono">2λw</span>, every update step becomes <span class="mono">w ← w − η(∂L<sub>data</sub>/∂w + 2λw)</span>: the usual data-driven nudge, plus a constant small pull toward zero on every weight, every step.</p>
 
   <figure class="w" id="l2fig">
     <div class="head">
@@ -902,7 +902,7 @@ SIZES = [<span class="s">784</span>, <span class="s">128</span>, <span class="s"
 </section>
 
 <footer>
-  <p>For the derivations behind cross-entropy, the softmax gradient, the transpose in backprop, and the scaling in attention, see the companion maths guide.</p>
+  <p>For the derivations behind cross-entropy, the softmax gradient, the transpose in backprop, and the scaling in attention, see <a href="part-1-maths.html">Part 1</a>.</p>
 </footer>
 
 </div>
