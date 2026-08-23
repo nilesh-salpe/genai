@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SPR2FRFBQ1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SPR2FRFBQ1');
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLMs From Scratch v2 — Attention</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF2F5; --card:#FFFFFF; --ink:#15222E; --ink-2:#4B5F6E; --ink-3:#8399A8; --rule:#CBD8E0;
+  --fwd:#0B8B8B; --fwd-soft:#D3EDED;
+  --back:#D8811C; --back-soft:#F8E7CE;
+  --loss:#B31E55; --loss-soft:#F7DDE7;
+  --attn:#5A4A9F; --attn-soft:#E2DDF2;
+  --measure:34rem; --wide:52rem;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background-color:var(--paper);
+  background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);
+  background-size:28px 28px;background-position:-1px -1px;
+  color:var(--ink);font-family:"Spectral",Georgia,serif;font-size:17px;line-height:1.68}
+body::before{content:"";position:fixed;inset:0;background:var(--paper);opacity:.82;pointer-events:none;z-index:0}
+.shell{position:relative;z-index:1;max-width:var(--wide);margin:0 auto;padding:0 1.25rem 6rem}
+h1,h2,h3,.eyebrow,.ui,button,input,label,table{font-family:"Space Grotesk",system-ui,sans-serif}
+code,.mono,.eq{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+header.top{padding:4.5rem 0 2rem;max-width:var(--measure)}
+.kicker{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 1.4rem}
+h1{font-size:clamp(2rem,5.6vw,3.2rem);line-height:1.03;letter-spacing:-.03em;font-weight:700;margin:0 0 1.1rem}
+h1 em{font-style:normal;color:var(--attn)}
+.standfirst{font-size:1.12rem;color:var(--ink-2);margin:0 0 2rem}
+.progress{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin:0 0 3rem;padding:.85rem .95rem;background:var(--card);border:1px solid var(--rule);font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.02em;max-width:var(--wide)}
+.progress a{color:var(--ink-2);text-decoration:none;padding:.28rem .6rem;border:1px solid var(--rule);border-radius:2px;white-space:nowrap;transition:border-color .15s,background .15s,color .15s}
+.progress a:hover{border-color:var(--ink);color:var(--ink)}
+.progress a.here{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+section{margin:4.5rem 0 0}
+.eyebrow{display:flex;align-items:baseline;gap:.85rem;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.5rem}
+.eyebrow .num{font-family:"IBM Plex Mono",monospace;color:var(--attn);font-weight:600}
+.eyebrow .line{flex:1;height:1px;background:var(--rule)}
+h2{font-size:clamp(1.4rem,3.4vw,1.95rem);line-height:1.15;letter-spacing:-.02em;margin:.1rem 0 1.1rem;font-weight:700;max-width:var(--measure)}
+p{margin:0 0 1.1rem;max-width:var(--measure)}
+strong{font-weight:600}
+.eq{display:block;margin:1.4rem 0;padding:.9rem 1.1rem;background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--attn);font-size:.95rem;overflow-x:auto;max-width:var(--measure);white-space:nowrap}
+.eq.hero{font-size:1.05rem}
+table{border-collapse:collapse;width:100%;max-width:var(--wide);margin:1.4rem 0;font-size:.86rem}
+th,td{text-align:left;padding:.55rem .7rem;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:600;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--ink-3)}
+figure.w{margin:2.5rem 0;background:var(--card);border:1px solid var(--rule);max-width:var(--wide)}
+figure.w.hero{border-color:var(--attn)}
+figure.w .head{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.7rem 1.1rem;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+figure.w .title{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+figure.w .body{padding:1.2rem 1.1rem}
+figure.w figcaption{padding:.75rem 1.1rem 1rem;font-size:.85rem;color:var(--ink-2);border-top:1px dashed var(--rule)}
+figure.w figcaption b{color:var(--ink);font-weight:600}
+.ctrls{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+button{font-size:.78rem;font-weight:500;padding:.42rem .85rem;border:1px solid var(--ink);background:var(--card);color:var(--ink);cursor:pointer;border-radius:2px;transition:background .15s,color .15s}
+button:hover{background:var(--ink);color:var(--card)}
+button.att{border-color:var(--attn);color:var(--attn)} button.att:hover{background:var(--attn);color:#fff}
+button.on{background:var(--ink);color:var(--card)}
+button.att.on{background:var(--attn);color:#fff}
+.slider-row{display:grid;grid-template-columns:auto 1fr auto;gap:.7rem;align-items:center;margin-bottom:.5rem;font-family:"IBM Plex Mono",monospace;font-size:.78rem}
+.slider-row label{color:var(--ink-2)}
+.slider-row .val{min-width:4.2rem;text-align:right;font-weight:500}
+input[type=range]{width:100%;accent-color:var(--attn);height:1.5rem}
+canvas{display:block;max-width:100%}
+.readout{font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--ink-2);margin-top:.7rem;line-height:1.65}
+.readout b{color:var(--ink);font-weight:600}
+footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-size:.85rem;color:var(--ink-3);max-width:var(--measure)}
+@media (max-width:640px){body{font-size:16px}.shell{padding:0 1rem 4rem}figure.w .body{padding:1rem .8rem}}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms !important;animation-duration:.01ms !important}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<nav class="progress" aria-label="Course progress">
+  <a href="part-0-big-picture.html">0 · Big Picture</a>
+  <a href="part-1-foundations.html">1 · Foundations</a>
+  <a href="part-2-neural-network.html">2 · Neural Network</a>
+  <a href="part-3-examples.html">3 · Examples</a>
+  <a href="part-4-attention.html" class="here">4 · Attention</a>
+  <a href="part-5-transformer.html">5 · Transformer</a>
+  <a href="part-6-llm.html">6 · LLM</a>
+  <a href="part-7-illustrated.html">7 · Illustrated</a>
+</nav>
+
+<header class="top">
+  <p class="kicker">v2 · part four of seven</p>
+  <h1>Attention, <em>derived</em></h1>
+  <p class="standfirst">Part 3's retrieval widget — a query, some keys, a softmax-weighted blend of values — was already attention's arithmetic. This page gives it the name, the matrices, the scaling factor, multiple heads, the rule against peeking, and a way to tell position apart from content: everything "Attention Is All You Need" (Vaswani et al., 2017) actually introduces.</p>
+</header>
+
+<section>
+  <div class="eyebrow"><span class="num">01</span><span>From one query to every position</span><span class="line"></span></div>
+  <h2>Q, K, V: the same retrieval, run for the whole sequence at once</h2>
+  <p>Part 3's query, key, and value were hand-picked vectors. In a real model they're computed <em>from</em> each token's embedding, by three learned matrices: <span class="mono">Q = XWQ</span>, <span class="mono">K = XWK</span>, <span class="mono">V = XWV</span>, where <span class="mono">X</span> stacks every token's embedding as a row. Every token gets its own query ("what am I looking for"), its own key ("what do I contain, as advertised to others"), and its own value ("what I'll actually contribute if attended to") — three different linear projections of the same embedding, for three different jobs.</p>
+  <span class="eq hero">Attention(Q,K,V) = softmax( QKᵀ / √d_k ) V</span>
+  <p>Read left to right: <span class="mono">QKᵀ</span> scores every query against every key at once (a matrix of dot products — Part 1 §4's agreement measure, done <span class="mono">n²</span> times in one multiply); divide by <span class="mono">√d_k</span> (§2 below); softmax turns each row into a probability distribution over positions; multiplying by <span class="mono">V</span> takes the weighted average of values that Part 3 already built by hand.</p>
+
+  <figure class="w hero" id="qkvfig">
+    <div class="head">
+      <span class="title">A 4-token sequence, one attention head, worked in full</span>
+      <div class="ctrls"></div>
+    </div>
+    <div class="body">
+      <canvas id="qkv" width="820" height="260" aria-label="Heatmap of attention weights for a 4-token sequence after softmax"></canvas>
+      <div class="readout" id="qkv-say"></div>
+    </div>
+    <figcaption>Rows are queries, columns are keys; brightness is the attention weight after softmax. Every row sums to exactly 1 — each token's output is a full weighted blend of every token's value, with the weights read straight off this heatmap.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">02</span><span>The scaling factor</span><span class="line"></span></div>
+  <h2>Why √d_k, and not "for numerical stability"</h2>
+  <p>Suppose <span class="mono">q</span> and <span class="mono">k</span>'s entries are roughly independent, mean 0, variance 1 — what initialization and layer norm arrange. Their dot product sums <span class="mono">d_k</span> independent products; by Part 1 §10's fact, <strong>variances add</strong>, so the dot product's variance is <span class="mono">d_k</span> and its typical size is <span class="mono">√d_k</span>. As <span class="mono">d_k</span> grows, raw scores grow with it — and Part 2 §2 showed a confident softmax has almost no gradient. Dividing by <span class="mono">√d_k</span> undoes exactly this growth, keeping scores in the range where softmax still responds to changes.</p>
+
+  <figure class="w" id="scalefig">
+    <div class="head">
+      <span class="title">Score spread vs. d_k · scaling on or off</span>
+      <div class="ctrls">
+        <button class="att on" id="sc-on">Scaling on</button>
+        <button id="sc-off">Scaling off</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="slider-row"><label>d_k</label><input type="range" id="sc-dk" min="4" max="512" step="4" value="64"><span class="val" id="sc-dkv">64</span></div>
+      <canvas id="scale" width="820" height="220" aria-label="Distribution of attention scores at a given d_k, with scaling toggled on or off"></canvas>
+      <div class="readout" id="sc-say"></div>
+    </div>
+    <figcaption>Push <b>d_k</b> to 512 with scaling <b>off</b>: scores spread to roughly ±23, softmax collapses to one-hot, and gradients vanish. Flip scaling <b>on</b> and the spread returns to roughly ±1 regardless of d_k — the variance argument above, made visible.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">03</span><span>Multiple questions at once</span><span class="line"></span></div>
+  <h2>Multi-head attention: several attention patterns in parallel</h2>
+  <p>One attention head can only ask one kind of question per position. The paper's fix: split <span class="mono">Q</span>, <span class="mono">K</span>, <span class="mono">V</span> into <span class="mono">h</span> smaller pieces (heads), run the identical attention formula on each piece independently and in parallel, then concatenate the results back together and project once more. Each head is free to specialize — one might track nearby words, another long-range subject-verb agreement — because nothing forces them to learn the same pattern.</p>
+  <span class="eq">MultiHead(Q,K,V) = Concat(head₁, …, head_h) Wᴼ &nbsp;&nbsp; headᵢ = Attention(QWᵢQ, KWᵢK, VWᵢV)</span>
+
+  <figure class="w" id="headfig">
+    <div class="head">
+      <span class="title">Two heads, same sentence, different patterns</span>
+      <div class="ctrls">
+        <button class="att on" id="mh-1">Head 1</button>
+        <button id="mh-2">Head 2</button>
+      </div>
+    </div>
+    <div class="body">
+      <canvas id="mh" width="820" height="200" aria-label="Attention lines for one word across two different heads, showing different dependency patterns"></canvas>
+      <div class="readout" id="mh-say"></div>
+    </div>
+    <figcaption>Same word, same sentence, same underlying formula — but each head's Q/K/V projections are different learned matrices, so <b>Head 1</b> and <b>Head 2</b> genuinely disagree about what matters. Concatenating both gives the next layer access to both patterns at once.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">04</span><span>No peeking</span><span class="line"></span></div>
+  <h2>The causal mask, formalized</h2>
+  <p>Part 3 §4 showed the rule; here is the mechanism. Before softmax, set every score where key position <span class="mono">j &gt; i</span> to <span class="mono">−∞</span>. Since <span class="mono">e⁻∞ = 0</span>, those positions get exactly zero weight after softmax — not "very small," exactly zero — while every row still sums to 1, because the mask only redistributes attention among the allowed positions rather than shrinking the total. In code this is a large negative number (like <span class="mono">−10⁹</span>) added to the score matrix before softmax, since a literal infinity would produce NaNs.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">05</span><span>Telling position from content</span><span class="line"></span></div>
+  <h2>Positional encoding: attention alone can't tell order</h2>
+  <p>Every dot product above depends only on the vectors involved, not on where they sit in the sequence — shuffle every token and every Q·K score shuffles identically, unchanged. Without a fix, "dog bites man" and "man bites dog" would attend identically. The paper's fix: add a fixed pattern to each token's embedding <em>before</em> attention runs, built from sines and cosines at different frequencies per dimension:</p>
+  <span class="eq wide">PE(pos, 2i) = sin(pos / 10000^(2i/d)) &nbsp;&nbsp; PE(pos, 2i+1) = cos(pos / 10000^(2i/d))</span>
+
+  <figure class="w" id="posfig">
+    <div class="head">
+      <span class="title">Positional encoding, dimension by dimension</span>
+      <div class="ctrls"></div>
+    </div>
+    <div class="body">
+      <canvas id="pos" width="820" height="240" aria-label="Sine and cosine curves at different frequencies representing positional encoding dimensions"></canvas>
+      <div class="readout" id="pos-say">Low dimensions oscillate fast (fine position detail); high dimensions oscillate slow (coarse position, like the hour hand on a clock).</div>
+    </div>
+    <figcaption>Each row is one embedding dimension's value across 50 positions — a different frequency per row. No two positions ever produce the exact same combination across all dimensions, and because sine/cosine of a sum expands into sines and cosines of the parts, the network can learn to read off <em>relative</em> position (how far apart two tokens are), not just absolute position.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">06</span><span>Onward</span><span class="line"></span></div>
+  <h2>What Part 5 assembles</h2>
+  <p>Every piece "Attention Is All You Need" introduces is now built: Q/K/V from learned projections, the √d_k scaling and why, multiple heads in parallel, the causal mask, and positional encoding. What's left is architecture — wrapping attention in residual connections and layer norm, pairing it with a feed-forward network, stacking that block many times, and (in the paper's original design) splitting the stack into an encoder and a decoder that talk to each other.</p>
+  <p><a href="part-5-transformer.html">Continue to Part 5 — the full architecture →</a></p>
+</section>
+
+<footer>
+  <p>Reduced-motion preferences are respected throughout; every animation degrades to its final state.</p>
+</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+var REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function fmt(v,d){ return Number(v).toFixed(d===undefined?2:d); }
+function gid(i){ return document.getElementById(i); }
+
+/* ===== QKV HEATMAP ===== */
+(function(){
+  var cv=gid("qkv"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("qkv-say");
+  var TOKENS=["The","cat","sat","down"];
+  var Q=[[1,0],[0,1],[1,1],[-1,1]];
+  var K=[[1,-0.3],[0.2,1.3],[0.3,1.1],[1,-0.2]];
+  var n=TOKENS.length, dk=2;
+  function softmaxRow(row){
+    var m=Math.max.apply(null,row);
+    var exps=row.map(function(v){return Math.exp(v-m);});
+    var sum=exps.reduce(function(a,b){return a+b;},0);
+    return exps.map(function(v){return v/sum;});
+  }
+  var W=[];
+  for(var i=0;i<n;i++){
+    var scores=[];
+    for(var j=0;j<n;j++){
+      var dot=Q[i][0]*K[j][0]+Q[i][1]*K[j][1];
+      scores.push(dot/Math.sqrt(dk));
+    }
+    W.push(softmaxRow(scores));
+  }
+  function draw(){
+    var Wd=cv.width,Hd=cv.height; ctx.clearRect(0,0,Wd,Hd);
+    var cell=76, gx=140, gy=40;
+    ctx.font="13px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+    TOKENS.forEach(function(t,j){ ctx.fillStyle="#8399A8"; ctx.fillText(t, gx+j*cell+cell/2, gy-10); });
+    for(var i=0;i<n;i++){
+      ctx.fillStyle="#8399A8"; ctx.textAlign="right";
+      ctx.fillText(TOKENS[i], gx-14, gy+i*cell+cell/2+5);
+      for(var j=0;j<n;j++){
+        var w=W[i][j];
+        ctx.fillStyle="rgba(90,74,159,"+(0.08+0.85*w)+")";
+        ctx.fillRect(gx+j*cell,gy+i*cell,cell-4,cell-4);
+        ctx.fillStyle = w>0.4 ? "#fff" : "#15222E";
+        ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+        ctx.fillText(fmt(w,2), gx+j*cell+(cell-4)/2, gy+i*cell+(cell-4)/2+4);
+      }
+    }
+    var order=[0,1,2,3].slice().sort(function(a,b){return W[1][b]-W[1][a];});
+    say.innerHTML="Row \""+TOKENS[1]+"\" attends most to \""+TOKENS[order[0]]+"\" ("+fmt(W[1][order[0]],2)+"), then \""+TOKENS[order[1]]+"\" ("+fmt(W[1][order[1]],2)+") — weights ["+W[1].map(function(v){return fmt(v,2);}).join(", ")+"], summing to "+fmt(W[1].reduce(function(a,b){return a+b;},0),2)+".";
+  }
+  draw();
+})();
+
+/* ===== SCALING ===== */
+(function(){
+  var cv=gid("scale"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("sc-say"), slider=gid("sc-dk");
+  var scaled=true;
+  function sampleScores(dk){
+    var scores=[];
+    for(var i=0;i<400;i++){
+      var s=0;
+      for(var k=0;k<dk;k++) s += (Math.random()*2-1)*Math.sqrt(3) * (Math.random()*2-1)*Math.sqrt(3);
+      scores.push(scaled ? s/Math.sqrt(dk) : s);
+    }
+    return scores;
+  }
+  function draw(){
+    var dk=parseInt(slider.value,10); gid("sc-dkv").textContent=dk;
+    var scores=sampleScores(dk);
+    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
+    var maxAbs = scaled ? 6 : Math.max(6, Math.max.apply(null,scores.map(Math.abs))*1.1);
+    var x0=-maxAbs,x1=maxAbs;
+    function px(v){ return 50+(v-x0)/(x1-x0)*(W-70); }
+    var bins=40, counts=new Array(bins).fill(0);
+    scores.forEach(function(s){ var b=Math.floor((Math.max(x0,Math.min(x1,s))-x0)/(x1-x0)*(bins-1)); counts[b]++; });
+    var maxCount=Math.max.apply(null,counts);
+    ctx.strokeStyle="#8399A8"; ctx.beginPath(); ctx.moveTo(px(x0),H-30); ctx.lineTo(px(x1),H-30); ctx.stroke();
+    for(var b=0;b<bins;b++){
+      var bx0=x0+(x1-x0)*b/bins, bw=(x1-x0)/bins;
+      var h=(counts[b]/maxCount)*(H-60);
+      ctx.fillStyle = scaled ? "#5A4A9F" : "#B31E55";
+      ctx.fillRect(px(bx0),H-30-h,px(bx0+bw)-px(bx0)-1,h);
+    }
+    var mean=scores.reduce(function(a,b){return a+b;},0)/scores.length;
+    var variance=scores.reduce(function(a,b){return a+(b-mean)*(b-mean);},0)/scores.length;
+    say.innerHTML="d_k = "+dk+" &nbsp;·&nbsp; scaling "+(scaled?"<b style='color:#5A4A9F'>on</b>":"<b style='color:#B31E55'>off</b>")+" &nbsp;·&nbsp; typical score size ≈ <b>"+fmt(Math.sqrt(variance),2)+"</b>"+(scaled?" — stays near 1 regardless of d_k":" — grows with √d_k, exactly as the variance argument predicts");
+  }
+  gid("sc-on").onclick=function(){ scaled=true; this.classList.add("on"); gid("sc-off").classList.remove("on"); draw(); };
+  gid("sc-off").onclick=function(){ scaled=false; this.classList.add("on"); gid("sc-on").classList.remove("on"); draw(); };
+  slider.oninput=draw;
+  draw();
+})();
+
+/* ===== MULTI-HEAD ===== */
+(function(){
+  var cv=gid("mh"); if(!cv) return;
+  var say=gid("mh-say");
+  var WORDS=["The","dog","that","chased","the","cat","barked","loudly"];
+  var HEAD1={1:{0:0.15,3:0.75,6:0.6}}; // "dog" -> chased(local-ish), barked (subject-verb)
+  var HEAD2={1:{0:0.7,2:0.1,6:0.15}}; // "dog" -> "The" (nearby determiner)
+  var mode=1;
+  function positions(){
+    var x=20, pos=[];
+    WORDS.forEach(function(w){ pos.push(x); x+=w.length*9+24; });
+    return pos;
+  }
+  function render(){
+    var svgLike = cv.getContext("2d");
+    var ctx=svgLike;
+    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
+    var pos=positions(), y=100;
+    var weights = mode===1 ? HEAD1[1] : HEAD2[1];
+    Object.keys(weights).forEach(function(k){
+      var j=parseInt(k,10), w=weights[k];
+      var x1=pos[1]+WORDS[1].length*4, x2=pos[j]+WORDS[j].length*4;
+      var midY=y-30-w*60;
+      ctx.strokeStyle="#5A4A9F"; ctx.lineWidth=1+w*6; ctx.globalAlpha=0.3+w*0.6;
+      ctx.beginPath(); ctx.moveTo(x1,y-10); ctx.quadraticCurveTo((x1+x2)/2,midY,x2,y-10); ctx.stroke();
+      ctx.globalAlpha=1;
+    });
+    ctx.font="15px 'IBM Plex Mono',monospace"; ctx.textAlign="left";
+    WORDS.forEach(function(w,i){
+      ctx.fillStyle = i===1 ? "#5A4A9F" : (weights[i]!==undefined ? "#15222E" : "#8399A8");
+      if(i===1) ctx.font="600 15px 'IBM Plex Mono',monospace"; else ctx.font="15px 'IBM Plex Mono',monospace";
+      ctx.fillText(w, pos[i], y);
+    });
+    var top = Object.keys(weights).reduce(function(best,k){ return weights[k]>weights[best]?k:best; }, Object.keys(weights)[0]);
+    say.innerHTML=(mode===1?"<b>Head 1</b>":"<b>Head 2</b>")+' — "dog" attends most to "'+WORDS[top]+'" ('+fmt(weights[top],2)+'). '+(mode===1?"This head tracks the verb it's the subject of, even several words away.":"This head tracks the immediately preceding determiner — a purely local pattern.");
+  }
+  gid("mh-1").onclick=function(){ mode=1; this.classList.add("on"); gid("mh-2").classList.remove("on"); render(); };
+  gid("mh-2").onclick=function(){ mode=2; this.classList.add("on"); gid("mh-1").classList.remove("on"); render(); };
+  render();
+})();
+
+/* ===== POSITIONAL ENCODING ===== */
+(function(){
+  var cv=gid("pos"); if(!cv) return;
+  var ctx=cv.getContext("2d");
+  var dims=8, positions=50, d=64;
+  function draw(){
+    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
+    var rowH=H/dims;
+    for(var dim=0;dim<dims;dim++){
+      var freq = 1/Math.pow(10000, (2*Math.floor(dim/2))/d);
+      var y0=dim*rowH+rowH/2;
+      ctx.strokeStyle = dim%2===0 ? "#0B8B8B" : "#5A4A9F";
+      ctx.lineWidth=1.6; ctx.beginPath();
+      for(var p=0;p<positions;p++){
+        var val = dim%2===0 ? Math.sin(p*freq) : Math.cos(p*freq);
+        var x=40+(p/positions)*(W-60);
+        var y=y0-val*(rowH*0.42);
+        if(p===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+      ctx.fillStyle="#8399A8"; ctx.font="10px 'IBM Plex Mono',monospace"; ctx.textAlign="left";
+      ctx.fillText("dim "+dim, 4, y0+3);
+    }
+  }
+  draw();
+})();
+})();
+</script>
+</body>
+</html>
