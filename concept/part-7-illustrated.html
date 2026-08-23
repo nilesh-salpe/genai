@@ -62,6 +62,10 @@ canvas{display:block;max-width:100%}
 .progressbar{height:4px;background:var(--rule);margin:0;position:relative}
 .progressbar .fill{height:100%;background:var(--attn);transition:width .2s}
 .partref{font-family:"IBM Plex Mono",monospace;font-size:.72rem;color:var(--ink-3);letter-spacing:.04em}
+.callout{max-width:var(--wide);margin:1.6rem 0;padding:1rem 1.2rem;background:var(--attn-soft);border:1px solid var(--attn);border-radius:2px}
+.callout .h{font-weight:700;margin-bottom:.3rem}
+.callout p{max-width:100%}
+.callout p:last-child{margin-bottom:0}
 footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-size:.85rem;color:var(--ink-3);max-width:var(--measure)}
 @media (max-width:640px){body{font-size:16px}.shell{padding:0 1rem 4rem}figure.w .body{padding:1rem .8rem}}
 @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms !important;animation-duration:.01ms !important}}
@@ -116,6 +120,14 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <section>
   <p>That's the whole pipeline this course builds: tokens in, a probability out, one number chosen, appended, and the entire thing runs again for the next word. Everything else in every current large language model — the number of blocks, the width of the embeddings, the size of the vocabulary — is scale applied to exactly this loop.</p>
   <p>If any single step above felt unfamiliar, its part reference names exactly where to go back and rebuild it from scratch.</p>
+</section>
+
+<section>
+  <div class="callout">
+    <p class="h">Two hands-on companions to this walkthrough</p>
+    <p>The <a href="bonus-transformer-illustrated.html"><strong>Transformer Visualizer</strong></a> re-runs this exact pipeline step by step, but with every intermediate matrix shown on screen, equations and PyTorch code toggled on demand, your own sentence typed in, and three modes — inference, training, fine-tuning — so you can see how the diagram changes once gradients enter the picture.</p>
+    <p>v1's <a href="v1/bonus-curve-fitting.html"><strong>curve-fitting sandbox</strong></a> zooms into just Part 2's half of the story — features → simple pieces → one prediction — with sliders for depth, width, activation, and learning rate, training live in the browser so you can watch a network fit a function from scratch.</p>
+  </div>
 </section>
 
 <footer>
