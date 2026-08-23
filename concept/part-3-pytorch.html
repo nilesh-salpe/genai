@@ -76,7 +76,11 @@ button[disabled]{opacity:.35;cursor:not-allowed}
 .mgrid{display:grid;gap:.35rem}
 .mcell{width:44px;height:36px;display:flex;align-items:center;justify-content:center;border:1px solid var(--rule);background:var(--paper);font-family:"IBM Plex Mono",monospace;font-size:.85rem;transition:background .3s,border-color .3s,color .3s}
 .mcell.changed{background:var(--back-soft);border-color:var(--back);color:var(--back);font-weight:600}
-pre{background:var(--card);border:1px solid var(--rule);padding:1rem 1.2rem;overflow-x:auto;font-family:'IBM Plex Mono',monospace;font-size:.8rem;line-height:1.6;max-width:100%}
+pre{background:var(--ink);color:#DDE7EC;padding:1.15rem;overflow-x:auto;font-family:"IBM Plex Mono",monospace;font-size:.79rem;line-height:1.62;max-width:100%;border-radius:2px}
+pre .c{color:#7F97A5;font-style:italic}
+pre .k{color:#5FCBCB}
+pre .s{color:#E9A85A}
+p code,li code,td code{background:#E2EAEF;padding:.08em .35em;font-size:.85em;border-radius:2px}
 .node{fill:#fff;stroke:var(--ink-3);stroke-width:1.4;transition:fill .3s,stroke .3s}
 .node.tracked{stroke:var(--fwd)}
 .node.on{fill:var(--fwd-soft);stroke:var(--fwd);stroke-width:2}
@@ -200,17 +204,17 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 
   <p><strong>The same architecture Part 2 derived by hand,</strong> one weight matrix and one nonlinearity at a time. Below is that <span class="mono">784 → 128 → 64 → 10</span> network again, in five lines:</p>
 
-<pre><code>class MLP(nn.Module):
-    def __init__(self):
+<pre><span class="k">class</span> MLP(nn.Module):
+    <span class="k">def</span> __init__(self):
         super().__init__()
-        self.l1 = nn.Linear(784, 128)
-        self.l2 = nn.Linear(128, 64)
-        self.l3 = nn.Linear(64, 10)
+        self.l1 = nn.Linear(<span class="s">784</span>, <span class="s">128</span>)
+        self.l2 = nn.Linear(<span class="s">128</span>, <span class="s">64</span>)
+        self.l3 = nn.Linear(<span class="s">64</span>, <span class="s">10</span>)
 
-    def forward(self, x):
+    <span class="k">def</span> forward(self, x):
         x = F.relu(self.l1(x))
         x = F.relu(self.l2(x))
-        return self.l3(x)   # logits — softmax lives in the loss, not here</code></pre>
+        <span class="k">return</span> self.l3(x)   <span class="c"># logits — softmax lives in the loss, not here</span></pre>
 
   <p style="margin-bottom:0">Two things worth noticing. First, each layer's input width has to be stated explicitly — PyTorch infers nothing about width from context; you still design the shape ladder yourself. Second, this returns raw <strong>logits</strong>, not probabilities: <span class="mono">nn.CrossEntropyLoss</span> applies softmax internally, so applying it yourself first and passing the result in is a real, common, and silent bug.</p>
 </section>
@@ -219,11 +223,11 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <div class="eyebrow"><span class="num">05</span><span>Fitting it</span><span class="line"></span></div>
   <h2>The training loop, translated</h2>
   <p>Whatever the architecture, training is always the same five-step pattern — Part 2 spelled out <em>forward → loss → backward → update, repeat</em> in full arithmetic; PyTorch just gives each step one call:</p>
-<pre><code>pred = model(X)              # forward — one pass through every layer
-loss = criterion(pred, y)    # loss — compare against the true labels
-loss.backward()              # backward — autograd fills in every .grad
-optimizer.step()             # update — each parameter moves against its gradient
-optimizer.zero_grad()        # reset — clear .grad before the next batch</code></pre>
+<pre>pred = model(X)              <span class="c"># forward — one pass through every layer</span>
+loss = criterion(pred, y)    <span class="c"># loss — compare against the true labels</span>
+loss.backward()              <span class="c"># backward — autograd fills in every .grad</span>
+optimizer.step()             <span class="c"># update — each parameter moves against its gradient</span>
+optimizer.zero_grad()        <span class="c"># reset — clear .grad before the next batch</span></pre>
   <div class="callout">
     <p class="h">Trap: the last call is the one people forget</p>
     <p><span class="mono">.backward()</span> <strong>adds</strong> new gradients onto whatever is already sitting in <span class="mono">.grad</span> — it does not overwrite. Skip <span class="mono">zero_grad()</span> and every batch's gradient piles on top of the last one, silently; training still runs, the loss curve just never makes sense.</p>
@@ -234,40 +238,40 @@ optimizer.zero_grad()        # reset — clear .grad before the next batch</code
   <div class="eyebrow"><span class="num">06</span><span>Full example</span><span class="line"></span></div>
   <h2>Rebuilding Part 2's model, in PyTorch</h2>
   <p>Everything above, assembled — a complete, runnable classifier. Same architecture, same ≈109,386 parameters, same He initialization Part 2 already built by hand.</p>
-<pre><code>import torch, torch.nn as nn, torch.nn.functional as F
+<pre><span class="k">import</span> torch, torch.nn <span class="k">as</span> nn, torch.nn.functional <span class="k">as</span> F
 
-class MLP(nn.Module):
-    def __init__(self):
+<span class="k">class</span> MLP(nn.Module):
+    <span class="k">def</span> __init__(self):
         super().__init__()
-        self.l1 = nn.Linear(784, 128)
-        self.l2 = nn.Linear(128, 64)
-        self.l3 = nn.Linear(64, 10)
-    def forward(self, x):
+        self.l1 = nn.Linear(<span class="s">784</span>, <span class="s">128</span>)
+        self.l2 = nn.Linear(<span class="s">128</span>, <span class="s">64</span>)
+        self.l3 = nn.Linear(<span class="s">64</span>, <span class="s">10</span>)
+    <span class="k">def</span> forward(self, x):
         x = F.relu(self.l1(x))
         x = F.relu(self.l2(x))
-        return self.l3(x)
+        <span class="k">return</span> self.l3(x)
 
-device = torch.accelerator.current_accelerator() if torch.accelerator.is_available() else "cpu"
+device = torch.accelerator.current_accelerator() <span class="k">if</span> torch.accelerator.is_available() <span class="k">else</span> <span class="s">"cpu"</span>
 model = MLP().to(device)
 criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+optimizer = torch.optim.SGD(model.parameters(), lr=<span class="s">0.1</span>)
 
-def train_epoch(loader):
+<span class="k">def</span> train_epoch(loader):
     model.train()
-    for X, y in loader:
+    <span class="k">for</span> X, y <span class="k">in</span> loader:
         X, y = X.to(device), y.to(device)
         pred = model(X); loss = criterion(pred, y)
         loss.backward(); optimizer.step(); optimizer.zero_grad()
 
-def evaluate(loader):
+<span class="k">def</span> evaluate(loader):
     model.eval()
-    correct = total = 0
-    with torch.no_grad():
-        for X, y in loader:
+    correct = total = <span class="s">0</span>
+    <span class="k">with</span> torch.no_grad():
+        <span class="k">for</span> X, y <span class="k">in</span> loader:
             X, y = X.to(device), y.to(device)
-            pred = model(X).argmax(dim=1)
-            correct += (pred == y).sum().item(); total += y.size(0)
-    return correct / total</code></pre>
+            pred = model(X).argmax(dim=<span class="s">1</span>)
+            correct += (pred == y).sum().item(); total += y.size(<span class="s">0</span>)
+    <span class="k">return</span> correct / total</pre>
 
   <table>
     <tr><th>Concept</th><th>Here, PyTorch</th><th>Part 2, NumPy</th></tr>
@@ -288,11 +292,11 @@ def evaluate(loader):
   </div>
   <p><strong>Train vs. eval mode.</strong> <span class="mono">model.train()</span> / <span class="mono">.eval()</span> switch layers like Dropout and BatchNorm between training and inference behavior. <span class="mono">torch.no_grad()</span> is separate: it skips building the autograd graph entirely. Use both together at inference.</p>
   <p style="margin-bottom:0"><strong>Saving.</strong> A model is architecture plus parameters, kept deliberately separate:</p>
-<pre><code>torch.save(model.state_dict(), "model.pth")
-# later, in a script that already defines class MLP:
+<pre>torch.save(model.state_dict(), <span class="s">"model.pth"</span>)
+<span class="c"># later, in a script that already defines class MLP:</span>
 model = MLP()
-model.load_state_dict(torch.load("model.pth"))
-model.eval()</code></pre>
+model.load_state_dict(torch.load(<span class="s">"model.pth"</span>))
+model.eval()</pre>
 </section>
 
 <section>

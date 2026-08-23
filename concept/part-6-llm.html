@@ -56,6 +56,11 @@ strong{font-weight:600}
 blockquote{margin:1.6rem 0;padding:.2rem 0 .2rem 1.3rem;border-left:3px solid var(--attn);max-width:var(--measure);font-size:1.04rem}
 .eq{display:block;margin:1.4rem 0;padding:.9rem 1.1rem;background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--attn);font-size:.95rem;overflow-x:auto;max-width:var(--measure);white-space:nowrap}
 table{border-collapse:collapse;width:100%;max-width:var(--wide);margin:1.4rem 0;font-size:.86rem}
+pre{background:var(--ink);color:#DDE7EC;padding:1.15rem;overflow-x:auto;font-family:"IBM Plex Mono",monospace;font-size:.79rem;line-height:1.62;max-width:100%;border-radius:2px}
+pre .c{color:#7F97A5;font-style:italic}
+pre .k{color:#5FCBCB}
+pre .s{color:#E9A85A}
+p code,li code,td code{background:#E2EAEF;padding:.08em .35em;font-size:.85em;border-radius:2px}
 th,td{text-align:left;padding:.55rem .7rem;border-bottom:1px solid var(--rule);vertical-align:top}
 th{font-weight:600;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--ink-3)}
 figure.w{margin:2.5rem 0;background:var(--card);border:1px solid var(--rule);max-width:var(--wide)}
@@ -172,52 +177,57 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <h2>The whole architecture, assembled</h2>
   <p>One block — causal self-attention, then a feed-forward network, each behind a residual connection (Part 5 §06) — stacked <span class="mono">N</span> times. This is Part 5 §06's block exactly, minus cross-attention, which a decoder-only model never has.</p>
 
-<pre style="background:var(--card);border:1px solid var(--rule);padding:1rem 1.2rem;overflow-x:auto;font-family:'IBM Plex Mono',monospace;font-size:.8rem;line-height:1.6;max-width:100%"><code>class CausalSelfAttention(nn.Module):
-    # Part 5 §03-04: softmax(QK^T/sqrt(d_k))V, masked so
-    # position i never sees j > i.
-    def __init__(self, d_model, n_heads, block_size):
+<pre><span class="k">class</span> CausalSelfAttention(nn.Module):
+    <span class="c"># Part 5 §03-04: softmax(QK^T/sqrt(d_k))V, masked so</span>
+    <span class="c"># position i never sees j > i.</span>
+    <span class="k">def</span> __init__(self, d_model, n_heads, block_size):
         super().__init__()
-        self.wq = nn.Linear(d_model, d_model, bias=False)
-        self.wk = nn.Linear(d_model, d_model, bias=False)
-        self.wv = nn.Linear(d_model, d_model, bias=False)
-        self.wo = nn.Linear(d_model, d_model, bias=False)
-        self.register_buffer("mask", torch.tril(torch.ones(block_size, block_size)).bool())
+        self.wq = nn.Linear(d_model, d_model, bias=<span class="k">False</span>)
+        self.wk = nn.Linear(d_model, d_model, bias=<span class="k">False</span>)
+        self.wv = nn.Linear(d_model, d_model, bias=<span class="k">False</span>)
+        self.wo = nn.Linear(d_model, d_model, bias=<span class="k">False</span>)
+        self.register_buffer(<span class="s">"mask"</span>, torch.tril(torch.ones(block_size, block_size)).bool())
 
-    def forward(self, x):
-        ...  # split into heads, score, mask, softmax, weight V, concat
+    <span class="k">def</span> forward(self, x):
+        ...  <span class="c"># split into heads, score, mask, softmax, weight V, concat</span>
 
-class DecoderBlock(nn.Module):
-    # Part 5 §06's exact equation:
-    # x' = x + MHA(LN(x));  x'' = x' + FFN(LN(x'))
-    def __init__(self, d_model, n_heads, ffn_hidden, block_size):
+<span class="k">class</span> DecoderBlock(nn.Module):
+    <span class="c"># Part 5 §06's exact equation:</span>
+    <span class="c"># x' = x + MHA(LN(x));  x'' = x' + FFN(LN(x'))</span>
+    <span class="k">def</span> __init__(self, d_model, n_heads, ffn_hidden, block_size):
         super().__init__()
         self.ln1 = nn.LayerNorm(d_model)
         self.attn = CausalSelfAttention(d_model, n_heads, block_size)
         self.ln2 = nn.LayerNorm(d_model)
         self.ffn = nn.Sequential(nn.Linear(d_model, ffn_hidden), nn.ReLU(), nn.Linear(ffn_hidden, d_model))
 
-    def forward(self, x):
+    <span class="k">def</span> forward(self, x):
         x = x + self.attn(self.ln1(x))
         x = x + self.ffn(self.ln2(x))
-        return x
+        <span class="k">return</span> x
 
-class TinyGPT(nn.Module):
-    def __init__(self, vocab_size, d_model, n_heads, n_blocks, ffn_hidden, block_size):
+<span class="k">class</span> TinyGPT(nn.Module):
+    <span class="k">def</span> __init__(self, vocab_size, d_model, n_heads, n_blocks, ffn_hidden, block_size):
         super().__init__()
         self.tok_emb = nn.Embedding(vocab_size, d_model)
-        self.register_buffer("pos_emb", sinusoidal_positional_encoding(block_size, d_model))
-        self.blocks = nn.ModuleList([DecoderBlock(d_model, n_heads, ffn_hidden, block_size) for _ in range(n_blocks)])
+        self.register_buffer(<span class="s">"pos_emb"</span>, sinusoidal_positional_encoding(block_size, d_model))
+        self.blocks = nn.ModuleList([DecoderBlock(d_model, n_heads, ffn_hidden, block_size) <span class="k">for</span> _ <span class="k">in</span> range(n_blocks)])
         self.ln_f = nn.LayerNorm(d_model)
-        self.head = nn.Linear(d_model, vocab_size)   # logits, one score per vocab char
+        self.head = nn.Linear(d_model, vocab_size)   <span class="c"># logits, one score per vocab char</span>
 
-    def forward(self, idx):
-        x = self.tok_emb(idx) + self.pos_emb[:idx.shape[1]]   # embed + PE, added
-        for block in self.blocks:
+    <span class="k">def</span> forward(self, idx):
+        x = self.tok_emb(idx) + self.pos_emb[:idx.shape[<span class="s">1</span>]]   <span class="c"># embed + PE, added</span>
+        <span class="k">for</span> block <span class="k">in</span> self.blocks:
             x = block(x)
-        return self.head(self.ln_f(x))</code></pre>
+        <span class="k">return</span> self.head(self.ln_f(x))</pre>
 
   <p>Read <code>TinyGPT.forward</code> against §01's animation, line for line: <code>tok_emb + pos_emb</code> is "embed + PE"; the <code>for block in self.blocks</code> loop is the block-1, block-2 stages; <code>self.ln_f</code> is "final LN"; <code>self.head</code> is "logits." Nothing in this class does anything §01 doesn't show happening.</p>
   <p class="note" style="font-size:.9rem;color:var(--ink-2)">Full, runnable, gap-free version — including <code>generate()</code> with temperature/top-k/top-p — is in the repo's <code>examples/05_tiny_gpt.py</code>. It trains a 3-block, 32-dimensional model on a handful of sentences in a few seconds on a CPU.</p>
+
+  <div class="callout">
+    <p class="h">Want every step of this architecture drawn out, cell by cell?</p>
+    <p>The <a href="bonus-transformer-illustrated.html"><strong>Transformer Visualizer</strong></a> walks the exact same class hierarchy above — tokenize → embed → attention → feed-forward → logits → sample — with every intermediate matrix shown on screen, equations and PyTorch code toggled on demand, and three modes (inference, training, fine-tuning) so you can see how the diagram changes once gradients enter the picture. Fixed, hand-picked numbers, so every step is exactly reproducible — a close-up companion to §01's live animation above.</p>
+  </div>
 </section>
 
 <section>

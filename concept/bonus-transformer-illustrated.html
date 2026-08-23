@@ -1,0 +1,1452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SPR2FRFBQ1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-SPR2FRFBQ1');
+</script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Transformer Visualizer</title>
+<style>
+:root{
+  --bg:#070b16; --panel:#0e1526; --panel2:#111a30; --card:#131d36;
+  --text:#e9eefb; --muted:#8ba0c4; --dim:#5f7296;
+  --grid:#1c2947; --line:#2a3a63;
+  --accent:#75b9ff; --accent2:#a78bfa; --warn:#f0857a; --good:#8be28b; --amber:#f5b84b;
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 700px at 50% -10%,#0f1830,#070b16 60%);
+  font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--text)}
+.wrap{max-width:1280px;margin:0 auto;padding:18px}
+header{text-align:center;margin-bottom:14px}
+header h1{font-size:26px;margin:0 0 4px;letter-spacing:.02em}
+header .sub{color:var(--muted);font-size:13px}
+
+.controlbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:12px}
+.controlbar button{background:#18233d;color:var(--text);border:1px solid var(--line);border-radius:8px;
+  padding:8px 12px;font:inherit;cursor:pointer;font-size:13px}
+.controlbar button:hover{border-color:var(--accent);color:#fff}
+.controlbar button:disabled{opacity:.35;cursor:not-allowed}
+.controlbar button.on{background:#20385f;border-color:var(--accent)}
+.speedgroup{display:flex;gap:4px;background:#0d1730;border:1px solid var(--line);border-radius:8px;padding:3px}
+.speedgroup button{padding:5px 9px;font-size:12px}
+.sep{width:1px;height:22px;background:var(--line);margin:0 4px}
+.toggles{display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:center;
+  font-size:12px;color:var(--muted);margin-bottom:12px}
+.toggles label{display:flex;align-items:center;gap:5px;cursor:pointer}
+
+.modebar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:10px}
+.modegroup{display:flex;gap:4px;background:#0d1730;border:1px solid var(--line);border-radius:8px;padding:3px}
+.modegroup button{background:transparent;color:var(--text);border:1px solid transparent;border-radius:7px;
+  padding:7px 14px;font:inherit;cursor:pointer;font-size:13px}
+.modegroup button.on{background:#2a1f4d;border-color:var(--accent2);color:#fff}
+.modegroup button[data-mode="training"].on,.modegroup button[data-mode="finetune"].on{background:#3a2a12;border-color:var(--amber)}
+#modeDesc{font-size:12px;color:var(--muted);text-align:center;width:100%}
+
+.progress-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:12px;flex-wrap:wrap}
+.progress-label{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--accent)}
+.progress-title{font-size:16px;font-weight:700}
+.progress-track{flex:1;min-width:160px;height:6px;background:#101b34;border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .25s}
+
+.stage-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;
+  box-shadow:0 20px 60px rgba(0,0,0,.35);position:relative}
+#stage{width:100%;height:auto;display:block;background:radial-gradient(900px 500px at 50% 0%,#0d1730,#080d1c 70%);border-radius:10px}
+.tooltip{position:absolute;pointer-events:none;background:#0d1730;border:1px solid var(--accent);
+  border-radius:8px;padding:8px 10px;font-size:12px;color:var(--text);display:none;z-index:5;max-width:220px;
+  box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.tooltip b{color:var(--accent)}
+
+.panels{display:grid;grid-template-columns:1.4fr 1fr;gap:12px;margin-top:12px}
+.panel{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.panel h3{margin:0 0 6px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.panel .body{font-size:13.5px;color:var(--text);line-height:1.55}
+.panel .why{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);color:var(--muted);font-size:12.5px}
+.math-eq{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;color:var(--accent2);
+  background:#0a1128;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:4px 0;overflow-x:auto;white-space:nowrap}
+
+.pytorch-panel{margin-top:12px;background:#0a1020;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.pytorch-panel h3{margin:0 0 8px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.pytorch-panel pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;
+  color:#c9e6d6;white-space:pre-wrap;line-height:1.6}
+
+.legend-hint{margin-top:10px;font-size:11.5px;color:var(--dim);text-align:center}
+.legend-hint b{color:var(--muted)}
+
+.intro-note{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 16px;margin-bottom:10px;font-size:12.5px;color:var(--muted);text-align:center;line-height:1.6}
+.intro-note b{color:var(--text)}
+.color-legend{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:center;font-size:11.5px;color:var(--muted);margin-bottom:12px}
+.color-legend .sw{display:inline-block;width:.7rem;height:.7rem;border-radius:3px;margin-right:.35rem;vertical-align:middle}
+
+.traps-panel{margin-top:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.traps-panel h3{margin:0 0 8px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.traps-panel ul{margin:0;padding-left:18px;font-size:13px;line-height:1.7;color:var(--text)}
+.traps-panel li{margin-bottom:6px}
+.traps-panel b{color:var(--accent2)}
+
+.sentence-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;
+  background:#0e1730;border:1px solid #273a61;border-radius:12px;padding:10px 14px;margin-bottom:12px}
+.sentence-bar input[type=text]{flex:1;min-width:220px;max-width:420px;background:#0a1128;color:var(--text);
+  border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:13px}
+.sentence-bar input[type=text]:focus{outline:none;border-color:var(--accent)}
+.sentence-bar button{background:#18233d;color:var(--text);border:1px solid var(--line);border-radius:8px;
+  padding:8px 14px;font:inherit;font-size:13px;cursor:pointer}
+.sentence-bar button:hover{border-color:var(--accent)}
+.sentence-bar .hint{font-size:11.5px;color:var(--dim);width:100%;text-align:center}
+.sentence-bar .err{font-size:11.5px;color:var(--warn);width:100%;text-align:center;display:none}
+
+footer{margin-top:16px;text-align:center;font-size:12px;color:var(--dim)}
+footer a{color:var(--accent)}
+
+svg text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.tok-lbl{fill:var(--text);font-size:13px;font-weight:700;text-anchor:middle}
+.axis-lbl{fill:var(--dim);font-size:11px}
+.eq-lbl{fill:var(--accent2);font-size:12px;font-family:ui-monospace,monospace}
+
+@media(max-width:820px){ .panels{grid-template-columns:1fr} }
+
+.progress{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin:0 0 14px;padding:10px 12px;background:#0e1730;border:1px solid #273a61;border-radius:12px;font-size:12px;letter-spacing:.02em}
+.progress a{color:#9eabc2;text-decoration:none;padding:5px 9px;border:1px solid #2c426b;border-radius:7px;white-space:nowrap;transition:border-color .15s,background .15s,color .15s}
+.progress a:hover{border-color:#7fa6d7;color:#dce8fb}
+.progress a.here{background:#20385f;color:#dce9ff;border-color:#7fa6d7;font-weight:700}
+.progress .sep{color:#7189b2;padding:0 2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+    <nav class="progress" aria-label="Course progress">
+    <a href="index.html">Course home</a>
+    <span class="sep">│</span>
+    <a href="part-2-neural-network.html">2 · Neural Network</a>
+    <a href="part-5-transformer-architecture.html">5 · Transformer Architecture</a>
+    <a href="part-6-llm.html">6 · LLM</a>
+    <a href="bonus-transformer-illustrated.html" class="here">Transformer Visualizer</a>
+    <a href="part-7-illustrated.html">7 · Illustrated</a>
+    <span class="sep">│</span>
+    <a href="v1/bonus-curve-fitting.html">v1 Sandbox</a>
+    <a href="v1/bonus-transformer-lab.html">v1 Live Lab</a>
+  </nav>
+
+  <header>
+    <h1>TRANSFORMER VISUALIZER</h1>
+    <div class="sub">"From tokens &rarr; vectors &rarr; attention &rarr; prediction" &mdash; an educational, deterministic simulation, not a real trained model</div>
+  </header>
+
+  <div class="intro-note">
+    <b>How to use this page:</b> pick a mode below, then step through with <b>Next</b> or <b>Play</b>. Steps 1–12 (Text → Final prediction) are identical in every mode; the last few steps show what happens differently after that — predicting the next word (Inference) vs. learning from the correct answer (Training / Fine-tuning). Hover any diagram element for a definition.
+  </div>
+  <div class="color-legend">
+    <span><span class="sw" style="background:rgba(117,185,255,.75)"></span>positive value</span>
+    <span><span class="sw" style="background:rgba(240,133,122,.75)"></span>negative value</span>
+    <span>— cell/bar opacity ≈ magnitude</span>
+    <span><b style="color:var(--text)">×</b> = blocked by the causal mask</span>
+  </div>
+
+  <div class="sentence-bar">
+    <label for="sentenceInput" style="font-size:12px;color:var(--muted)">Try your own sentence</label>
+    <input type="text" id="sentenceInput" placeholder="the cat sat on the mat" maxlength="80" />
+    <button id="btnRebuild">Rebuild</button>
+    <button id="btnResetSentence">Reset to default</button>
+    <div class="hint">2–8 words, space-separated. Words outside the built-in 8-word vocabulary get a deterministic (not trained) generated embedding.</div>
+    <div class="err" id="sentenceErr"></div>
+  </div>
+
+  <div class="modebar">
+    <span style="color:var(--muted);font-size:12px">Mode</span>
+    <div class="modegroup" id="modeGroup">
+      <button data-mode="inference" class="on">Inference</button>
+      <button data-mode="training">Training</button>
+      <button data-mode="finetune">Fine-tuning</button>
+    </div>
+    <div id="modeDesc"></div>
+  </div>
+
+  <div class="controlbar">
+    <button id="btnPrev">&#9664; Previous</button>
+    <button id="btnPlay">&#9654; Play</button>
+    <button id="btnPause">&#9208; Pause</button>
+    <button id="btnNext">Next &#9654;</button>
+    <div class="sep"></div>
+    <button id="btnReset">&#8635; Reset</button>
+    <div class="sep"></div>
+    <span style="color:var(--muted);font-size:12px">Speed</span>
+    <div class="speedgroup">
+      <button data-speed="0.5">0.5x</button>
+      <button data-speed="1" class="on">1x</button>
+      <button data-speed="2">2x</button>
+    </div>
+  </div>
+
+  <div class="toggles">
+    <label><input type="checkbox" id="toggleEq" checked> Show equations</label>
+    <label><input type="checkbox" id="toggleVals" checked> Show matrix values</label>
+    <label><input type="checkbox" id="togglePy"> Show PyTorch code</label>
+  </div>
+
+  <div class="progress-row">
+    <div class="progress-label" id="stepLabel">STEP 1 / 15</div>
+    <div class="progress-title" id="stepTitle">Text</div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+
+  <div class="stage-card">
+    <svg id="stage" viewBox="0 0 1000 480" role="img" aria-label="Transformer step visualization"></svg>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+
+  <div class="panels">
+    <div class="panel">
+      <h3>What is happening?</h3>
+      <div class="body" id="explainBody"></div>
+      <div class="why" id="explainWhy"></div>
+    </div>
+    <div class="panel" id="mathPanel">
+      <h3>Mathematics</h3>
+      <div id="mathBody"></div>
+    </div>
+  </div>
+
+  <div class="pytorch-panel" id="pytorchPanel" style="display:none">
+    <h3>PyTorch equivalent</h3>
+    <pre id="pytorchBody"></pre>
+  </div>
+
+  <div class="traps-panel">
+    <h3>Common misconceptions</h3>
+    <ul>
+      <li><b>Layer, head, and neuron are three different, nested things.</b> A layer is a full transformation stage (this page stacks 4); inside <i>its</i> attention step it has several heads; inside <i>its</i> FFN it has several neurons. A head is never called a neuron, and neither is a layer.</li>
+      <li><b>Multi-head attention isn't "split one projection into pieces."</b> We do that here only to keep every number traceable by hand — real models give each head its own independent, full-size W_Q/W_K/W_V, learned separately.</li>
+      <li><b>Attention itself has no sense of order.</b> It just weights and sums vectors — position only enters the model once, at the positional-encoding step, before attention ever runs.</li>
+      <li><b>Causal masking is a decoder thing.</b> It exists because a decoder predicts the next token and must not see the future. Encoder-only models (like BERT) deliberately skip it and let every position see the whole sequence.</li>
+      <li><b>The √d_k in attention isn't about the number of heads.</b> It counteracts dot products growing large in high dimensions, which would otherwise push softmax toward a near one-hot output and stall learning almost everywhere else.</li>
+      <li><b>Fine-tuning isn't a different algorithm.</b> It's the exact same forward → loss → backward → update loop as training — the only differences are the starting weights (pretrained, not random) and usually a smaller learning rate.</li>
+      <li><b>This walkthrough uses one training example for clarity.</b> Real training batches many examples together and averages their loss before every single weight update.</li>
+    </ul>
+  </div>
+
+  <div class="legend-hint">Hover <b>Q</b>, <b>K</b>, <b>V</b>, attention cells, and other labeled terms in the diagram for a short definition. Cells marked <b>&times;</b> are hidden by the causal mask.</div>
+
+  <footer>
+    Companion to <a href="part-5-transformer-architecture.html">Part 5</a>'s attention derivation and <a href="v1/bonus-transformer-lab.html">v1's live-training lab</a> &mdash; this page uses fixed, hand-picked numbers on one sentence so every step is exactly reproducible; the lab trains a real model instead. Now with causal masking, 2 attention heads, and separate training / fine-tuning / inference flows.
+  </footer>
+</div>
+
+<script>
+"use strict";
+(function(){
+
+/* =========================================================================
+   MATH — every operation below is a plain, manually-implemented function.
+   No libraries. Used identically whether or not a step happens to display
+   the result — the numbers shown anywhere on this page come from here.
+   ========================================================================= */
+class Matrix {
+  static make(rows, cols, fill){ return Array.from({length:rows}, () => new Array(cols).fill(fill||0)); }
+  static mul(A, B){
+    const m=A.length, k=A[0].length, n=B[0].length;
+    const out = Matrix.make(m,n,0);
+    for(let i=0;i<m;i++) for(let p=0;p<k;p++){ const a=A[i][p]; if(!a) continue;
+      for(let j=0;j<n;j++) out[i][j]+=a*B[p][j]; }
+    return out;
+  }
+  static transpose(A){
+    const m=A.length, n=A[0].length, out=Matrix.make(n,m,0);
+    for(let i=0;i<m;i++) for(let j=0;j<n;j++) out[j][i]=A[i][j];
+    return out;
+  }
+  static addRows(A,B){ return A.map((row,i)=>row.map((v,j)=>v+B[i][j])); }
+  static scale(A,s){ return A.map(row=>row.map(v=>v*s)); }
+}
+function dot(a,b){ let s=0; for(let i=0;i<a.length;i++) s+=a[i]*b[i]; return s; }
+function addVec(a,b){ return a.map((v,i)=>v+b[i]); }
+function scaleVec(a,s){ return a.map(v=>v*s); }
+function relu(x){ return Math.max(0,x); }
+function softmax(arr){
+  const m = Math.max.apply(null, arr);
+  const ex = arr.map(v => Math.exp(v-m));
+  const s = ex.reduce((a,b)=>a+b,0);
+  return ex.map(v=>v/s);
+}
+function softmaxWithTemp(logits, temp){ return softmax(logits.map(v=>v/temp)); }
+function mulberry32(seed){ let a=seed>>>0; return function(){ a|=0; a=(a+0x6D2B79F5)|0; let t=Math.imul(a^(a>>>15),1|a); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }; }
+function sampleFromDist(probs, rng){
+  const r = rng();
+  let cum = 0;
+  for(let i=0;i<probs.length;i++){ cum += probs[i]; if(r<=cum) return i; }
+  return probs.length-1;
+}
+function weightedSum(weights, vectors){
+  const d = vectors[0].length;
+  const out = new Array(d).fill(0);
+  weights.forEach((w,i)=>{ for(let j=0;j<d;j++) out[j]+=w*vectors[i][j]; });
+  return out;
+}
+
+/* =========================================================================
+   FIXED, DETERMINISTIC EXAMPLE — hand-picked weights, not trained.
+   "The cat sat on the mat", 4-dim embeddings, 8-word vocabulary.
+   Every downstream number (Q, K, V, attention, FFN, logits) is computed
+   from these once, at load, with the exact functions above.
+   ========================================================================= */
+const BASE_VOCAB = ["the","cat","sat","on","mat","dog","ran","was"];
+const EMB_BASE = {
+  the:[0.20, 0.70,-0.10, 0.40],
+  cat:[0.80, 0.10, 0.50,-0.20],
+  sat:[0.40, 0.60, 0.20, 0.10],
+  on: [0.10, 0.30, 0.60,-0.30],
+  mat:[0.60, 0.20,-0.40, 0.50],
+  dog:[0.75, 0.15, 0.45,-0.15],
+  ran:[0.35, 0.55, 0.25, 0.05],
+  was:[0.15, 0.35, 0.55,-0.25]
+};
+// Any word outside the 8 hand-picked ones (typed via the custom-sentence box)
+// gets a deterministic pseudo-random embedding instead — same word always
+// gets the same vector, so the page stays fully reproducible, but nothing
+// needs to be hand-picked in advance to accept arbitrary text.
+function hashSeed(str){ let h=0; for(let i=0;i<str.length;i++){ h=(h*31+str.charCodeAt(i))|0; } return h>>>0; }
+function hashEmbed(word, d){ const rng=mulberry32(hashSeed(word)+12345); const v=[]; for(let i=0;i<d;i++) v.push((rng()*2-1)*0.5); return v; }
+function getEmb(word){ return EMB_BASE[word] ? EMB_BASE[word].slice() : hashEmbed(word, D); }
+
+const D = 4;
+let SENTENCE = ["the","cat","sat","on","the","mat"]; // default: 6 positions — replaceable via the "Try your own sentence" box
+let T = SENTENCE.length;
+let QUERY_POS = T-1;  // last position — sees the whole (unmasked-for-it) context; used to illustrate attention
+let PRED_POS = T-2;   // second-to-last position — its hidden state is what predicts the final word
+let VOCAB = Array.from(new Set([...BASE_VOCAB, ...SENTENCE])); // base 8 words + any new words from the current sentence
+
+const WQ = [[1,0,0,0.2],[0,1,0.1,0],[0.1,0,1,0],[0,0.2,0,1]];
+const WK = [[1,0.1,0,0],[0,1,0,0.1],[0,0,1,0.1],[0.1,0,0,1]];
+const WV = [[0.9,0,0.1,0],[0,0.9,0,0.1],[0.1,0,0.9,0],[0,0.1,0,0.9]];
+
+// Multi-head split: d_model=4 divided into 2 heads of d_head=2. Splitting the
+// existing WQ/WK/WV by column keeps each head's projection well-defined and
+// keeps the whole page's weights internally consistent (Part 5's "why more
+// than one head" section explains why real models don't do this — they learn
+// n_heads independent full-size projections instead).
+const NUM_HEADS = 2, D_HEAD = D / NUM_HEADS;
+function splitCols(W, h){ return W.map(row => row.slice(h*D_HEAD, h*D_HEAD+D_HEAD)); }
+const WQ_H = [0,1].map(h=>splitCols(WQ,h));
+const WK_H = [0,1].map(h=>splitCols(WK,h));
+const WV_H = [0,1].map(h=>splitCols(WV,h));
+// W_O: mixes the concatenated heads back together (Part 5 §multi-head attention).
+const WO = [[1,0,0.05,0],[0,1,0,0.05],[0.05,0,1,0],[0,0.05,0,1]];
+
+const FFN_HIDDEN = 8;
+const W1 = [ // 4x8, hand-picked
+  [0.5,-0.3,0.2,0.1,-0.4,0.3,0.2,-0.1],
+  [0.2, 0.4,-0.3,0.5, 0.1,-0.2,0.3, 0.4],
+  [-0.3,0.2, 0.5,-0.1,0.3, 0.4,-0.2,0.1],
+  [0.1,-0.4, 0.1, 0.3,-0.2,0.5, 0.4,-0.3]
+];
+const b1 = [0.1,-0.1,0.05,0,-0.05,0.1,-0.1,0.05];
+const W2 = Matrix.transpose(W1).map(row=>row.map(v=>v*0.6)); // 8x4, related to W1 so shapes flow sensibly
+const b2 = [0.05,-0.05,0.05,-0.05];
+
+// Sinusoidal positional encoding (Part 1 §10) — identical formula to the
+// live-training lab. Token embedding alone can't distinguish "the" at
+// position 0 from "the" at position 4 (same word, same vector); this adds a
+// position-only vector on top, once, before attention ever runs.
+function sinusoidalPE(maxLen, d){
+  const pe = Array.from({length:maxLen}, () => new Array(d).fill(0));
+  for(let pos=0; pos<maxLen; pos++){
+    for(let i=0; i<d; i+=2){
+      const div = Math.pow(10000, i/d);
+      pe[pos][i] = Math.sin(pos/div);
+      if(i+1<d) pe[pos][i+1] = Math.cos(pos/div);
+    }
+  }
+  return pe;
+}
+let PE = sinusoidalPE(T, D);
+function tokenEmb0(){ return SENTENCE.map(w => getEmb(w)); }
+function X0(){ return SENTENCE.map((w,i) => getEmb(w).map((v,j)=> v + PE[i][j])); }
+
+// Causal mask: position i may only look at positions j <= i. This is what
+// makes the model a *decoder* — at generation time token i has never seen
+// what comes after it, so training must hide that too, or the model would
+// learn to "cheat" by reading the answer directly off a future position.
+function causalMask(scores){
+  return scores.map((row,i)=> row.map((v,j)=> j>i ? -Infinity : v));
+}
+
+function attentionBlock(X){
+  const scale = 1/Math.sqrt(D_HEAD);
+  const heads = [];
+  for(let h=0; h<NUM_HEADS; h++){
+    const Qh = Matrix.mul(X, WQ_H[h]), Kh = Matrix.mul(X, WK_H[h]), Vh = Matrix.mul(X, WV_H[h]);
+    const rawScores = Matrix.mul(Qh, Matrix.transpose(Kh)).map(row=>row.map(v=>v*scale));
+    const maskedScores = causalMask(rawScores);
+    const weights = maskedScores.map(row => softmax(row));
+    const out = weights.map(row => weightedSum(row, Vh));
+    heads.push({Qh,Kh,Vh,rawScores,maskedScores,weights,out});
+  }
+  const concat = X.map((_,i)=> heads.flatMap(hd=>hd.out[i]));
+  const attnOut = Matrix.mul(concat, WO);
+  const residual1 = Matrix.addRows(X, attnOut);
+  return {heads, concat, attnOut, residual1};
+}
+function ffnBlock(X){
+  const Z1 = Matrix.addRows(Matrix.mul(X, W1), X.map(()=>b1));
+  const H = Z1.map(row=>row.map(relu));
+  const Z2 = Matrix.addRows(Matrix.mul(H, W2), X.map(()=>b2));
+  const residual2 = Matrix.addRows(X, Z2);
+  return {Z1,H,Z2,residual2};
+}
+// Row-normalize to a fixed target norm — a simplified stand-in for LayerNorm
+// (Part 1 §9). Without *some* normalization between layers, residual
+// connections compound and magnitudes blow up across a stack — exactly the
+// failure LayerNorm exists to prevent in a real model.
+function normalizeRows(X, targetNorm){
+  return X.map(row=>{
+    const n = Math.sqrt(row.reduce((s,v)=>s+v*v,0)) || 1;
+    return row.map(v => v * (targetNorm/n));
+  });
+}
+function oneLayer(X){
+  const a = attentionBlock(X);
+  const f = ffnBlock(a.residual1);
+  return {attn:a, ffn:f, out:normalizeRows(f.residual2, 0.9)};
+}
+
+// Data-driven description of how the two heads actually differ for this
+// example, computed once from the real numbers above (not asserted) — used
+// in the "Softmax attention" step so the "different heads learn different
+// things" claim is backed by this page's own data, not just stated.
+function describeHeadRow(w){
+  const max = Math.max.apply(null,w), min = Math.min.apply(null,w);
+  return {max, min, maxIdx: w.indexOf(max)};
+}
+
+let LAYER1, LAYER2, LAYER3, LAYER4, LAYERS, FINAL_H, WHEAD, bHEAD, LOGITS, PROBS;
+let TARGET_IDX, LOSS, D_LOGITS, D_FINAL_H, HEAD_ROW_Q, HEAD_COMPARE_TEXT;
+
+// Recomputes every sentence-dependent quantity on the page — called once at
+// load with the default sentence, and again whenever a custom sentence is
+// submitted. Everything below this point (layers, prediction, loss,
+// gradients) is a pure function of SENTENCE; nothing is hand-tuned per word.
+function computeExample(){
+  // Run 4 stacked layers (illustrative — real weights repeat, but each
+  // layer's output feeds the next, exactly as a real stack does).
+  LAYER1 = oneLayer(X0());
+  LAYER2 = oneLayer(LAYER1.out);
+  LAYER3 = oneLayer(LAYER2.out);
+  LAYER4 = oneLayer(LAYER3.out);
+  LAYERS = [LAYER1,LAYER2,LAYER3,LAYER4];
+  FINAL_H = LAYER4.out[PRED_POS]; // the hidden state that predicts the final word
+
+  // Output head: the actual target word (whatever the sentence's last word
+  // is) gets a fixed, deterministic edge; every other vocabulary word gets a
+  // smaller, per-word deterministic scale (via a seeded hash, not hand-
+  // picked) so the "wrong answer" candidates still vary realistically.
+  // Stated plainly: nothing here was trained — see Training mode for that.
+  const targetWord = SENTENCE[QUERY_POS];
+  WHEAD = VOCAB.map((w) => {
+    const boost = w===targetWord ? 1.5 : (0.8 + mulberry32(hashSeed(w))()*0.5);
+    return scaleVec(FINAL_H, boost);
+  });
+  bHEAD = VOCAB.map(()=>0);
+  LOGITS = WHEAD.map((row,i) => dot(FINAL_H, row) + bHEAD[i]);
+  PROBS = softmax(LOGITS);
+
+  // Training-only quantities. Real, checked gradients (finite-difference
+  // verified to ~1e-11) for the one layer closest to the loss — see the
+  // "Backpropagation" step for why the rest of the stack is described rather
+  // than fully re-derived here.
+  TARGET_IDX = VOCAB.indexOf(targetWord);
+  LOSS = -Math.log(Math.max(PROBS[TARGET_IDX], 1e-12));
+  D_LOGITS = PROBS.map((p,i)=> p - (i===TARGET_IDX?1:0));
+  D_FINAL_H = new Array(D).fill(0);
+  for(let i=0;i<VOCAB.length;i++) for(let k=0;k<D;k++) D_FINAL_H[k] += D_LOGITS[i]*WHEAD[i][k];
+
+  HEAD_ROW_Q = [0,1].map(h => describeHeadRow(LAYER1.attn.heads[h].weights[QUERY_POS]));
+  HEAD_COMPARE_TEXT = "In this example: head 1 peaks at position "+HEAD_ROW_Q[0].maxIdx+' ("'+SENTENCE[HEAD_ROW_Q[0].maxIdx]+'", '+
+    (HEAD_ROW_Q[0].max*100).toFixed(0)+"%) and ranges down to "+(HEAD_ROW_Q[0].min*100).toFixed(0)+"%; head 2 peaks at position "+
+    HEAD_ROW_Q[1].maxIdx+' ("'+SENTENCE[HEAD_ROW_Q[1].maxIdx]+'", '+(HEAD_ROW_Q[1].max*100).toFixed(0)+
+    "%). Same "+T+" positions, two different patterns — that's the point of having more than one head.";
+}
+computeExample();
+
+// Rebuilds the entire example (embeddings, all 4 layers, prediction, loss,
+// gradients) for a new sentence typed into the "Try your own sentence" box.
+function rebuildExample(words){
+  SENTENCE = words;
+  T = SENTENCE.length;
+  QUERY_POS = T-1;
+  PRED_POS = T-2;
+  PE = sinusoidalPE(T, D);
+  VOCAB = Array.from(new Set([...BASE_VOCAB, ...SENTENCE]));
+  computeExample();
+}
+
+/* =========================================================================
+   ANIMATION CONTROLLER
+   ========================================================================= */
+const SVGNS = "http://www.w3.org/2000/svg";
+function el(tag, attrs){ const e=document.createElementNS(SVGNS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); return e; }
+function txt(x,y,s,cls){ const t=el("text",{x,y,class:cls||""}); t.textContent=s; return t; }
+const stage = document.getElementById("stage");
+const tooltip = document.getElementById("tooltip");
+
+function showTip(evt, html){
+  tooltip.innerHTML = html;
+  tooltip.style.display = "block";
+  const card = stage.parentElement.getBoundingClientRect();
+  tooltip.style.left = (evt.clientX - card.left + 14) + "px";
+  tooltip.style.top = (evt.clientY - card.top + 10) + "px";
+}
+function hideTip(){ tooltip.style.display = "none"; }
+function withTip(node, html){
+  node.addEventListener("mousemove", e=>showTip(e, html));
+  node.addEventListener("mouseleave", hideTip);
+  node.style.cursor = "help";
+  return node;
+}
+
+const TERM_DEFS = {
+  Q: "<b>Query</b> — what this token is looking for.",
+  K: "<b>Key</b> — what this token advertises, for others to match against.",
+  V: "<b>Value</b> — the actual content this token contributes once matched.",
+  Attention: "Lets every token gather information from every other token, weighted by relevance.",
+  Softmax: "Turns raw scores into probabilities that sum to 1.",
+  Residual: "Adds a layer's output back onto its input, so nothing already learned is lost.",
+  FFN: "Feed-forward network — processes each position's vector independently after attention has run.",
+  Logits: "Raw, unnormalized scores — one per vocabulary word, before softmax.",
+  Embedding: "A learned (here: fixed) vector representation of a token.",
+  Mask: "Causal mask — blocks a position from attending to any position that comes after it.",
+  WO: "Output projection — mixes the concatenated heads back into one vector.",
+  Loss: "A single number measuring how wrong the prediction was — lower is better.",
+  Gradient: "The direction and size of the nudge that would most reduce the loss.",
+  Layer: "One full transformation stage — attention, then FFN, both behind residuals. This page stacks 4. A layer <i>contains</i> heads (inside its attention) and neurons (inside its FFN) — they're nested, not the same kind of thing.",
+  Head: "One independent attention computation inside a layer's attention step. This page uses 2 per layer, each with its own slice of Q/K/V, free to attend to something different. Not the same thing as a neuron.",
+  Neuron: "One hidden unit inside a layer's feed-forward network (FFN) — unrelated to attention heads. This page's FFN has "+FFN_HIDDEN+" per layer; each one's activation can be watched in the Stacked Layers step's Neuron view."
+};
+
+function fmt(v){ return v.toFixed(2); }
+function tokColor(i){ return ["#75b9ff","#a78bfa","#f5b84b","#8be28b","#f0857a","#5eead4"][i%6]; }
+
+let showEq = true, showVals = true, showPy = false;
+document.getElementById("toggleEq").onchange = e => { showEq = e.target.checked; render(); };
+document.getElementById("toggleVals").onchange = e => { showVals = e.target.checked; render(); };
+document.getElementById("togglePy").onchange = e => { showPy = e.target.checked; render(); };
+
+/* ---------- per-step render functions ---------- */
+function clearStage(){ stage.innerHTML = ""; }
+
+function drawTokenRow(y, highlightIdx, opacityFn){
+  const xs = [];
+  const w = 110, gap = 14, startX = 500 - (T*(w+gap)-gap)/2;
+  SENTENCE.forEach((word,i)=>{
+    const x = startX + i*(w+gap);
+    xs.push(x + w/2);
+    const g = el("g",{opacity: opacityFn ? opacityFn(i) : 1});
+    const r = el("rect",{x,y,width:w,height:44,rx:10,fill: i===highlightIdx?"#20385f":"#131d36",
+      stroke: tokColor(i), "stroke-width": i===highlightIdx?2.5:1.4});
+    g.appendChild(r);
+    g.appendChild(txt(x+w/2,y+27,word,"tok-lbl"));
+    stage.appendChild(g);
+    stage.appendChild(txt(x+w/2,y+60,"pos "+i,"axis-lbl")).setAttribute("text-anchor","middle");
+  });
+  return xs;
+}
+
+function vectorCells(x,y,vec,cellW,cellH,label){
+  const g = el("g",{});
+  if(label) g.appendChild(txt(x, y-6, label, "axis-lbl"));
+  vec.forEach((v,i)=>{
+    const cy = y + i*cellH;
+    const t = Math.max(-1,Math.min(1,v));
+    const pos = t>=0;
+    const c = pos ? `rgba(117,185,255,${0.25+Math.abs(t)*0.6})` : `rgba(240,133,122,${0.25+Math.abs(t)*0.6})`;
+    g.appendChild(el("rect",{x,y:cy,width:cellW,height:cellH-2,rx:3,fill:c,stroke:"#2a3a63"}));
+    if(showVals) g.appendChild(txt(x+cellW/2,cy+cellH/2+1,fmt(v),"axis-lbl")).setAttribute("text-anchor","middle");
+  });
+  stage.appendChild(g);
+}
+
+function matrixGrid(x,y,M,cellW,cellH,rowLabels,colLabels,opts){
+  opts = opts || {};
+  const g = el("g",{});
+  if(colLabels) colLabels.forEach((c,j)=> g.appendChild(txt(x+j*cellW+cellW/2, y-8, c, "axis-lbl")).setAttribute("text-anchor","middle"));
+  M.forEach((row,i)=>{
+    if(rowLabels) g.appendChild(txt(x-8, y+i*cellH+cellH/2+4, rowLabels[i], "axis-lbl")).setAttribute("text-anchor","end");
+    row.forEach((v,j)=>{
+      const cx=x+j*cellW, cy=y+i*cellH;
+      const masked = opts.mask && opts.mask(i,j);
+      let fill;
+      if(masked){
+        fill = "#0a0f1e";
+      } else if(opts.heat){
+        const t = opts.norm ? v/opts.norm : v;
+        fill = `rgba(117,185,255,${0.08+t*0.85})`;
+      } else {
+        const t = Math.max(-1,Math.min(1,v));
+        fill = t>=0 ? `rgba(117,185,255,${0.18+Math.abs(t)*0.55})` : `rgba(240,133,122,${0.18+Math.abs(t)*0.55})`;
+      }
+      const r = el("rect",{x:cx,y:cy,width:cellW-2,height:cellH-2,rx:3,fill,stroke: masked?"#22304f":"#2a3a63"});
+      g.appendChild(r);
+      if(!opts.noVals){
+        if(masked){
+          g.appendChild(txt(cx+cellW/2,cy+cellH/2+1,"×","axis-lbl")).setAttribute("text-anchor","middle");
+        } else if(showVals){
+          g.appendChild(txt(cx+cellW/2,cy+cellH/2+1,fmt(v),"axis-lbl")).setAttribute("text-anchor","middle");
+        }
+      }
+      if(opts.tooltip) withTip(r, opts.tooltip(i,j,v));
+    });
+  });
+  stage.appendChild(g);
+  return g;
+}
+
+function barChart(x,y,w,h,labels,values,opts){
+  opts = opts || {};
+  const max = Math.max.apply(null, values.map(Math.abs)) || 1;
+  const barH = h/labels.length - 6;
+  labels.forEach((lab,i)=>{
+    const by = y + i*(barH+6);
+    const bw = Math.max(2, (values[i]/max) * w * (opts.frac?1:0.9));
+    stage.appendChild(txt(x-8, by+barH/2+4, lab, "axis-lbl")).setAttribute("text-anchor","end");
+    stage.appendChild(el("rect",{x,y:by,width:w,height:barH,rx:4,fill:"#101b34"}));
+    const bar = el("rect",{x,y:by,width:bw,height:barH,rx:4,
+      fill: opts.highlight===i ? "#8be28b" : "#75b9ff"});
+    stage.appendChild(bar);
+    stage.appendChild(txt(x+bw+8, by+barH/2+4, opts.pct ? (values[i]*100).toFixed(1)+"%" : fmt(values[i]), "axis-lbl"));
+  });
+}
+
+// Diverging bar chart around a zero baseline — used for gradients (negative
+// vs positive push in opposite visual directions from a centered zero-line).
+function divergingBarChart(x,y,w,h,labels,values,opts){
+  opts = opts || {};
+  const max = Math.max.apply(null, values.map(Math.abs)) || 1;
+  const barH = h/labels.length - 6;
+  const mid = x + w/2;
+  stage.appendChild(el("line",{x1:mid,y1:y-4,x2:mid,y2:y+h,stroke:"#2a3a63"}));
+  labels.forEach((lab,i)=>{
+    const by = y + i*(barH+6);
+    const bw = (values[i]/max) * (w/2) * 0.92;
+    stage.appendChild(txt(x-8, by+barH/2+4, lab, "axis-lbl")).setAttribute("text-anchor","end");
+    const rx = bw>=0 ? mid : mid+bw;
+    const rw = Math.max(1.5, Math.abs(bw));
+    stage.appendChild(el("rect",{x:rx,y:by,width:rw,height:barH,rx:3,
+      fill: values[i]>=0 ? "#f0857a" : "#75b9ff"}));
+    // Negative bars can extend far left toward the row-label column — anchor
+    // their value text at the zero line instead of the bar's outer tip so it
+    // never collides with the row labels.
+    stage.appendChild(txt(bw>=0 ? mid+bw+8 : mid-8, by+barH/2+4, (values[i]>=0?"+":"")+fmt(values[i]), "axis-lbl"))
+      .setAttribute("text-anchor", bw>=0 ? "start":"end");
+  });
+}
+
+function flowArrow(x1,y1,x2,y2,label,color){
+  const g = el("g",{});
+  g.appendChild(el("line",{x1,y1,x2,y2,stroke:color||"#5f7296","stroke-width":2,"marker-end":"url(#arrow)"}));
+  if(label) g.appendChild(txt((x1+x2)/2,(y1+y2)/2-6,label,"axis-lbl")).setAttribute("text-anchor","middle");
+  stage.appendChild(g);
+}
+function ensureArrowMarker(){
+  if(document.getElementById("arrow")) return;
+  const defs = el("defs",{});
+  const marker = el("marker",{id:"arrow",markerWidth:8,markerHeight:8,refX:6,refY:3,orient:"auto"});
+  marker.appendChild(el("path",{d:"M0,0 L6,3 L0,6 Z",fill:"#5f7296"}));
+  defs.appendChild(marker);
+  stage.appendChild(defs);
+}
+function lineChart(x,y,w,h,series,xLabels){
+  stage.appendChild(el("line",{x1:x,y1:y+h,x2:x+w,y2:y+h,stroke:"#2a3a63"}));
+  stage.appendChild(el("line",{x1:x,y1:y,x2:x,y2:y+h,stroke:"#2a3a63"}));
+  stage.appendChild(el("line",{x1:x,y1:y+h/2,x2:x+w,y2:y+h/2,stroke:"#1c2947","stroke-dasharray":"3,3"}));
+  const maxV = Math.max.apply(null, series.flatMap(s=>s.values).map(Math.abs)) || 1;
+  const n = series[0].values.length;
+  const stepX = n>1 ? w/(n-1) : 0;
+  function py(v){ return y+h/2 - (v/maxV)*(h/2-10); }
+  series.forEach(s=>{
+    let d="";
+    s.values.forEach((v,i)=>{ d += (i===0?"M":"L")+(x+i*stepX)+","+py(v)+" "; });
+    stage.appendChild(el("path",{d:d.trim(),stroke:s.color,"stroke-width":2,fill:"none"}));
+    s.values.forEach((v,i)=> stage.appendChild(el("circle",{cx:x+i*stepX,cy:py(v),r:3,fill:s.color})));
+  });
+  if(xLabels) xLabels.forEach((lab,i)=> stage.appendChild(txt(x+i*stepX, y+h+16, String(lab), "axis-lbl")).setAttribute("text-anchor","middle"));
+  // legend drawn as a horizontal row below the axis labels, clear of the
+  // plotted curves regardless of their shape (a top-corner legend risked
+  // sitting on top of whichever series happened to end up there).
+  series.forEach((s,i)=>{
+    const lx = x + i*70;
+    stage.appendChild(el("circle",{cx:lx, cy:y+h+34, r:4, fill:s.color}));
+    stage.appendChild(txt(lx+9, y+h+38, s.label, "axis-lbl"));
+  });
+}
+function ensureBackArrowMarker(){
+  if(document.getElementById("barrow")) return;
+  const defs = el("defs",{});
+  const marker = el("marker",{id:"barrow",markerWidth:8,markerHeight:8,refX:6,refY:3,orient:"auto"});
+  marker.appendChild(el("path",{d:"M0,0 L6,3 L0,6 Z",fill:"#f0857a"}));
+  defs.appendChild(marker);
+  stage.appendChild(defs);
+}
+
+/* ---------- shared steps (identical across all modes) ---------- */
+const STEP_TEXT = {
+  title:"Text", math:["text → tokens"],
+  explain:"A Transformer never sees raw characters or words directly — the very first step is always splitting text into tokens.",
+  why:"\"Transformers operate on tokens rather than raw text.\"",
+  render(t){
+    ensureArrowMarker();
+    const sentence = SENTENCE.map((w,i)=> i===0 ? w.charAt(0).toUpperCase()+w.slice(1) : w).join(" ");
+    stage.appendChild(txt(500,180,sentence,"tok-lbl")).setAttribute("font-size", T>8?"22":"28");
+    const words = sentence.split(" ");
+    const widths = words.map(w=>w.length*15+18);
+    const total = widths.reduce((a,b)=>a+b,0);
+    let x = 500-total/2;
+    const cursorX = x + total*t;
+    words.forEach((w,i)=>{
+      const wx=x; x+=widths[i];
+      const hit = cursorX >= wx;
+      if(hit) stage.appendChild(el("rect",{x:wx-4,y:160,width:widths[i]-8,height:34,rx:6,fill:"none",stroke:"#75b9ff","stroke-width":2}));
+    });
+    stage.appendChild(el("line",{x1:cursorX,y1:150,x2:cursorX,y2:200,stroke:"#f5b84b","stroke-width":2}));
+    stage.appendChild(txt(500,260,T+" word"+(T===1?"":"s")+" → will become "+T+" token"+(T===1?"":"s"),"axis-lbl")).setAttribute("text-anchor","middle");
+  }
+};
+// Finds two positions sharing the same word — used so the Tokenization and
+// Positional-encoding steps can point at a *real* repeat instead of the
+// hardcoded "the"/"the" example, which only exists in the default sentence.
+function findRepeatedPositions(){
+  for(let i=0;i<SENTENCE.length;i++)
+    for(let j=i+1;j<SENTENCE.length;j++)
+      if(SENTENCE[i]===SENTENCE[j]) return [i,j];
+  return null;
+}
+const STEP_TOKENIZATION = {
+  title:"Tokenization",
+  math(){ return [SENTENCE.map((w,i)=>'"'+w+'"→'+VOCAB.indexOf(w)).join("  ")]; },
+  explain(){
+    const rep = findRepeatedPositions();
+    return "Each word becomes a token with a position index (0–"+(T-1)+")."
+      + (rep ? " Note \""+SENTENCE[rep[0]]+"\" appears twice — same word, two different positions." : " Every word here is different, but the same rule applies to any repeats.");
+  },
+  why:"Position and identity are tracked separately from here on — that separation is what positional encoding (Part 1 §10) later re-adds meaning to.",
+  pytorch:["tokens = tokenizer.encode(text)","# e.g. via tiktoken, or a small custom BPE/word tokenizer","# tokens: one integer id per word, looked up in the vocabulary"],
+  render(t){
+    const n = Math.max(1, Math.floor(t*T+0.001));
+    drawTokenRow(200, -1, i => i<n ? 1 : 0.08);
+  }
+};
+const STEP_EMBEDDINGS = {
+  title:"Embeddings",
+  math(){ return ["TokenEmb[i] = Embedding(token_i)  —  "+T+"×"+D+", before position is added"]; },
+  explain:"Every token becomes a small numeric vector — here just 4 numbers, so they fit on screen and every step stays checkable by hand.",
+  why(){
+    const rep = findRepeatedPositions();
+    const base = "Real models use hundreds or thousands of dimensions. We use 4 purely so humans can see every number involved.";
+    return rep ? base+" Note both \""+SENTENCE[rep[0]]+"\" tokens (position "+rep[0]+" and "+rep[1]+") get the exact same vector here — that gets fixed next." : base;
+  },
+  pytorch:["self.tok_emb = nn.Embedding(vocab_size, d_model)","x = self.tok_emb(tokens)          # (T, d_model) — position not yet included"],
+  render(t){
+    const xs = drawTokenRow(60, -1);
+    const X = tokenEmb0();
+    X.forEach((vec,i)=>{ vectorCells(xs[i]-24, 150, vec, 48, 22); });
+    if(t>0.5){
+      stage.appendChild(txt(500,300,"stacked into one matrix, TokenEmb ("+T+"×"+D+"):","axis-lbl")).setAttribute("text-anchor","middle");
+      matrixGrid(390,320, X.map(r=>r), 50,26, SENTENCE.map((w,i)=>w+" "+i), ["d1","d2","d3","d4"]);
+    }
+  }
+};
+
+const STEP_POSENC = {
+  title:"Positional encoding",
+  math:["PE(pos, 2i)   = sin(pos / 10000^(2i/d))","PE(pos, 2i+1) = cos(pos / 10000^(2i/d))","X = TokenEmbedding + PE"],
+  explain(){
+    const rep = findRepeatedPositions();
+    return rep
+      ? "The token embedding alone can't tell \""+SENTENCE[rep[0]]+"\" at position "+rep[0]+" apart from \""+SENTENCE[rep[1]]+"\" at position "+rep[1]+" — same word, same vector. A second vector, built purely from the position index using sine/cosine waves of different frequencies, gets added on top to break that tie."
+      : "This sentence has no repeated word, so every position already has a distinct embedding — but positional encoding still runs, unconditionally, on every token. A second vector, built purely from the position index using sine/cosine waves of different frequencies, gets added on top of every embedding.";
+  },
+  why:"Attention itself is order-blind — it just weights and sums vectors, with no notion of \"before\" or \"after\". This is the one place order gets injected, once, before attention ever runs (Part 1 §10).",
+  pytorch:["pe = sinusoidal_positional_encoding(max_len, d_model)  # fixed, as in the original paper","# or: self.pos_emb = nn.Embedding(max_len, d_model)      # learned, GPT-style","x = self.tok_emb(tokens) + pe[:T]"],
+  render(t){
+    const tok = tokenEmb0();
+    const rep = findRepeatedPositions();
+    const rows = rep || [0, T-1];
+    rows.forEach((pos,ri)=>{
+      const y = 90 + ri*130;
+      const a = ri===0 ? 1 : Math.min(1, Math.max(0,(t-0.15)*3));
+      if(a<=0) return;
+      stage.appendChild(txt(30,y+14,'"'+SENTENCE[pos]+'" (pos '+pos+')',"axis-lbl"));
+      vectorCells(120,y,tok[pos],44,22, ri===0?"token emb":undefined);
+      stage.appendChild(txt(180,y+52,"+","tok-lbl")).setAttribute("font-size","16");
+      const peShown = PE[pos].map(v=>v*Math.min(1,Math.max(0,(t-0.35)*2.2)));
+      vectorCells(210,y,peShown,44,22, ri===0?"+ position":undefined);
+      stage.appendChild(txt(270,y+52,"=","tok-lbl")).setAttribute("font-size","16");
+      if(t>0.65){
+        const b = Math.min(1,(t-0.65)/0.35);
+        const xrow = tok[pos].map((v,j)=> v + PE[pos][j]*b);
+        vectorCells(300,y,xrow,44,22, ri===0?"= X[pos]":undefined);
+      }
+    });
+    if(t>0.65){
+      const b = Math.min(1,(t-0.65)/0.35);
+      const lbl = stage.appendChild(txt(30,360,rep ? "same token embedding, different position → different final vector" : "different words, different positions — both contribute to the final vector","axis-lbl"));
+      lbl.setAttribute("opacity",String(b));
+    }
+    const seriesTitle = stage.appendChild(txt(560,50,"PE(pos) — all "+T+" positions, "+D+" dims (sin/cos waves)",""));
+    seriesTitle.setAttribute("font-size","12"); seriesTitle.setAttribute("fill","var(--muted)");
+    const series = [0,1,2,3].map(d=>({label:"d"+(d+1), color:DIM_COLORS[d], values: PE.map(row=>row[d])}));
+    lineChart(560,70,380,280, series, SENTENCE.map((w,i)=>i));
+  }
+};
+const STEP_QKV = {
+  title:"Multi-head Q / K / V",
+  math:["Q_h = XW_Q^h,  K_h = XW_K^h,  V_h = XW_V^h   (per head h)","d_model="+D+" split into "+NUM_HEADS+" heads of d_head="+D_HEAD],
+  explain:"Instead of one attention pattern, the same input X is projected into "+NUM_HEADS+" smaller Q/K/V triples in parallel — each head gets its own learned W_Q, W_K, W_V.",
+  why:"One head can learn to track nearby words, another longer-range structure. Real models use far more heads (GPT-2 small uses 12); we use 2 so every number still fits on screen. (We split one shared projection into 2 heads purely so the numbers stay traceable by hand — real models give each head its own independent, full-size projection instead. See \"Common misconceptions\" below.)",
+  pytorch:["self.qkv = nn.Linear(d_model, 3*d_model)","q, k, v = self.qkv(x).split(d_model, dim=-1)","q = q.view(T, n_heads, d_head).transpose(0,1)  # (n_heads, T, d_head)","k = k.view(T, n_heads, d_head).transpose(0,1)","v = v.view(T, n_heads, d_head).transpose(0,1)"],
+  render(t){
+    ensureArrowMarker();
+    const X = X0();
+    const a = attentionBlock(X);
+    stage.appendChild(txt(120,60,"X (input)","axis-lbl"));
+    matrixGrid(40,90,X,40,22,SENTENCE.map((w,i)=>w+" "+i),["d1","d2","d3","d4"]);
+    const labels6 = SENTENCE.map((w,i)=>w+" "+i);
+    if(t>0.15){
+      withTip(stage.appendChild(txt(380,66,"Head 1","tok-lbl")), TERM_DEFS.Head).setAttribute("font-size","14");
+      stage.appendChild(txt(300,86,"Q","axis-lbl"));
+      matrixGrid(260,98,a.heads[0].Qh,42,22,null,["1","2"]);
+      stage.appendChild(txt(398,86,"K","axis-lbl"));
+      matrixGrid(360,98,a.heads[0].Kh,42,22,null,["1","2"]);
+      stage.appendChild(txt(498,86,"V","axis-lbl"));
+      matrixGrid(460,98,a.heads[0].Vh,42,22,null,["1","2"]);
+    }
+    if(t>0.5){
+      withTip(stage.appendChild(txt(700,66,"Head 2","tok-lbl")), TERM_DEFS.Head).setAttribute("font-size","14");
+      stage.appendChild(txt(620,86,"Q","axis-lbl"));
+      matrixGrid(580,98,a.heads[1].Qh,42,22,null,["1","2"]);
+      stage.appendChild(txt(718,86,"K","axis-lbl"));
+      matrixGrid(680,98,a.heads[1].Kh,42,22,null,["1","2"]);
+      stage.appendChild(txt(818,86,"V","axis-lbl"));
+      matrixGrid(780,98,a.heads[1].Vh,42,22,null,["1","2"]);
+    }
+    if(t>0.7){
+      const qn=withTip(stage.appendChild(txt(500,420,"Q = query   K = key   V = value","axis-lbl")),TERM_DEFS.Q+"<br>"+TERM_DEFS.K+"<br>"+TERM_DEFS.V);
+      qn.setAttribute("text-anchor","middle");
+    }
+  }
+};
+
+const STEP_SCORES = {
+  title:"Attention scores & causal mask",
+  math:["scores_h = Q_h K_hᵀ / √d_head   (per head)","mask: scores_h[i][j] = −∞  for all j > i"],
+  explain:"Compute raw scores per head, exactly like single-head attention — but now block every position from seeing the future: position i may only compare against keys at positions ≤ i.",
+  why:"This is what makes it a decoder: token i must never gather information from a token that comes after it, or the model would be predicting a word by peeking at that very word. Hover a masked (×) cell. (The 1/√d_head scaling above matters too: without it, dot products grow large as dimensions increase and push softmax toward a near one-hot output, stalling learning everywhere else.)",
+  pytorch:["scores = (q @ k.transpose(-2,-1)) / math.sqrt(d_head)   # (n_heads, T, T)","causal_mask = torch.tril(torch.ones(T, T)).bool()","scores = scores.masked_fill(~causal_mask, float('-inf'))"],
+  render(t){
+    const X = X0();
+    const a = attentionBlock(X);
+    const labels = SENTENCE.map((w,i)=>w+" "+i);
+    const shortLabels = SENTENCE.map((w,i)=>String(i));
+    [0,1].forEach((h,hi)=>{
+      if(hi===1 && t<0.4) return;
+      const gx = hi===0 ? 100 : 590;
+      const norm = Math.max.apply(null, a.heads[h].maskedScores.flat().filter(v=>v>-Infinity));
+      withTip(stage.appendChild(txt(gx+130,68,"Head "+(h+1)+" — scores (masked)","tok-lbl")), TERM_DEFS.Head).setAttribute("font-size","13");
+      matrixGrid(gx,90, a.heads[h].maskedScores.map(row=>row.map(v=>v===-Infinity?0:v*Math.min(1,t*1.6))), 44,38, shortLabels, shortLabels, {
+        heat:true, norm,
+        mask:(i,j)=> j>i,
+        tooltip:(i,j,v)=> j>i
+          ? "<b>"+labels[i]+"</b> → <b>"+labels[j]+"</b><br>masked — future token, not visible"
+          : "Query: <b>"+labels[i]+"</b><br>Key: <b>"+labels[j]+"</b><br>Score: <b>"+fmt(a.heads[h].maskedScores[i][j])+"</b>"
+      });
+    });
+  }
+};
+
+const STEP_SOFTMAX = {
+  title:"Softmax attention", math:["softmax(x_i) = e^{x_i} / Σⱼ e^{xⱼ}   (per head, per row)"],
+  explain(){ return "Take position "+QUERY_POS+' ("'+SENTENCE[QUERY_POS]+'", the last token) in both heads and turn its masked scores into probabilities. Position '+QUERY_POS+" is last, so its mask hides nothing — look back at the matrices in the previous step to see earlier rows losing access to later columns."; },
+  why(){ return "Each head produces its own independent set of attention weights over the same "+T+" positions. "+HEAD_COMPARE_TEXT; },
+  pytorch:["weights = F.softmax(scores, dim=-1)   # (n_heads, T, T), rows sum to 1"],
+  render(t){
+    const X = X0();
+    const a = attentionBlock(X);
+    const labels = SENTENCE.map((w,i)=>w+" "+i);
+    const row0 = a.heads[0].weights[QUERY_POS].map((w,i)=> w*t + (1-t)*(1/T));
+    const row1 = a.heads[1].weights[QUERY_POS].map((w,i)=> w*t + (1-t)*(1/T));
+    withTip(stage.appendChild(txt(255,40,"Head 1 — query: \""+SENTENCE[QUERY_POS]+"\" ("+QUERY_POS+")","axis-lbl")), TERM_DEFS.Head).setAttribute("text-anchor","middle");
+    barChart(70,70,380,320,labels,row0,{pct:true, highlight: row0.indexOf(Math.max.apply(null,row0))});
+    withTip(stage.appendChild(txt(750,40,"Head 2 — query: \""+SENTENCE[QUERY_POS]+"\" ("+QUERY_POS+")","axis-lbl")), TERM_DEFS.Head).setAttribute("text-anchor","middle");
+    barChart(560,70,380,320,labels,row1,{pct:true, highlight: row1.indexOf(Math.max.apply(null,row1))});
+  }
+};
+
+const STEP_ATTNOUT = {
+  title:"Attention output & merge",
+  math(){ return ["head_h,i = Σⱼ weights_h[i,j]·V_h[j]","concat = [head_1 ; head_2]  ("+T+"×"+D+")","AttnOut = concat · W_O"]; },
+  explain(){ return "Each head separately gathers a weighted blend of its own Value vectors for position "+QUERY_POS+". The two heads' results are concatenated back into one "+D+"-dim vector, then one more learned matrix W_O mixes the heads together."; },
+  why:"W_O is what lets information from different heads combine — without it the heads would stay in two disconnected halves of the vector.",
+  pytorch:["out = weights @ v                              # per head: (T, d_head)","out = out.transpose(0,1).reshape(T, d_model)    # concat heads back to d_model","attn_out = self.out_proj(out)                   # W_O: nn.Linear(d_model, d_model)"],
+  render(t){
+    ensureArrowMarker();
+    const X = X0();
+    const a = attentionBlock(X);
+    const q = QUERY_POS;
+    withTip(stage.appendChild(txt(70,60,"head 1 out","axis-lbl")), TERM_DEFS.Head);
+    vectorCells(70,72,a.heads[0].out[q],52,24);
+    withTip(stage.appendChild(txt(200,60,"head 2 out","axis-lbl")), TERM_DEFS.Head);
+    vectorCells(200,72,a.heads[1].out[q],52,24);
+    stage.appendChild(txt(340,60,"concat (4)","axis-lbl"));
+    vectorCells(340,72,a.concat[q],52,24);
+    if(t>0.35){
+      flowArrow(410,120,500,120,"× W_O","#75b9ff");
+      const merged = a.attnOut[q].map((v,i)=> a.concat[q][i] + (v-a.concat[q][i])*Math.min(1,(t-0.35)/0.5));
+      stage.appendChild(txt(520,60,"attnOut["+q+"] (4)","axis-lbl"));
+      vectorCells(520,72,merged,52,24);
+    }
+    if(t>0.55){
+      const b=(t-0.55)/0.45;
+      stage.appendChild(txt(260,270,"before (embedding)","axis-lbl"));
+      vectorCells(260,290,X[q],52,26);
+      stage.appendChild(txt(640,270,"after (attention output)","axis-lbl"));
+      vectorCells(640,290,a.attnOut[q].map((v,i)=>X[q][i]+(v-X[q][i])*b),52,26);
+      flowArrow(390,320,630,320,"","#75b9ff");
+    }
+  }
+};
+
+const STEP_RESIDUAL1 = {
+  title:"Residual connection", math:["X' = X + Attention(X)"],
+  explain:"The attention output is added back onto the original vector — not used to replace it.",
+  why:"This keeps a direct path for the original signal, which is what keeps deep stacks trainable (Part 1 §9).",
+  pytorch:["x = x + self.attn(self.ln1(x))   # pre-norm residual (GPT-style)"],
+  render(t){
+    ensureArrowMarker();
+    const X = X0();
+    const {attnOut,residual1} = attentionBlock(X);
+    const q = QUERY_POS;
+    stage.appendChild(txt(220,40,"original X["+q+"]","axis-lbl"));
+    vectorCells(220,60,X[q],52,26);
+    stage.appendChild(txt(460,40,"Attention(X)["+q+"]","axis-lbl"));
+    vectorCells(460,60,attnOut[q],52,26);
+    flowArrow(300,180,420,180,"","#5f7296"); flowArrow(540,180,420,180,"","#5f7296");
+    stage.appendChild(el("circle",{cx:420,cy:180,r:22,fill:"#131d36",stroke:"#75b9ff","stroke-width":2}));
+    stage.appendChild(txt(420,187,"+","tok-lbl")).setAttribute("font-size","22");
+    if(t>0.4){
+      const a=Math.min(1,(t-0.4)/0.6);
+      stage.appendChild(txt(420,260,"X'["+q+"]","axis-lbl")).setAttribute("text-anchor","middle");
+      vectorCells(394,280,residual1[q].map((v,i)=>X[q][i]+(v-X[q][i])*a),52,26);
+    }
+  }
+};
+
+const STEP_FFN = {
+  title:"Feed-forward network", math:["FFN(x) = W₂ σ(W₁x + b₁) + b₂","4 → "+FFN_HIDDEN+" → 4,  σ = ReLU"],
+  explain:"After attention gathers context, a small network processes each position independently. The "+FFN_HIDDEN+" purple circles below are its hidden units — commonly called neurons — each one a single number computed as one row of W₁ dotted with the input, then passed through ReLU.",
+  why:"\"Attention gathers; the FFN thinks about what was gathered\" (Part 1 §11). Neurons are not the same thing as attention heads: heads live in the attention step you just saw; neurons live here, inside the FFN. The Stacked Layers step later lets you watch these neurons' activations across the whole sentence.",
+  pytorch:["self.ffn = nn.Sequential(","    nn.Linear(d_model, d_ffn), nn.ReLU(),","    nn.Linear(d_ffn, d_model))","x = x + self.ffn(self.ln2(x))"],
+  render(t){
+    const X = X0();
+    const {residual1} = attentionBlock(X);
+    const {Z1,H} = ffnBlock(residual1);
+    const inNodes = 4, hidNodes = FFN_HIDDEN, outNodes = 4;
+    const xin=140, xhid=500, xout=860, y0=60, y1=380;
+    function ny(n,i,total){ return y0 + (i+0.5)*(y1-y0)/total; }
+    ensureArrowMarker();
+    for(let i=0;i<inNodes;i++) for(let j=0;j<hidNodes;j++)
+      stage.appendChild(el("line",{x1:xin,y1:ny(0,i,inNodes),x2:xhid,y2:ny(1,j,hidNodes),stroke:"#1c2947","stroke-width":1}));
+    for(let j=0;j<hidNodes;j++) for(let k=0;k<outNodes;k++)
+      stage.appendChild(el("line",{x1:xhid,y1:ny(1,j,hidNodes),x2:xout,y2:ny(2,k,outNodes),stroke:"#1c2947","stroke-width":1}));
+    for(let i=0;i<inNodes;i++) stage.appendChild(el("circle",{cx:xin,cy:ny(0,i,inNodes),r:9,fill:"#75b9ff"}));
+    for(let j=0;j<hidNodes;j++){
+      const act = Math.max(0,H[PRED_POS][j])*t;
+      stage.appendChild(el("circle",{cx:xhid,cy:ny(1,j,hidNodes),r:9,fill:`rgba(167,139,250,${0.15+Math.min(1,act)*0.8})`,stroke:"#a78bfa"}));
+    }
+    for(let k=0;k<outNodes;k++) stage.appendChild(el("circle",{cx:xout,cy:ny(2,k,outNodes),r:9,fill:"#8be28b",opacity:Math.min(1,t*1.5)}));
+    stage.appendChild(txt(xin,40,"input (4)","axis-lbl"));
+    stage.appendChild(txt(xhid,40,"hidden ("+FFN_HIDDEN+"), ReLU","axis-lbl"));
+    stage.appendChild(txt(xout,40,"output (4)","axis-lbl"));
+    const gx=860,gy=300,gw=100,gh=60;
+    stage.appendChild(el("line",{x1:gx,y1:gy+gh,x2:gx+gw,y2:gy+gh,stroke:"#2a3a63"}));
+    stage.appendChild(el("line",{x1:gx,y1:gy,x2:gx,y2:gy+gh,stroke:"#2a3a63"}));
+    stage.appendChild(el("path",{d:`M${gx},${gy+gh} L${gx+gw/2},${gy+gh} L${gx+gw},${gy}`,stroke:"#f5b84b","stroke-width":2,fill:"none"}));
+    stage.appendChild(txt(gx+gw/2,gy+gh+16,"ReLU: y=max(0,x)","axis-lbl")).setAttribute("text-anchor","middle");
+  }
+};
+
+let selectedLayer = 4;
+const DIM_COLORS = ["#75b9ff","#a78bfa","#f5b84b","#8be28b"];
+
+let stackedView = "matrix"; // "matrix" | "graph" | "neurons" — which detail view is showing for the selected layer
+const STEP_STACKED = {
+  title:"Stacked layers", math:["X⁴ = Layer₄(Layer₃(Layer₂(Layer₁(X))))"],
+  explain:"The same block — multi-head attention, then FFN, both behind residuals — repeats 4 times. Click a layer below, then pick a view: its real output matrix, a graph of how each dimension moves across positions, its attention heads, or the FFN's hidden-neuron activations.",
+  why:"Layer 1 catches local relationships; by layer 4 the representation is considerably more context-aware. This illustration reuses the same hand-picked W_Q/W_K/W_V/W₁/W₂ at every layer for simplicity — real models learn independent weights per layer (Part 5). Nesting, spelled out: each of the 4 layers contains its own 2 attention heads and its own "+FFN_HIDDEN+" FFN neurons — a layer is the outer container, heads and neurons are two different things living inside it, not two names for the same thing.",
+  pytorch:["self.blocks = nn.ModuleList([Block(d_model, n_heads) for _ in range(n_layers)])","for block in self.blocks:","    x = block(x)"],
+  render(t){
+    const shown = Math.max(1, Math.ceil(t*4));
+    if(selectedLayer > shown) selectedLayer = shown;
+    const boxW=200, gap=16, startX=500-(4*boxW+3*gap)/2, y=32;
+    const sub = ["local","richer context","more abstract","contextual"];
+    for(let i=0;i<4;i++){
+      const on = i < shown;
+      const isSel = (i+1)===selectedLayer;
+      const bx = startX + i*(boxW+gap);
+      const g = el("g",{opacity: on?1:0.18});
+      g.appendChild(el("rect",{x:bx,y,width:boxW,height:46,rx:10,fill: isSel?"#20385f":"#131d36",
+        stroke: isSel?"#75b9ff":"#2a3a63","stroke-width": isSel?2.4:1.2}));
+      withTip(g.appendChild(txt(bx+boxW/2,y+20,"Layer "+(i+1),"tok-lbl")), TERM_DEFS.Layer).setAttribute("font-size","13");
+      g.appendChild(txt(bx+boxW/2,y+37,sub[i],"axis-lbl")).setAttribute("text-anchor","middle");
+      stage.appendChild(g);
+      if(on){
+        g.style.cursor="pointer";
+        g.addEventListener("click", ()=>{ selectedLayer=i+1; render(); });
+      }
+    }
+
+    // view selector — Matrix / Graph / Neurons / Attention, for the selected layer, plus Overview across all layers
+    const views = [["matrix","Matrix"],["graph","Graph"],["neurons","Neurons"],["attention","Attention"],["overview","Overview"]];
+    const vw=116, vgap=8, vStartX=500-(5*vw+4*vgap)/2, vy=92;
+    views.forEach(([id,label],i)=>{
+      const on = stackedView===id;
+      const vx = vStartX + i*(vw+vgap);
+      const vg = el("g",{});
+      vg.appendChild(el("rect",{x:vx,y:vy,width:vw,height:26,rx:13,fill:on?"#75b9ff":"#131d36",stroke:on?"#75b9ff":"#2a3a63","stroke-width":1.2}));
+      const vt = vg.appendChild(txt(vx+vw/2,vy+17,label,"")); vt.setAttribute("text-anchor","middle"); vt.setAttribute("font-size","12"); vt.setAttribute("font-weight","700"); vt.setAttribute("fill", on?"#06111f":"var(--muted)");
+      if(id==="neurons") withTip(vt, TERM_DEFS.Neuron);
+      else if(id==="attention") withTip(vt, TERM_DEFS.Head);
+      vg.style.cursor="pointer";
+      vg.addEventListener("click", ()=>{ stackedView=id; render(); });
+      stage.appendChild(vg);
+    });
+
+    const L = LAYERS[selectedLayer-1];
+    const labels = SENTENCE.map((w,i)=>w+" "+i);
+
+    if(stackedView==="matrix"){
+      const mTitle = stage.appendChild(txt(300,150,"Matrix view — Layer "+selectedLayer+" output ("+T+"×"+D+")",""));
+      mTitle.setAttribute("text-anchor","middle"); mTitle.setAttribute("font-size","13"); mTitle.setAttribute("font-weight","700"); mTitle.setAttribute("fill","var(--text)");
+      matrixGrid(390,168, L.out, 60,32, labels, ["d1","d2","d3","d4"], {});
+    } else if(stackedView==="graph"){
+      const gTitle = stage.appendChild(txt(500,150,"Graph view — Layer "+selectedLayer+", each dim across positions",""));
+      gTitle.setAttribute("text-anchor","middle"); gTitle.setAttribute("font-size","13"); gTitle.setAttribute("font-weight","700"); gTitle.setAttribute("fill","var(--text)");
+      const series = [0,1,2,3].map(d=>({label:"d"+(d+1), color:DIM_COLORS[d], values: L.out.map(row=>row[d])}));
+      lineChart(260,168, 480,220, series, SENTENCE.map((w,i)=>i));
+    } else if(stackedView==="neurons"){
+      const nTitle = stage.appendChild(txt(500,150,"Neuron view — Layer "+selectedLayer+" FFN hidden units ("+FFN_HIDDEN+"), post-ReLU",""));
+      nTitle.setAttribute("text-anchor","middle"); nTitle.setAttribute("font-size","13"); nTitle.setAttribute("font-weight","700"); nTitle.setAttribute("fill","var(--text)");
+      // transpose to rows=neurons, cols=positions — same convention as the live-training lab's neuron tab
+      const Ht = [];
+      for(let n=0;n<FFN_HIDDEN;n++) Ht.push(L.ffn.H.map(row=>row[n]));
+      const maxAct = Math.max.apply(null, Ht.flat().concat([1e-6]));
+      matrixGrid(300,168, Ht, 64,26, Ht.map((r,n)=>"n"+n), SENTENCE.map((w,i)=>i), {heat:true, norm:maxAct,
+        tooltip:(n,i,v)=> "neuron n"+n+" @ position "+i+" (\""+SENTENCE[i]+"\")<br>activation: <b>"+fmt(v)+"</b>"});
+      stage.appendChild(txt(500,400,"watch for a row that lights up consistently at a particular word or position — that neuron is specializing","axis-lbl")).setAttribute("text-anchor","middle");
+    } else if(stackedView==="attention"){
+      const aTitle = stage.appendChild(txt(500,150,"Attention view — Layer "+selectedLayer+", causal-masked scores per head",""));
+      aTitle.setAttribute("text-anchor","middle"); aTitle.setAttribute("font-size","13"); aTitle.setAttribute("font-weight","700"); aTitle.setAttribute("fill","var(--text)");
+      const shortLabels = SENTENCE.map((w,i)=>String(i));
+      [0,1].forEach((h,hi)=>{
+        const gx = hi===0 ? 90 : 560;
+        const hd = L.attn.heads[h];
+        const norm = Math.max.apply(null, hd.maskedScores.flat().filter(v=>v>-Infinity));
+        withTip(stage.appendChild(txt(gx+130,178,"Head "+(h+1),"tok-lbl")), TERM_DEFS.Head).setAttribute("font-size","13");
+        matrixGrid(gx,200, hd.maskedScores, 44,36, shortLabels, shortLabels, {
+          heat:true, norm, mask:(i,j)=>j>i,
+          tooltip:(i,j,v)=> j>i
+            ? "<b>"+labels[i]+"</b> → <b>"+labels[j]+"</b><br>masked — future token"
+            : "Query: <b>"+labels[i]+"</b><br>Key: <b>"+labels[j]+"</b><br>Score: <b>"+fmt(hd.maskedScores[i][j])+"</b>"
+        });
+      });
+      stage.appendChild(txt(500,432,"same causal mask, same two heads, at layer "+selectedLayer+" instead of layer 1 — compare against the \"Attention scores & causal mask\" step earlier","axis-lbl")).setAttribute("text-anchor","middle");
+    } else { // overview — every layer × head at once, small multiples
+      const ovTitle = stage.appendChild(txt(500,150,"Overview — every layer × head, causal-masked attention at a glance",""));
+      ovTitle.setAttribute("text-anchor","middle"); ovTitle.setAttribute("font-size","13"); ovTitle.setAttribute("font-weight","700"); ovTitle.setAttribute("fill","var(--text)");
+      const thumbW=190, thumbH=96, gapX=25, gapY=34, gridX=45, gridY=180;
+      for(let l=0;l<4;l++){
+        for(let h=0;h<2;h++){
+          const tx = gridX + l*(thumbW+gapX);
+          const ty = gridY + h*(thumbH+gapY);
+          const isCur = (l+1)===selectedLayer;
+          const lbl = stage.appendChild(txt(tx+thumbW/2, ty-8, "Layer "+(l+1)+" · Head "+(h+1), ""));
+          lbl.setAttribute("text-anchor","middle"); lbl.setAttribute("font-size","10.5"); lbl.setAttribute("fill", isCur?"var(--accent)":"var(--dim)");
+          const hd = LAYERS[l].attn.heads[h];
+          const norm = Math.max.apply(null, hd.maskedScores.flat().filter(v=>v>-Infinity));
+          const g = matrixGrid(tx, ty, hd.maskedScores, thumbW/6, thumbH/6, null, null, {heat:true, norm, mask:(i,j)=>j>i, noVals:true});
+          g.style.cursor = "pointer";
+          g.addEventListener("click", ()=>{ selectedLayer=l+1; stackedView="attention"; render(); });
+          stage.appendChild(el("rect",{x:tx-4,y:ty-4,width:thumbW+8,height:thumbH+8,rx:6,fill:"none",stroke:isCur?"var(--accent)":"transparent","stroke-width":1.4}));
+        }
+      }
+      stage.appendChild(txt(500,440,"click any thumbnail to open its full detail — patterns genuinely differ across layers/heads even though this illustration reuses the same weights at every layer","axis-lbl")).setAttribute("text-anchor","middle");
+    }
+
+    if(stackedView==="matrix" || stackedView==="graph" || stackedView==="neurons") stage.appendChild(txt(500,440,"weights applied at this layer: W_Q, W_K, W_V, W_O, W₁, W₂ — same values shown in the \"Multi-head Q/K/V\" and \"Feed-forward network\" steps","axis-lbl")).setAttribute("text-anchor","middle");
+  }
+};
+
+const STEP_FINALPRED = {
+  title:"Final prediction", math:["logits = W_{head}\\,h,\\;\\; h = final hidden vector","p = softmax(logits)"],
+  explain(){ return "The final hidden vector at position "+PRED_POS+' ("'+SENTENCE[PRED_POS]+'", the last context token) is projected to one score per vocabulary word, then softmax turns those into probabilities.'; },
+  why:"The highest-probability word is the model's actual next-token guess.",
+  pytorch:["logits = self.lm_head(self.ln_f(x))     # (T, vocab_size)","probs = F.softmax(logits[-1], dim=-1)   # distribution for the next token"],
+  render(t){
+    if(t<0.5){
+      const a = t*2;
+      stage.appendChild(txt(500,40,"final hidden vector h (position "+PRED_POS+")","axis-lbl")).setAttribute("text-anchor","middle");
+      vectorCells(454,70,FINAL_H,52,26);
+      if(a>0.3){
+        const b=(a-0.3)/0.7;
+        const labels = VOCAB;
+        barChart(280,220,520,220,labels,LOGITS.map(v=>v*b),{});
+        stage.appendChild(txt(500,190,"logits (raw scores)","axis-lbl")).setAttribute("text-anchor","middle");
+      }
+    } else {
+      const labels = VOCAB;
+      barChart(280,60,520,320,labels,PROBS,{pct:true, highlight:PROBS.indexOf(Math.max.apply(null,PROBS))});
+      stage.appendChild(txt(500,40,"softmax probabilities","axis-lbl")).setAttribute("text-anchor","middle");
+    }
+  }
+};
+
+let samplingMode = "greedy"; // "greedy" | "t07" | "t15"
+let sampleSeed = 1;
+const STEP_AUTOREGRESSIVE = {
+  title:"Autoregressive loop", math:["context → Transformer → P(next) → pick → append → new context → …"],
+  explain:"The predicted word gets appended to the context, and the whole process runs again to predict the word after that. Try the sampling modes below — greedy always takes the top pick; temperature sampling can pick something else, on purpose.",
+  why:"This loop, one token at a time, is the entire generation process — every sentence a language model writes is this loop repeated. Real generation almost always samples rather than always taking the greedy top pick — otherwise every run of the model would produce the exact same output.",
+  pytorch:["for _ in range(max_new_tokens):","    logits = model(context)[-1]","    probs = F.softmax(logits / temperature, dim=-1)","    next_id = torch.multinomial(probs, 1)   # or argmax(probs) for greedy","    context = torch.cat([context, next_id])"],
+  render(t){
+    ensureArrowMarker();
+    const contextWords = SENTENCE.slice(0, QUERY_POS);
+    const top = contextWords.map((w,i)=> i===0 ? w.charAt(0).toUpperCase()+w.slice(1) : w).join(" ");
+
+    // sampling-mode pills + resample button
+    const modes = [["greedy","Greedy (argmax)"],["t07","Temperature 0.7"],["t15","Temperature 1.5"]];
+    const pillW = [130,150,150], gap=8;
+    const totalW = pillW.reduce((a,b)=>a+b,0) + gap*(pillW.length-1);
+    let px0 = 500-totalW/2;
+    modes.forEach(([id,label],i)=>{
+      const w = pillW[i];
+      const on = samplingMode===id;
+      const g = el("g",{});
+      g.appendChild(el("rect",{x:px0,y:8,width:w,height:26,rx:13,fill:on?"#75b9ff":"#131d36",stroke:on?"#75b9ff":"#2a3a63","stroke-width":1.2}));
+      const lt = g.appendChild(txt(px0+w/2,25,label,"")); lt.setAttribute("text-anchor","middle"); lt.setAttribute("font-size","11.5"); lt.setAttribute("font-weight","700"); lt.setAttribute("fill",on?"#06111f":"var(--muted)");
+      g.style.cursor="pointer";
+      g.addEventListener("click", ()=>{ samplingMode=id; render(); });
+      stage.appendChild(g);
+      px0 += w+gap;
+    });
+    if(samplingMode!=="greedy"){
+      const rx = px0+10;
+      const rg = el("g",{});
+      rg.appendChild(el("rect",{x:rx,y:8,width:110,height:26,rx:13,fill:"#131d36",stroke:"#f5b84b","stroke-width":1.2}));
+      const rt = rg.appendChild(txt(rx+55,25,"🎲 Resample","")); rt.setAttribute("text-anchor","middle"); rt.setAttribute("font-size","11.5"); rt.setAttribute("font-weight","700"); rt.setAttribute("fill","#f5b84b");
+      rg.style.cursor="pointer";
+      rg.addEventListener("click", ()=>{ sampleSeed++; render(); });
+      stage.appendChild(rg);
+    }
+
+    // compute the sampled/greedy distribution and choice
+    const temp = samplingMode==="t07" ? 0.7 : samplingMode==="t15" ? 1.5 : 1.0;
+    const distP = samplingMode==="greedy" ? PROBS : softmaxWithTemp(LOGITS, temp);
+    const greedyIdx = PROBS.indexOf(Math.max.apply(null,PROBS));
+    const chosenIdx = samplingMode==="greedy" ? greedyIdx : sampleFromDist(distP, mulberry32(sampleSeed*7919+ (temp*100|0)));
+    const chosen = VOCAB[chosenIdx];
+    const matchesGreedy = chosenIdx===greedyIdx;
+
+    stage.appendChild(txt(500,68,'"'+top+'"',"tok-lbl")).setAttribute("font-size","17");
+    flowArrow(500,86,500,116,"","#5f7296");
+    const bx = el("rect",{x:400,y:118,width:200,height:38,rx:8,fill:"#131d36",stroke:"#75b9ff","stroke-width":1.6});
+    stage.appendChild(bx); stage.appendChild(txt(500,141,"Transformer","tok-lbl")).setAttribute("font-size","13");
+    flowArrow(500,156,500,180,"","#5f7296");
+
+    const dTitle = stage.appendChild(txt(500,196,samplingMode==="greedy" ? "P(next token)" : "P(next token) / temperature "+temp,""));
+    dTitle.setAttribute("text-anchor","middle"); dTitle.setAttribute("font-size","12"); dTitle.setAttribute("fill","var(--muted)");
+    const order = distP.map((p,i)=>i).sort((a,b)=>distP[b]-distP[a]);
+    const top4 = order.slice(0,4);
+    barChart(340,210, 320,110, top4.map(i=>VOCAB[i]), top4.map(i=>distP[i]), {pct:true, highlight: top4.indexOf(chosenIdx)});
+
+    const a = Math.min(1,t*1.6);
+    stage.appendChild(txt(500,352,a>0.5?('→ "'+chosen+'"'):"","tok-lbl")).setAttribute("font-size","17");
+    if(a>0.5 && samplingMode!=="greedy"){
+      const note = stage.appendChild(txt(500,370,matchesGreedy ? "(sampled — happened to match the top pick)" : "(sampled — NOT the top pick, that's what temperature does)","axis-lbl"));
+      note.setAttribute("text-anchor","middle"); if(!matchesGreedy) note.setAttribute("fill","#f5b84b");
+    }
+    if(a>=1){
+      var doneLbl = stage.appendChild(txt(500,398,'"'+top+" "+chosen+'"',"tok-lbl"));
+      doneLbl.setAttribute("font-size","17"); doneLbl.setAttribute("fill","#8be28b");
+      stage.appendChild(txt(500,420,"→ fed back in as the new context, and the loop repeats","axis-lbl")).setAttribute("text-anchor","middle");
+    }
+  }
+};
+
+const STEP_LOSS = {
+  title:"Loss function (training)",
+  math(){ return ["L = −log P(y_target)","y_target = \""+SENTENCE[QUERY_POS]+"\"  (the real next word in this training example)"]; },
+  explain:"During training the correct next word is already known — it's just the next word in the real sentence. Cross-entropy loss measures how far the model's predicted distribution is from being fully confident in that word.",
+  why:"Lower loss = higher probability assigned to the correct word. Training is nothing but repeatedly nudging weights to make this one number smaller, across millions of examples. (This walkthrough uses a single example for clarity — real training batches many examples together and averages their loss before every update.)",
+  pytorch:["loss = F.cross_entropy(logits, target)   # target = the real next-token id","# equivalently: loss = -log_softmax(logits)[target]"],
+  render(t){
+    const labels = VOCAB;
+    const a = Math.min(1,t*1.4);
+    barChart(280,70,520,300,labels,PROBS.map(v=>v),{pct:true, highlight:TARGET_IDX});
+    stage.appendChild(txt(500,40,"softmax probabilities — target = \""+SENTENCE[QUERY_POS]+"\"","axis-lbl")).setAttribute("text-anchor","middle");
+    if(a>0.3){
+      const b=(a-0.3)/0.7;
+      stage.appendChild(el("rect",{x:60,y:170,width:170,height:70,rx:10,fill:"#131d36",stroke:"#f0857a","stroke-width":1.6,opacity:b}));
+      const lbl = stage.appendChild(txt(145,200,"L = "+(LOSS*b).toFixed(2),"tok-lbl"));
+      lbl.setAttribute("font-size","20"); lbl.setAttribute("fill","#f0857a");
+      stage.appendChild(txt(145,222,"cross-entropy loss","axis-lbl")).setAttribute("text-anchor","middle");
+    }
+  }
+};
+
+const STEP_BACKPROP = {
+  title:"Backpropagation (training)",
+  math:["∂L/∂logits = softmax(logits) − one_hot(target)","∂L/∂h = ∂L/∂logits · W_headᵀ    (chain rule through the output layer)","…continues backward through every earlier operation, the same way"],
+  explain:"The gradient of the loss w.r.t. the logits has a famously clean form — literally \"what we predicted minus what was actually true.\" From there the chain rule multiplies that gradient by each operation's own local derivative, working backward through every step you just walked forward through: the output layer, then each block's FFN and attention, back to the embeddings.",
+  why:"The two gradient vectors below are the real values for this exact example, checked against finite differences to ~1e-11. Every earlier layer keeps flowing the same way — omitted here for space, but never a different rule.",
+  pytorch:["loss.backward()      # PyTorch computes every ∂L/∂W automatically","print(x.grad)         # ∂L/∂x, populated via autograd, same chain rule"],
+  render(t){
+    ensureBackArrowMarker();
+    const labels = VOCAB;
+    stage.appendChild(txt(255,40,"∂L/∂logits = probs − one-hot(\"mat\")","axis-lbl")).setAttribute("text-anchor","middle");
+    divergingBarChart(70,64,380,300,labels,D_LOGITS.map(v=>v*Math.min(1,t*1.5)),{});
+    stage.appendChild(txt(770,40,"∂L/∂h  (final hidden vector)","axis-lbl")).setAttribute("text-anchor","middle");
+    if(t>0.35){
+      const b=Math.min(1,(t-0.35)/0.5);
+      vectorCells(744,64,D_FINAL_H.map(v=>v*b),52,26);
+    }
+    if(t>0.55){
+      const stagesN = ["EMBED","ATTN","FFN","LAYERS","LOGITS"];
+      const x0=560,x1=940,y=280;
+      stage.appendChild(el("line",{x1:x0,y1:y,x2:x1,y2:y,stroke:"#1c2947","stroke-width":3}));
+      stagesN.forEach((s,i)=>{
+        const x = x0 + i*(x1-x0)/(stagesN.length-1);
+        stage.appendChild(el("circle",{cx:x,cy:y,r:5,fill:"#2a3a63"}));
+        stage.appendChild(txt(x,y+22,s,"axis-lbl")).setAttribute("text-anchor","middle");
+      });
+      const c=Math.min(1,(t-0.55)/0.45);
+      const px = x1 - c*(x1-x0);
+      stage.appendChild(el("circle",{cx:px,cy:y,r:9,fill:"#f0857a"}));
+      stage.appendChild(txt(750,320,"gradients flow backward ←","axis-lbl")).setAttribute("text-anchor","middle");
+    }
+  }
+};
+
+function stepWeightUpdate(mode){
+  const lr = mode==="finetune" ? 0.0003 : 0.01;
+  const lrLabel = mode==="finetune" ? "η = 0.0003 (small — adapt gently)" : "η = 0.01";
+  return {
+    title:"Weight update ("+(mode==="finetune"?"fine-tuning":"training")+")",
+    math:["W ← W − η · ∂L/∂W", lrLabel],
+    explain:"Every weight matrix — W_Q, W_K, W_V, W_O, W₁, W₂, the embedding table, W_head — takes one small step in the direction that would have reduced this loss. This exact formula, same code, runs whether you're training from scratch or fine-tuning — switch modes above and compare: only the equation's η value and the \"why\" below change.",
+    why: mode==="finetune"
+      ? "Fine-tuning runs the identical update rule, starting from weights that are already pretrained (not random) and typically using a smaller η, so the model specializes on new data without forgetting what it already learned. Same code as Training mode — only the starting point and η differ."
+      : "Repeat this for millions of (context, next-word) pairs, and this loop — forward pass, loss, backward pass, update — is the entire training process. Nothing more exotic happens anywhere. Fine-tuning (see that mode) is this identical loop, just started from pretrained weights instead of random ones.",
+    pytorch:["optimizer = torch.optim.AdamW(model.parameters(), lr="+lr+")","loss.backward()","optimizer.step()","optimizer.zero_grad()"],
+    render(t){
+      // Starting-point badge — the underlying WQ numbers are the same fixed,
+      // hand-picked matrix either way (this page is deterministic, not a real
+      // trained/untrained model) — the badge marks what to *imagine* it
+      // represents in each mode, since that's the actual difference.
+      const isFt = mode==="finetune";
+      const modeColor = isFt ? "#f5b84b" : "#75b9ff";
+      const badgeText = isFt ? "🔒  Starting point: pretrained weights (not random)" : "🎲  Starting point: freshly initialized (random) weights";
+      stage.appendChild(el("rect",{x:230,y:10,width:540,height:30,rx:15,fill:modeColor,"fill-opacity":0.12,stroke:modeColor,"stroke-width":1.4}));
+      stage.appendChild(txt(500,30,badgeText,"")).setAttribute("text-anchor","middle");
+      const badgeTxt = stage.lastChild;
+      badgeTxt.setAttribute("font-size","13"); badgeTxt.setAttribute("fill",modeColor); badgeTxt.setAttribute("font-weight","700");
+
+      stage.appendChild(txt(500,60,"W_Q before → after one update step (illustrative direction)","axis-lbl")).setAttribute("text-anchor","middle");
+      matrixGrid(300,92,WQ,60,40,["r0","r1","r2","r3"],["c0","c1","c2","c3"]);
+      if(t>0.4){
+        const b=Math.min(1,(t-0.4)/0.6);
+        const after = WQ.map((row,i)=>row.map((v,j)=> v - b*0.06*Math.sin(i+j*1.7)));
+        ensureArrowMarker();
+        flowArrow(560,172,650,172,"−η·grad","#f5b84b");
+        matrixGrid(680,92,after,60,40,["r0","r1","r2","r3"],["c0","c1","c2","c3"]);
+      }
+
+      // η comparison, log scale — makes "smaller learning rate" visible, not
+      // just a number in the equation above.
+      const etaRows = [
+        {label:"Training", eta:0.01, on: mode==="training"},
+        {label:"Fine-tuning", eta:0.0003, on: mode==="finetune"}
+      ];
+      const logMin = Math.log10(0.0001), logMax = Math.log10(0.03);
+      const barX = 260, barMaxW = 480;
+      stage.appendChild(txt(500,278,"learning rate η, compared (log scale)","axis-lbl")).setAttribute("text-anchor","middle");
+      etaRows.forEach((r,i)=>{
+        const y = 300 + i*36;
+        const frac = Math.max(0,(Math.log10(r.eta)-logMin)/(logMax-logMin));
+        const w = Math.max(4, frac*barMaxW*Math.min(1,t*1.6));
+        stage.appendChild(txt(barX-10,y+14,r.label,"axis-lbl")).setAttribute("text-anchor","end");
+        stage.appendChild(el("rect",{x:barX,y:y,width:barMaxW,height:20,rx:4,fill:"#101b34"}));
+        stage.appendChild(el("rect",{x:barX,y:y,width:w,height:20,rx:4,fill:r.on?modeColor:"#3a4a72","fill-opacity":r.on?1:0.6}));
+        const vt = stage.appendChild(txt(barX+w+8,y+14,"η = "+r.eta+(r.on?"  ← this mode":""),"axis-lbl"));
+        if(r.on){ vt.setAttribute("fill","var(--text)"); vt.setAttribute("font-weight","700"); }
+      });
+
+      stage.appendChild(txt(500,392,"(cell deltas above are illustrative motion — the real per-weight gradient for W_Q follows the same chain rule shown in the previous step)","axis-lbl")).setAttribute("text-anchor","middle");
+    }
+  };
+}
+
+function fullPipelineStep(mode){
+  const stagesN = mode==="inference"
+    ? ["TEXT","TOKENS","EMBED","Q/K/V","ATTN","FFN","LAYERS","LOGITS","SOFTMAX","NEXT"]
+    : ["TEXT","TOKENS","EMBED","Q/K/V","ATTN","FFN","LAYERS","LOGITS","LOSS","BACKPROP","UPDATE"];
+  const coreIdea = mode==="inference"
+    ? "A Transformer repeatedly transforms vectors, while allowing them to interact through attention."
+    : (mode==="finetune"
+        ? "Forward pass, loss, backward pass, weight update — starting from pretrained weights and adapting them to new data. Exactly training's loop, smaller steps."
+        : "Forward pass computes a prediction; loss measures the error; backward pass computes gradients; the optimizer nudges every weight. Repeated millions of times, this is how a Transformer learns.");
+  return {
+    title:"The full pipeline",
+    math:[stagesN.join(" → ")],
+    explain:"Every stage you just walked through, in one row — the recap, not a new idea.",
+    why:"THE CORE IDEA: "+coreIdea,
+    render(t){
+      const x0=60, x1=940, y=240;
+      stage.appendChild(el("line",{x1:x0,y1:y,x2:x1,y2:y,stroke:"#1c2947","stroke-width":3}));
+      stagesN.forEach((s,i)=>{
+        const x = x0 + i*(x1-x0)/(stagesN.length-1);
+        stage.appendChild(el("circle",{cx:x,cy:y,r:6,fill:"#75b9ff"}));
+        stage.appendChild(txt(x,y+26,s,"axis-lbl")).setAttribute("text-anchor","middle");
+      });
+      stage.appendChild(txt(500,340,"THE CORE IDEA","tok-lbl")).setAttribute("text-anchor","middle");
+      const words = coreIdea.match(/.{1,58}(\s|$)/g) || [coreIdea];
+      words.forEach((w,i)=> stage.appendChild(txt(500,368+i*20,w.trim(),"axis-lbl")).setAttribute("text-anchor","middle"));
+    }
+  };
+}
+
+function buildSteps(mode){
+  const head = [STEP_TEXT, STEP_TOKENIZATION, STEP_EMBEDDINGS, STEP_POSENC];
+  const attn = [STEP_QKV, STEP_SCORES, STEP_SOFTMAX, STEP_ATTNOUT, STEP_RESIDUAL1, STEP_FFN, STEP_STACKED, STEP_FINALPRED];
+  const tail = mode==="inference" ? [STEP_AUTOREGRESSIVE] : [STEP_LOSS, STEP_BACKPROP, stepWeightUpdate(mode)];
+  return [...head, ...attn, ...tail, fullPipelineStep(mode)];
+}
+
+/* ---------- controller ---------- */
+let MODE = "inference";
+let STEPS = buildSteps(MODE);
+let stepIdx = 0, playing = false, speed = 1, raf = null, stepT = 0, lastTs = null;
+const STEP_DURATION = 1600; // ms per step at 1x
+
+const MODE_DESC = {
+  inference: "Given a trained model and a prompt, predict the next word — no learning happens here.",
+  training: "From scratch: forward pass → loss → backprop → weight update, repeated over a full dataset.",
+  finetune: "Same loop as training, but starting from pretrained weights on a small, task-specific dataset with a smaller learning rate."
+};
+
+function resolveField(f){ return typeof f==="function" ? f() : f; }
+function render(){
+  clearStage();
+  const s = STEPS[stepIdx];
+  s.render(stepT);
+  document.getElementById("stepLabel").textContent = "STEP "+(stepIdx+1)+" / "+STEPS.length;
+  document.getElementById("stepTitle").textContent = s.title;
+  document.getElementById("progressFill").style.width = (((stepIdx+stepT)/STEPS.length)*100)+"%";
+  document.getElementById("explainBody").textContent = resolveField(s.explain);
+  document.getElementById("explainWhy").textContent = resolveField(s.why);
+  const mathPanel = document.getElementById("mathPanel");
+  mathPanel.style.display = showEq ? "block" : "none";
+  document.getElementById("mathBody").innerHTML = resolveField(s.math).map(m=>'<div class="math-eq">'+m+'</div>').join("");
+  document.getElementById("pytorchPanel").style.display = (showPy && s.pytorch) ? "block" : "none";
+  document.getElementById("pytorchBody").textContent = s.pytorch ? s.pytorch.join("\n") : "";
+  document.getElementById("btnPrev").disabled = stepIdx===0;
+  document.getElementById("btnNext").disabled = stepIdx===STEPS.length-1;
+  document.getElementById("modeDesc").textContent = MODE_DESC[MODE];
+}
+
+function tick(ts){
+  if(lastTs===null) lastTs = ts;
+  const dt = ts - lastTs; lastTs = ts;
+  stepT += (dt / STEP_DURATION) * speed;
+  if(stepT >= 1){
+    stepT = 0;
+    if(stepIdx < STEPS.length-1){ stepIdx++; } else { playing=false; updatePlayState(); lastTs=null; render(); return; }
+  }
+  render();
+  if(playing) raf = requestAnimationFrame(tick);
+}
+function updatePlayState(){
+  document.getElementById("btnPlay").classList.toggle("on", playing);
+}
+function play(){ if(playing) return; playing=true; lastTs=null; updatePlayState(); raf=requestAnimationFrame(tick); }
+function pause(){ playing=false; updatePlayState(); if(raf) cancelAnimationFrame(raf); }
+function goto(i, full){ stepIdx = Math.max(0, Math.min(STEPS.length-1, i)); stepT = full ? 1 : 0; render(); }
+function next(){ pause(); if(stepIdx<STEPS.length-1){ stepIdx++; stepT=1; } else stepT=1; render(); }
+function prev(){ pause(); if(stepIdx>0){ stepIdx--; stepT=1; } else stepT=0; render(); }
+function reset(){ pause(); stepIdx=0; stepT=0; render(); }
+
+document.getElementById("btnPlay").onclick = play;
+document.getElementById("btnPause").onclick = pause;
+document.getElementById("btnNext").onclick = next;
+document.getElementById("btnPrev").onclick = prev;
+document.getElementById("btnReset").onclick = reset;
+document.querySelectorAll(".speedgroup button").forEach(b=>{
+  b.onclick = () => {
+    speed = parseFloat(b.getAttribute("data-speed"));
+    document.querySelectorAll(".speedgroup button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+  };
+});
+document.querySelectorAll("#modeGroup button").forEach(b=>{
+  b.onclick = () => {
+    pause();
+    MODE = b.getAttribute("data-mode");
+    STEPS = buildSteps(MODE);
+    stepIdx = 0; stepT = 0;
+    document.querySelectorAll("#modeGroup button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    render();
+  };
+});
+
+/* ---------- custom sentence input ---------- */
+const DEFAULT_SENTENCE = ["the","cat","sat","on","the","mat"];
+function applySentence(words){
+  pause();
+  rebuildExample(words);
+  selectedLayer = 4; stackedView = "matrix";
+  samplingMode = "greedy"; sampleSeed = 1;
+  STEPS = buildSteps(MODE);
+  stepIdx = 0; stepT = 0;
+  render();
+}
+document.getElementById("btnRebuild").onclick = () => {
+  const raw = document.getElementById("sentenceInput").value;
+  const words = raw.toLowerCase().trim().replace(/[.,!?;:]+/g," ").split(/\s+/).filter(Boolean);
+  const errEl = document.getElementById("sentenceErr");
+  if(words.length < 2 || words.length > 8){
+    errEl.textContent = "Please enter 2–8 words (got "+words.length+").";
+    errEl.style.display = "block";
+    return;
+  }
+  errEl.style.display = "none";
+  applySentence(words);
+};
+document.getElementById("btnResetSentence").onclick = () => {
+  document.getElementById("sentenceInput").value = "";
+  document.getElementById("sentenceErr").style.display = "none";
+  applySentence(DEFAULT_SENTENCE.slice());
+};
+document.getElementById("sentenceInput").addEventListener("keydown", e => {
+  if(e.key==="Enter") document.getElementById("btnRebuild").click();
+});
+
+render();
+
+})();
+</script>
+</body>
+</html>
