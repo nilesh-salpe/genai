@@ -217,6 +217,24 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     <tr><td>2</td><td>2.038</td><td>0.703</td><td>[2.74, 4.78, 6.81, 8.85]</td><td>[−0.26, −0.22, −0.19, −0.15]</td><td>−0.94</td><td>−0.20</td></tr>
   </table>
   <p><span class="mono">a</span> and <span class="mono">b</span> are visibly homing in on <span class="mono">2</span> and <span class="mono">1</span> — the exact rule the data came from. Run a couple hundred more steps and it converges there.</p>
+
+  <figure class="w" id="linefig">
+    <div class="head">
+      <span class="title">Watch a and b converge · same four points, by hand</span>
+      <div class="ctrls">
+        <button class="fwd" id="line-step">Step</button>
+        <button class="fwd" id="line-run">Run to convergence</button>
+        <button id="line-reset">Reset</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="slider-row"><label for="line-lr">learning rate η</label><input type="range" id="line-lr" min="0.01" max="0.15" step="0.01" value="0.05"><span class="val" id="line-lrv">0.05</span></div>
+      <canvas id="line-plot" width="560" height="280" aria-label="Scatter plot of four points with the fitted line ax+b updating step by step as gradient descent runs"></canvas>
+      <div class="readout" id="line-say"></div>
+    </div>
+    <figcaption>The four dots are the data; the dashed verticals are each point's error, <b>ŷᵢ−yᵢ</b>, the thing <span class="mono">L</span> squares and averages. Press <b>Step</b> a few times and check the numbers against Step 5's table above — same <span class="mono">a</span>, same <span class="mono">b</span>, same gradients. Then press <b>Run to convergence</b> and watch the line settle exactly onto <span class="mono">y = 2x + 1</span>, the rule the data was generated from — nothing this loop ever saw directly.</figcaption>
+  </figure>
+
   <p style="margin-bottom:0"><strong>Inference.</strong> Freeze <span class="mono">a≈2.00, b≈1.00</span>. Given a brand-new <span class="mono">x=10</span> — never seen during training — evaluate the line once: <span class="mono">ŷ = 2×10+1 = 21</span>. No searching, no loop: one forward evaluation. Everything below this section is this exact loop — guess, predict, measure, get the gradient, nudge, repeat — with a curvier function and vastly more numbers.</p>
 </section>
 
@@ -948,6 +966,94 @@ function el(tag, attrs){
   lrSl.oninput = function(){ gid("fit-lrv").textContent = fmt(this.value, 2); };
 
   initW(); buildSvg(); render(0);
+})();
+
+/* ===== y = ax + b, BY HAND (§02) ===== */
+(function(){
+  var cv = gid("line-plot");
+  if (!cv) return;
+  var ctx = cv.getContext("2d"), say = gid("line-say");
+  var lrSl = gid("line-lr");
+  var W = cv.width, H = cv.height;
+  var PTS = [{x:1,y:3},{x:2,y:5},{x:3,y:7},{x:4,y:9}];
+  var n = PTS.length;
+  var PAD = {l:38, r:14, t:14, b:30};
+  var XMAX = 5, YMAX = 10;
+  function px(x){ return PAD.l + (x / XMAX) * (W - PAD.l - PAD.r); }
+  function py(y){ return H - PAD.b - (y / YMAX) * (H - PAD.t - PAD.b); }
+
+  var a, b, step, timer = null, running = false;
+  function lr(){ return Number(lrSl.value); }
+
+  function predsErrsLoss(){
+    var preds = PTS.map(function(p){ return a * p.x + b; });
+    var errs = preds.map(function(yh, i){ return yh - PTS[i].y; });
+    var loss = errs.reduce(function(s, e){ return s + e * e; }, 0) / n;
+    return {preds: preds, errs: errs, loss: loss};
+  }
+
+  function trainStep(){
+    var pel = predsErrsLoss();
+    var gradA = 0, gradB = 0;
+    for (var i = 0; i < n; i++){ gradA += pel.errs[i] * PTS[i].x; gradB += pel.errs[i]; }
+    gradA = (2 / n) * gradA; gradB = (2 / n) * gradB;
+    a -= lr() * gradA; b -= lr() * gradB;
+    step++;
+    return {gradA: gradA, gradB: gradB, pel: pel};
+  }
+
+  function drawAxes(){
+    ctx.strokeStyle = "#CBD8E0"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px(0), py(0)); ctx.lineTo(px(XMAX), py(0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px(0), py(0)); ctx.lineTo(px(0), py(YMAX)); ctx.stroke();
+    ctx.fillStyle = "#8399A8"; ctx.font = "11px 'IBM Plex Mono',monospace"; ctx.textAlign = "center";
+    for (var xv = 0; xv <= XMAX; xv++){ ctx.fillText(String(xv), px(xv), H - PAD.b + 16); }
+    ctx.textAlign = "right";
+    for (var yv = 0; yv <= YMAX; yv += 2){ ctx.fillText(String(yv), PAD.l - 8, py(yv) + 4); }
+  }
+
+  function render(){
+    ctx.clearRect(0, 0, W, H);
+    drawAxes();
+    var pel = predsErrsLoss();
+
+    ctx.strokeStyle = "#B31E55"; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+    PTS.forEach(function(p, i){
+      ctx.beginPath(); ctx.moveTo(px(p.x), py(p.y)); ctx.lineTo(px(p.x), py(pel.preds[i])); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    ctx.strokeStyle = "#0B8B8B"; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(px(0), py(b)); ctx.lineTo(px(XMAX), py(a * XMAX + b)); ctx.stroke();
+
+    PTS.forEach(function(p){
+      ctx.fillStyle = "#15222E";
+      ctx.beginPath(); ctx.arc(px(p.x), py(p.y), 5, 0, 2 * Math.PI); ctx.fill();
+    });
+
+    say.innerHTML = "step <b>" + step + "</b> &nbsp; a = <b>" + fmt(a, 3) + "</b> &nbsp; b = <b>" + fmt(b, 3) +
+      "</b> &nbsp; loss = <b>" + fmt(pel.loss, 4) + "</b> &nbsp; ŷ = [" + pel.preds.map(function(v){ return fmt(v, 2); }).join(", ") + "]";
+  }
+
+  function stopRun(){ running = false; clearInterval(timer); gid("line-run").textContent = "Run to convergence"; }
+  function startRun(){
+    running = true; gid("line-run").textContent = "Pause";
+    if (REDUCED){ for (var s = 0; s < 300; s++) trainStep(); render(); stopRun(); return; }
+    timer = setInterval(function(){
+      for (var k = 0; k < 4; k++) trainStep();
+      render();
+      if (step >= 300) stopRun();
+    }, 40);
+  }
+
+  function reset(){ stopRun(); a = 0; b = 0; step = 0; render(); }
+
+  gid("line-step").onclick = function(){ if (running) return; trainStep(); render(); };
+  gid("line-run").onclick = function(){ if (running) stopRun(); else startRun(); };
+  gid("line-reset").onclick = reset;
+  lrSl.oninput = function(){ gid("line-lrv").textContent = fmt(this.value, 2); };
+
+  reset();
 })();
 
 /* ===== SINGLE NEURON (§03) ===== */
