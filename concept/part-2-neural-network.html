@@ -536,6 +536,23 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <p style="margin-bottom:0"><strong>Regularization</strong> taxes large weights directly in the loss: <span class="mono">L = L_data + λΣw²</span>. If training accuracy itself is poor, the model is too small; if training accuracy is excellent but validation is poor, it's too large — add regularization, more data, or shrink the model.</p>
 </section>
 
+<div class="box">
+  <div class="sub">Template · every neural network, every time</div>
+  <div class="h">The eight steps that don't change</div>
+  <p style="margin-top:.7rem">Everything above is one instance of this. Swap the architecture, the data, or the loss, and these eight steps are still exactly what runs:</p>
+  <ol>
+    <li><strong>Define the architecture</strong> — how many layers, how many neurons per layer, which activation (§03–§05)</li>
+    <li><strong>Initialize the weights</strong> — small random values, never all zero (§12)</li>
+    <li><strong>Forward pass</strong> — push one input through, saving every intermediate value (§08)</li>
+    <li><strong>Compute the loss</strong> — compare the prediction to the target (§07)</li>
+    <li><strong>Backward pass</strong> — the chain rule, run backward through every layer, assigning blame to every weight (§09)</li>
+    <li><strong>Update</strong> — nudge each weight opposite its gradient, scaled by the learning rate η (§11)</li>
+    <li><strong>Repeat</strong> steps 3–6 over many batches and epochs, checking validation loss, until it stops improving (§13)</li>
+    <li><strong>Inference</strong> — freeze the weights, run step 3 once on data never seen during training. No loss, no backward pass (§01)</li>
+  </ol>
+  <p style="margin-bottom:0">§14 through §15 are this exact template, four different times: same eight steps, a different shape swapped in for step 1.</p>
+</div>
+
 <section>
   <div class="eyebrow"><span class="num">14</span><span>Which network, when</span><span class="line"></span></div>
   <h2>MLP, CNN, RNN, Transformer</h2>
