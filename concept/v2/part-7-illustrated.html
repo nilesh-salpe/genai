@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SPR2FRFBQ1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SPR2FRFBQ1');
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLMs From Scratch v2 — Illustrated</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF2F5; --card:#FFFFFF; --ink:#15222E; --ink-2:#4B5F6E; --ink-3:#8399A8; --rule:#CBD8E0;
+  --fwd:#0B8B8B; --fwd-soft:#D3EDED;
+  --back:#D8811C; --back-soft:#F8E7CE;
+  --loss:#B31E55; --loss-soft:#F7DDE7;
+  --attn:#5A4A9F; --attn-soft:#E2DDF2;
+  --measure:34rem; --wide:52rem;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background-color:var(--paper);
+  background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);
+  background-size:28px 28px;background-position:-1px -1px;
+  color:var(--ink);font-family:"Spectral",Georgia,serif;font-size:17px;line-height:1.68}
+body::before{content:"";position:fixed;inset:0;background:var(--paper);opacity:.82;pointer-events:none;z-index:0}
+.shell{position:relative;z-index:1;max-width:var(--wide);margin:0 auto;padding:0 1.25rem 6rem}
+h1,h2,h3,.eyebrow,.ui,button,label,table{font-family:"Space Grotesk",system-ui,sans-serif}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+header.top{padding:4.5rem 0 2rem;max-width:var(--measure)}
+.kicker{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 1.4rem}
+h1{font-size:clamp(2rem,5.6vw,3.2rem);line-height:1.03;letter-spacing:-.03em;font-weight:700;margin:0 0 1.1rem}
+h1 em{font-style:normal;color:var(--attn)}
+.standfirst{font-size:1.12rem;color:var(--ink-2);margin:0 0 2rem}
+.progress{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin:0 0 3rem;padding:.85rem .95rem;background:var(--card);border:1px solid var(--rule);font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.02em;max-width:var(--wide)}
+.progress a{color:var(--ink-2);text-decoration:none;padding:.28rem .6rem;border:1px solid var(--rule);border-radius:2px;white-space:nowrap;transition:border-color .15s,background .15s,color .15s}
+.progress a:hover{border-color:var(--ink);color:var(--ink)}
+.progress a.here{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+section{margin:4.5rem 0 0}
+p{margin:0 0 1.1rem;max-width:var(--measure)}
+strong{font-weight:600}
+figure.w{margin:2.5rem 0;background:var(--card);border:1px solid var(--attn);max-width:100%}
+figure.w .head{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.7rem 1.1rem;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+figure.w .title{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+figure.w .body{padding:1.2rem 1.1rem}
+figure.w figcaption{padding:.9rem 1.1rem 1.1rem;font-size:.92rem;color:var(--ink-2);border-top:1px dashed var(--rule)}
+figure.w figcaption b{color:var(--ink);font-weight:600}
+.ctrls{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+button{font-size:.78rem;font-weight:500;padding:.42rem .85rem;border:1px solid var(--ink);background:var(--card);color:var(--ink);cursor:pointer;border-radius:2px;transition:background .15s,color .15s}
+button:hover{background:var(--ink);color:var(--card)}
+button.att{border-color:var(--attn);color:var(--attn)} button.att:hover{background:var(--attn);color:#fff}
+button[disabled]{opacity:.35;cursor:not-allowed}
+canvas{display:block;max-width:100%}
+.steplabel{font-family:"IBM Plex Mono",monospace;font-size:.75rem;color:var(--attn);letter-spacing:.06em}
+.progressbar{height:4px;background:var(--rule);margin:0;position:relative}
+.progressbar .fill{height:100%;background:var(--attn);transition:width .2s}
+.partref{font-family:"IBM Plex Mono",monospace;font-size:.72rem;color:var(--ink-3);letter-spacing:.04em}
+footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-size:.85rem;color:var(--ink-3);max-width:var(--measure)}
+@media (max-width:640px){body{font-size:16px}.shell{padding:0 1rem 4rem}figure.w .body{padding:1rem .8rem}}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms !important;animation-duration:.01ms !important}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<nav class="progress" aria-label="Course progress">
+  <a href="part-0-big-picture.html">0 · Big Picture</a>
+  <a href="part-1-foundations.html">1 · Foundations</a>
+  <a href="part-2-neural-network.html">2 · Neural Network</a>
+  <a href="part-3-examples.html">3 · Examples</a>
+  <a href="part-4-attention.html">4 · Attention</a>
+  <a href="part-5-transformer.html">5 · Transformer</a>
+  <a href="part-6-llm.html">6 · LLM</a>
+  <a href="part-7-illustrated.html" class="here">7 · Illustrated</a>
+</nav>
+
+<header class="top">
+  <p class="kicker">v2 · part seven of seven · the capstone</p>
+  <h1>One sentence, <em>start to finish</em></h1>
+  <p class="standfirst">Everything from Parts 1–6, run once on a single real sentence, one step at a time. Nothing here is new — every step names the part that built it. Step through with Next/Previous, or press Play.</p>
+</header>
+
+<section>
+  <figure class="w" id="walkfig">
+    <div class="head">
+      <span class="title">"the cat sat" → predict the next word</span>
+      <span class="steplabel" id="wk-steplabel">step 1 / 10</span>
+    </div>
+    <div class="progressbar"><div class="fill" id="wk-fill" style="width:10%"></div></div>
+    <div class="body">
+      <canvas id="wk" width="900" height="320" aria-label="Step-by-step visualization of a sentence passing through tokenization, embedding, attention, and prediction"></canvas>
+    </div>
+    <figcaption>
+      <span class="partref" id="wk-partref">Part 1 §3 · Part 6 §2</span>
+      <div id="wk-say" style="margin-top:.4rem"></div>
+    </figcaption>
+    <div class="head" style="border-top:1px solid var(--rule);border-bottom:none">
+      <div class="ctrls">
+        <button id="wk-prev" disabled>← Previous</button>
+        <button class="att" id="wk-play">▶ Play</button>
+        <button id="wk-next">Next →</button>
+        <button id="wk-reset">Restart</button>
+      </div>
+    </div>
+  </figure>
+</section>
+
+<section>
+  <p>That's the whole pipeline this course builds: tokens in, a probability out, one number chosen, appended, and the entire thing runs again for the next word. Everything else in every current large language model — the number of blocks, the width of the embeddings, the size of the vocabulary — is scale applied to exactly this loop.</p>
+  <p>If any single step above felt unfamiliar, its part reference names exactly where to go back and rebuild it from scratch.</p>
+</section>
+
+<footer>
+  <p>Reduced-motion preferences are respected throughout; every animation degrades to its final state.</p>
+</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+var REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function gid(i){ return document.getElementById(i); }
+function fmt(v,d){ return Number(v).toFixed(d===undefined?2:d); }
+
+var cv=gid("wk"), ctx=cv.getContext("2d");
+var W=cv.width, H=cv.height;
+
+var TOKENS=["the","cat","sat"];
+var EMB=[[0.4,-0.2,0.6],[0.1,0.7,-0.3],[-0.5,0.3,0.4]];
+var POS=[[0,0.1,0],[0.05,-0.05,0.1],[0.1,0.1,-0.05]];
+var Q=[[0.3,0.2],[0.1,0.6],[0.5,-0.1]];
+var K=[[0.2,0.1],[0.4,0.5],[0.55,-0.15]];
+var V=[2,5,8];
+function attnRow(qi){
+  var scores=K.map(function(k){ return (qi[0]*k[0]+qi[1]*k[1])/Math.sqrt(2); });
+  var m=Math.max.apply(null,scores);
+  var exps=scores.map(function(s){return Math.exp(s-m);});
+  var sum=exps.reduce(function(a,b){return a+b;},0);
+  return exps.map(function(e){return e/sum;});
+}
+var wRow = attnRow(Q[2]); // "sat"'s attention row
+var attnOut = wRow.reduce(function(acc,w,i){return acc+w*V[i];},0);
+var VOCAB=["on","the","mat","cat","fast"];
+var FINAL_LOGITS=[3.1,1.2,4.0,0.5,-0.3];
+function softmax(arr){ var m=Math.max.apply(null,arr); var e=arr.map(function(v){return Math.exp(v-m);}); var s=e.reduce(function(a,b){return a+b;},0); return e.map(function(v){return v/s;}); }
+var FINAL_PROBS = softmax(FINAL_LOGITS);
+
+function clear(){ ctx.clearRect(0,0,W,H); }
+function tok(x,y,text,col){
+  ctx.fillStyle=col||"#15222E"; ctx.font="14px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+  ctx.fillRect(x-30,y-16,60,32);
+  ctx.strokeStyle="#CBD8E0"; ctx.strokeRect(x-30,y-16,60,32);
+  ctx.fillStyle="#15222E";
+  ctx.fillText(text,x,y+5);
+}
+function vecBars(x,y,vec,col,scale){
+  scale=scale||40;
+  vec.forEach(function(v,i){
+    var bx=x+i*22;
+    var h=v*scale;
+    ctx.fillStyle=col;
+    ctx.fillRect(bx,y-Math.max(0,h),16,Math.abs(h));
+    ctx.strokeStyle="#CBD8E0"; ctx.beginPath(); ctx.moveTo(x-4,y); ctx.lineTo(x+vec.length*22,y); ctx.stroke();
+  });
+}
+function bars(x0,y0,w,h,labels,vals,highlight){
+  var bw=w/labels.length;
+  var maxV=Math.max.apply(null,vals);
+  labels.forEach(function(lab,i){
+    var bh=(vals[i]/maxV)*h;
+    ctx.fillStyle = i===highlight ? "#5A4A9F" : "#D3EDED";
+    ctx.fillRect(x0+i*bw+6,y0+h-bh,bw-12,bh);
+    ctx.fillStyle="#8399A8"; ctx.font="11px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+    ctx.fillText(lab,x0+i*bw+bw/2,y0+h+16);
+    ctx.fillStyle="#15222E";
+    ctx.fillText(fmt(vals[i],2),x0+i*bw+bw/2,y0+h-bh-6);
+  });
+}
+
+var STEPS=[
+  { label:"Tokenize", part:"Part 1 §3 · Part 6 §2",
+    say:"The sentence <b>\"the cat sat\"</b> becomes three integer ids via a fixed vocabulary lookup — text turned into numbers before anything else can happen.",
+    render:function(){ clear(); TOKENS.forEach(function(t,i){ tok(120+i*140,60,t,"#F4F7F9"); }); ctx.fillStyle="#8399A8"; ctx.font="11px 'IBM Plex Mono',monospace"; ctx.textAlign="center"; TOKENS.forEach(function(t,i){ ctx.fillText("id "+i,120+i*140,95); }); } },
+
+  { label:"Embed", part:"Part 1 §3 · Part 6 §3",
+    say:"Each id becomes a learned vector — three numbers standing in for the token's meaning. Bars below zero and above zero both matter; this is Part 1 §3's \"a vector is a filled-in form,\" now with learned entries.",
+    render:function(){ clear(); TOKENS.forEach(function(t,i){ tok(120+i*140,50,t,"#F4F7F9"); ctx.strokeStyle="#8399A8"; ctx.beginPath(); ctx.moveTo(120+i*140,66); ctx.lineTo(120+i*140,110); ctx.stroke(); vecBars(100+i*140,150,EMB[i],"#0B8B8B"); }); } },
+
+  { label:"Add position", part:"Part 4 §5",
+    say:"Attention alone can't tell order (Part 4 §5) — a small fixed sine/cosine pattern, different per position, is added to each embedding so \"cat sat the\" and \"the cat sat\" don't look identical to the model.",
+    render:function(){ clear(); TOKENS.forEach(function(t,i){ tok(120+i*140,40,t,"#F4F7F9"); vecBars(100+i*140,110,EMB[i],"#0B8B8B"); ctx.fillStyle="#8399A8"; ctx.font="16px serif"; ctx.fillText("+",120+i*140,135); vecBars(100+i*140,175,POS[i],"#D8811C"); ctx.fillStyle="#8399A8"; ctx.font="16px serif"; ctx.fillText("↓",120+i*140,195); var sum=EMB[i].map(function(v,k){return v+POS[i][k];}); vecBars(100+i*140,250,sum,"#5A4A9F"); }); } },
+
+  { label:"Self-attention: scores", part:"Part 4 §1",
+    say:"\"Sat\" asks a query; every token's key gets scored against it via a dot product, scaled by √d_k (Part 4 §2) — Part 1 §4's \"agreement\" measure, computed for every pair at once.",
+    render:function(){ clear(); var scores=K.map(function(k){ return (Q[2][0]*k[0]+Q[2][1]*k[1])/Math.sqrt(2); }); bars(60,40,W-120,180,TOKENS,scores.map(function(s){return s+2;}),2); ctx.fillStyle="#8399A8"; ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="left"; ctx.fillText("raw scores for query = \"sat\" (shifted for display; only gaps matter)",40,20); } },
+
+  { label:"Self-attention: softmax", part:"Part 2 §2 · Part 4 §1",
+    say:"Softmax turns those scores into a proper probability distribution — Part 2 §2's exact formula, reused unchanged. \"Sat\" ends up attending to itself and \"cat\" more than \"the.\"",
+    render:function(){ clear(); bars(60,40,W-120,180,TOKENS,wRow,wRow.indexOf(Math.max.apply(null,wRow))); ctx.fillStyle="#8399A8"; ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="left"; ctx.fillText("attention weights (sum to 1.00)",40,20); } },
+
+  { label:"Self-attention: weighted sum", part:"Part 3 §3 · Part 4 §1",
+    say:"Multiply those weights into each token's value and add — Part 3 §3's retrieval widget, run for real. \"Sat\"'s new representation is a blend of every token's value, weighted by how much it matched.",
+    render:function(){ clear(); TOKENS.forEach(function(t,i){ ctx.fillStyle="#8399A8"; ctx.font="13px 'IBM Plex Mono',monospace"; ctx.textAlign="left"; ctx.fillText(fmt(wRow[i],2)+" × value("+t+" = "+V[i]+")"+(i<2?"  +":"  ="),60,60+i*30); }); ctx.fillStyle="#5A4A9F"; ctx.font="20px 'IBM Plex Mono',monospace"; ctx.fillText(fmt(attnOut,2),60,60+3*30+10); } },
+
+  { label:"Residual + LayerNorm", part:"Part 2 §6 · Part 5 §1",
+    say:"The attention output is added back to \"sat\"'s original vector (Part 2 §6's fix for vanishing gradients), then rescaled to a stable mean and spread (LayerNorm) before the next stage sees it.",
+    render:function(){ clear(); vecBars(160,110,EMB[2],"#0B8B8B"); ctx.fillStyle="#8399A8"; ctx.font="18px serif"; ctx.fillText("+",280,105); vecBars(320,110,[attnOut*0.3,attnOut*0.2,attnOut*0.1],"#5A4A9F"); ctx.fillStyle="#8399A8"; ctx.font="18px serif"; ctx.fillText("→",460,105); vecBars(520,110,[0.3,-0.4,0.2],"#D8811C"); ctx.fillStyle="#8399A8"; ctx.font="11px 'IBM Plex Mono',monospace"; ctx.fillText("normalized",500,140); } },
+
+  { label:"Feed-forward + residual", part:"Part 2 §1 · Part 5 §1",
+    say:"A small two-layer network with a kink in the middle (Part 2 §1's exact machine) processes each position independently, wrapped in its own residual connection — the second half of one Transformer block.",
+    render:function(){ clear(); ctx.fillStyle="#8399A8"; ctx.font="13px 'IBM Plex Mono',monospace"; ctx.textAlign="center"; ctx.fillText("x → Linear → ReLU → Linear → +x",W/2,150); ctx.strokeStyle="#5A4A9F"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(150,180); ctx.lineTo(650,180); ctx.stroke(); } },
+
+  { label:"Project to vocabulary", part:"Part 2 §2 · Part 6 §3",
+    say:"After N blocks (just one, here), a final linear layer scores every vocabulary word, and softmax turns those logits into a real probability distribution over what comes next.",
+    render:function(){ clear(); bars(40,40,W-80,180,VOCAB,FINAL_PROBS,FINAL_PROBS.indexOf(Math.max.apply(null,FINAL_PROBS))); ctx.fillStyle="#8399A8"; ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="left"; ctx.fillText("P(next word | \"the cat sat\")",40,20); } },
+
+  { label:"Sample and continue", part:"Part 5 §3 · Part 6 §5",
+    say:"One word is drawn from that distribution — here, \"mat\" — and appended: \"the cat sat mat\"… run the whole pipeline again for the word after that. This loop, repeated, is text generation.",
+    render:function(){ clear(); ["the","cat","sat"].concat(["mat"]).forEach(function(t,i){ tok(90+i*110,60,t,i===3?"#E2DDF2":"#F4F7F9"); }); ctx.fillStyle="#5A4A9F"; ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="center"; ctx.fillText("newly sampled",90+3*110,95); ctx.strokeStyle="#CBD8E0"; ctx.setLineDash([4,3]); ctx.beginPath(); ctx.moveTo(60,130); ctx.lineTo(W-60,130); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle="#8399A8"; ctx.textAlign="left"; ctx.fillText("↻ feed this whole sequence back into step 1, predict the next word after \"mat\"",60,160); } }
+];
+
+var i=0, playing=false, timer=null;
+function render(){
+  STEPS[i].render();
+  gid("wk-say").innerHTML=STEPS[i].say;
+  gid("wk-partref").textContent=STEPS[i].part;
+  gid("wk-steplabel").textContent="step "+(i+1)+" / "+STEPS.length+" — "+STEPS[i].label;
+  gid("wk-fill").style.width=((i+1)/STEPS.length*100)+"%";
+  gid("wk-prev").disabled = i===0;
+  gid("wk-next").disabled = i===STEPS.length-1;
+}
+gid("wk-next").onclick=function(){ if(i<STEPS.length-1){ i++; render(); } };
+gid("wk-prev").onclick=function(){ if(i>0){ i--; render(); } };
+gid("wk-reset").onclick=function(){ stopPlay(); i=0; render(); };
+function stopPlay(){ playing=false; clearInterval(timer); gid("wk-play").textContent="▶ Play"; }
+gid("wk-play").onclick=function(){
+  if(playing){ stopPlay(); return; }
+  playing=true; gid("wk-play").textContent="⏸ Pause";
+  if(REDUCED){ i=STEPS.length-1; render(); stopPlay(); return; }
+  timer=setInterval(function(){
+    if(i>=STEPS.length-1){ stopPlay(); return; }
+    i++; render();
+  }, 2200);
+};
+render();
+})();
+</script>
+</body>
+</html>
