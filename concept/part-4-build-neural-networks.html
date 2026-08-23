@@ -107,7 +107,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     <tr><th>The example</th><td>A synthetic 2D dataset: points sampled along two spiral arms, colored by class. Purely visual, so the decision boundary can be watched directly.</td></tr>
     <tr><th>Why a neural network is needed</th><td>A network with a kink (Part 2 §05) can bend its decision boundary to match; a purely linear model — logistic regression, or a network with no activation — provably tops out far below what a kinked network reaches here, no matter how it's trained.</td></tr>
     <tr><th>The solution, briefly</th><td>A small ReLU network, trained with Part 2's exact backprop and softmax + cross-entropy. Watch the shaded decision region fold itself around both spiral arms as training proceeds.</td></tr>
-    <tr><th>Notebook</th><td><a href="code/01_mlp_spiral_classifier.ipynb">01_mlp_spiral_classifier.ipynb</a> — the full version, gradient-checked against numerical differentiation.</td></tr>
+    <tr><th>Notebook</th><td><a href="code/01_mlp_spiral_classifier.ipynb">01_mlp_spiral_classifier.ipynb</a> · <a href="https://colab.research.google.com/github/nilesh-salpe/genai/blob/main/concept/code/01_mlp_spiral_classifier.ipynb" target="_blank" rel="noopener">open in Colab</a> — the full version, gradient-checked against numerical differentiation.</td></tr>
   </table>
 
   <figure class="w" id="spiralfig">
@@ -132,7 +132,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     <tr><th>The example</th><td>Small synthetic images containing either vertical or horizontal stripes — a minimal case for a mechanism that scales to real images in the notebook.</td></tr>
     <tr><th>Why a neural network is needed</th><td>A dense layer can only solve this by memorizing pixel positions per pattern — one full set of weights per position that pattern might appear at. A <strong>convolution</strong> keeps the 2D grid: one small filter slides over every position, computing the same dot product each time, so "detect an edge" is learned once and applies everywhere.</td></tr>
     <tr><th>The solution, briefly</th><td>One 3×3 kernel, trained end-to-end. Watch the filter's own 9 numbers converge into a stripe-shaped pattern — strong along one direction, weak along the other.</td></tr>
-    <tr><th>Notebook</th><td><a href="code/02_cnn_digit_classifier.ipynb">02_cnn_digit_classifier.ipynb</a> — full im2col conv forward/backward, max-pool, dense, on real 8×8 digit images, reaching 90% test accuracy.</td></tr>
+    <tr><th>Notebook</th><td><a href="code/02_cnn_digit_classifier.ipynb">02_cnn_digit_classifier.ipynb</a> · <a href="https://colab.research.google.com/github/nilesh-salpe/genai/blob/main/concept/code/02_cnn_digit_classifier.ipynb" target="_blank" rel="noopener">open in Colab</a> — full im2col conv forward/backward, max-pool, dense, on real 8×8 digit images, reaching 90% test accuracy.</td></tr>
   </table>
 
   <figure class="w" id="convfig">
@@ -157,7 +157,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     <tr><th>The example</th><td>Three stored (key, value) pairs and one query, all 2D vectors so they can be dragged and watched directly.</td></tr>
     <tr><th>Why a neural network is needed</th><td>This is a genuinely new operation, not a bigger version of §01–§02's machinery: score the query against every key with a dot product (Part 1 §04), softmax the scores into weights (Part 2 §06), then return the <strong>weighted average</strong> of the values — not the single best match, a blend weighted by how well each key matched.</td></tr>
     <tr><th>The solution, briefly</th><td>Drag the query near a key and its weight climbs toward 1 while the others fall toward 0. Drag it equidistant from two keys and the output blends them.</td></tr>
-    <tr><th>Notebook</th><td><a href="code/03_mini_attention_retrieval.ipynb">03_mini_attention_retrieval.ipynb</a> — full embeddings, Wq/Wk/Wv, output projection, gradient-checked exactly.</td></tr>
+    <tr><th>Notebook</th><td><a href="code/03_mini_attention_retrieval.ipynb">03_mini_attention_retrieval.ipynb</a> · <a href="https://colab.research.google.com/github/nilesh-salpe/genai/blob/main/concept/code/03_mini_attention_retrieval.ipynb" target="_blank" rel="noopener">open in Colab</a> — full embeddings, Wq/Wk/Wv, output projection, gradient-checked exactly.</td></tr>
   </table>
 
   <figure class="w" id="retfig">
@@ -182,7 +182,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     <tr><th>The example</th><td>A short alternating series, <span class="mono">"ababab..."</span>. Task: at every position, predict the next character using only what's been seen so far.</td></tr>
     <tr><th>Why a neural network is needed</th><td>This reuses §03's retrieval-by-similarity but runs it at <em>every</em> position at once, under a <strong>causal mask</strong>: position <span class="mono">i</span> is blocked from attending to any position <span class="mono">j &gt; i</span> — otherwise the "prediction" is just copying an answer it was handed.</td></tr>
     <tr><th>The solution, briefly</th><td>The greyed-out characters are masked — invisible to the current position's prediction, no matter how useful they'd be. Advance and watch the visible window grow by exactly one every step.</td></tr>
-    <tr><th>Notebook</th><td><a href="code/04_causal_series_predictor.ipynb">04_causal_series_predictor.ipynb</a> — gradient-checked, full causal attention.</td></tr>
+    <tr><th>Notebook</th><td><a href="code/04_causal_series_predictor.ipynb">04_causal_series_predictor.ipynb</a> · <a href="https://colab.research.google.com/github/nilesh-salpe/genai/blob/main/concept/code/04_causal_series_predictor.ipynb" target="_blank" rel="noopener">open in Colab</a> — gradient-checked, full causal attention.</td></tr>
   </table>
 
   <figure class="w" id="causalfig">
