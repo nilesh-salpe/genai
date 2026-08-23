@@ -136,8 +136,9 @@ p code,li code,td code{background:#E2EAEF;padding:.08em .35em;font-size:.85em;bo
 .edge.on-fwd{stroke:var(--fwd);stroke-width:2.4}
 .edge.on-att{stroke:var(--attn);stroke-width:2.4;stroke-dasharray:6 5;animation:wireflow .7s linear infinite}
 @keyframes wireflow{to{stroke-dashoffset:-22}}
-.box{stroke:var(--ink-3);stroke-width:1.4;fill:none;transition:stroke .3s}
+.box{stroke:var(--ink-3);stroke-width:1.4;fill:none;transition:stroke .3s,fill .3s}
 .box.on{stroke:var(--attn);stroke-width:2}
+.box.done{stroke:var(--attn);stroke-width:1.4;fill:var(--attn-soft)}
 .lbl{font-family:"IBM Plex Mono",monospace;font-size:11px;fill:var(--ink-3)}
 .lbl.hd{font-size:12px;fill:var(--ink);font-weight:500}
 .lbl.c-fwd{fill:var(--fwd)}
@@ -302,17 +303,18 @@ footer .nextprev{display:flex;justify-content:space-between;gap:1rem;flex-wrap:w
 
   <figure class="w" id="crossfig">
     <div class="head">
-      <span class="title">Where cross-attention's Q, K, V actually come from · <span id="cr-step">step 0 of 3</span></span>
+      <span class="title">Where cross-attention's Q, K, V actually come from · <span id="cr-step">encoder not run yet</span></span>
       <div class="ctrls">
-        <button class="att" id="cr-run">Start: encoder finishes →</button>
+        <button class="att" id="cr-encode">Run encoder (once)</button>
+        <button class="fwd" id="cr-gen" disabled>Generate next token →</button>
         <button id="cr-reset">Reset</button>
       </div>
     </div>
     <div class="body">
-      <svg id="cr" viewBox="0 0 640 260" role="img" aria-label="Diagram of encoder and decoder stacks connected by cross-attention"></svg>
-      <div class="readout" id="cr-say">Press <b>Start</b> to walk K, V, and Q into the cross-attention layer, one arrival at a time.</div>
+      <svg id="cr" viewBox="0 0 640 260" role="img" aria-label="Diagram of encoder and decoder stacks connected by cross-attention, with the encoder running once and the decoder generating one token at a time"></svg>
+      <div class="readout" id="cr-say">Press <b>Run encoder</b> first — it reads the source sentence once and produces fixed K, V.</div>
     </div>
-    <figcaption>K and V are <b>not</b> computed once and reused verbatim — every decoder block has its own cross-attention layer with its own learned K/V projections, all reading from the same encoder output. Q is the only piece that changes as generation proceeds, because it comes from whatever the decoder has generated so far.</figcaption>
+    <figcaption>Run the encoder once, then press <b>Generate next token</b> repeatedly. Watch the encoder box: after the first run it turns solid and never lights up again — its K, V are fixed for the rest of the sentence. The decoder and cross-attention boxes flash on <b>every single token</b>, because each one needs a fresh Q from whatever's been generated so far. The tally at the bottom is exactly the answer to this section's practice question: one encoder pass, one cross-attention call per generated token.</figcaption>
   </figure>
 
   <div class="callout trap">
@@ -615,71 +617,92 @@ function softmaxArr(v){
     return l;
   }
 
+  var SOURCE = ["the","cat","sat","down"];
+  var TARGET = ["le","chat","s'est","assis"];
+
   var encBox = box(40, 40, 220, 100, "encbox");
-  label(150, 30, "ENCODER (finished)", "lbl hd");
-  label(150, 75, "self-attention", "lbl");
-  label(150, 95, "N blocks, no mask", "lbl");
+  label(150, 30, "ENCODER", "lbl hd");
+  label(150, 60, '"'+SOURCE.join(" ")+'"', "lbl mono");
+  label(150, 80, "self-attention, N blocks, no mask", "lbl");
+  var encStatus = label(150, 118, "not run yet", "lbl c-att");
 
   var decBox = box(380, 40, 220, 170, "decbox");
-  label(490, 30, "DECODER (generating)", "lbl hd");
+  label(490, 30, "DECODER", "lbl hd");
   label(490, 75, "masked self-attention", "lbl");
-  label(490, 95, "→ produces Q", "lbl");
+  label(490, 95, "→ produces Q from tokens so far", "lbl");
+  var decStatus = label(490, 118, "generated: (none)", "lbl mono");
 
-  var crossBox = box(410, 130, 160, 50, "crossbox");
-  label(490, 150, "cross-attention", "lbl hd");
-  label(490, 168, "Q here, K/V below", "lbl");
+  var crossBox = box(410, 138, 160, 50, "crossbox");
+  label(490, 158, "cross-attention", "lbl hd");
+  label(490, 176, "Q here, K/V below", "lbl");
 
-  var kv = arrow(260, 90, 410, 145, "kvarrow");
-  var qarr = arrow(490, 105, 490, 130, "qarrow");
-  var kvlabel = label(335, 105, "K, V", "lbl c-att");
-  var outArrow = arrow(490, 180, 490, 210, "outarrow");
+  var kv = arrow(260, 90, 410, 155, "kvarrow");
+  var qarr = arrow(490, 105, 490, 138, "qarrow");
+  label(335, 105, "K, V", "lbl c-att");
+  var outArrow = arrow(490, 188, 490, 210, "outarrow");
   label(490, 225, "→ feed-forward → next block", "lbl");
+  var tally = label(20, 245, "", "lbl", "start");
 
-  function stepDot(x, y, n){
-    var g = el("g", {});
-    var c = el("circle", { cx: x, cy: y, r: 10 });
-    c.setAttribute("class", "stepdot");
-    var t = el("text", { x: x, y: y + 1 });
-    t.setAttribute("class", "stepnum");
-    t.textContent = n;
-    g.appendChild(c); g.appendChild(t);
-    svg.appendChild(g);
-    return { circle: c, text: t, setState: function(cls){ c.setAttribute("class", "stepdot" + (cls ? " " + cls : "")); t.setAttribute("class", "stepnum" + (cls ? " " + cls : "")); } };
+  var encoded = false, genCount = 0, flashTimer = null;
+
+  function settle(){
+    [decBox, crossBox].forEach(function(b){ b.setAttribute("class", "box"); });
+    [qarr, outArrow].forEach(function(e){ e.setAttribute("class", "edge"); });
+    kv.setAttribute("class", encoded ? "edge" : "edge");
+    render();
   }
-  var dot1 = stepDot(40, 40, "1");
-  var dot2 = stepDot(380, 40, "2");
-  var dot3 = stepDot(410, 130, "3");
-
-  var STEPS = [
-    { boxes: [], edges: [], btn: "Start: encoder finishes →", stepLbl: "step 0 of 3",
-      say: "Press <b>Start</b> to walk K, V, and Q into the cross-attention layer, one arrival at a time." },
-    { boxes: [encBox], edges: [kv], dot: dot1, btn: "Next: decoder produces Q →", stepLbl: "step 1 of 3",
-      say: "<b>Step 1 — K, V leave the encoder.</b> The encoder has already finished; its output becomes fixed K and V, computed once for this input sentence and shared by every decoder block. Watch them travel the wire toward cross-attention." },
-    { boxes: [encBox, decBox], edges: [kv, qarr], dot: dot2, btn: "Next: fuse in cross-attention →", stepLbl: "step 2 of 3",
-      say: "<b>Step 2 — Q leaves the decoder.</b> The decoder's masked self-attention runs on whatever it has generated so far, producing this block's Query — \"what am I trying to say next.\" K/V from step 1 are still arriving; now Q joins them." },
-    { boxes: [encBox, decBox, crossBox], edges: [kv, qarr, outArrow], dot: dot3, btn: "Reset · start over", stepLbl: "step 3 of 3 — fused",
-      say: "<b>Step 3 — cross-attention fuses them.</b> This Q is scored against the encoder's K, softmaxed, and used to weight the encoder's V — the decoder pulling exactly the source-sentence content it needs for this position. Every box that fed this moment is still lit, because every one of them is still live: the encoder's K/V, the decoder's Q." }
-  ];
-
-  var state = 0;
   function render(){
-    [encBox, decBox, crossBox].forEach(function(b){ b.setAttribute("class", "box"); });
-    [kv, qarr, outArrow].forEach(function(e){ e.setAttribute("class", "edge"); });
-    [dot1, dot2, dot3].forEach(function(d){ d.setState(""); });
-    var s = STEPS[state];
-    s.boxes.forEach(function(b){ b.setAttribute("class", "box on"); });
-    s.edges.forEach(function(e){ e.setAttribute("class", "edge on-att"); });
-    for (var i = 0; i < state; i++) STEPS[i].dot && STEPS[i].dot.setState("done");
-    if (s.dot) s.dot.setState("on");
-    gid("cr-run").textContent = s.btn;
-    gid("cr-step").textContent = s.stepLbl;
-    say.innerHTML = s.say;
+    encBox.setAttribute("class", encoded ? "box done" : "box");
+    encStatus.textContent = encoded ? "K, V fixed ✓" : "not run yet";
+    decStatus.textContent = "generated: " + (genCount ? TARGET.slice(0, genCount).join(" ") : "(none)");
+    gid("cr-gen").disabled = !encoded || genCount >= TARGET.length;
+    gid("cr-encode").disabled = encoded;
+    gid("cr-step").textContent = !encoded ? "encoder not run yet"
+      : genCount === 0 ? "encoder done · 0 tokens generated"
+      : genCount < TARGET.length ? genCount + " of " + TARGET.length + " tokens generated"
+      : "done — " + TARGET.length + " of " + TARGET.length;
+    tally.textContent = "encoder passes: 1" + (encoded ? "" : " (pending)") + "   ·   cross-attention calls: " + genCount;
+    if (!encoded){
+      say.innerHTML = "Press <b>Run encoder</b> first — it reads the source sentence once and produces fixed K, V.";
+    } else if (genCount === 0){
+      say.innerHTML = "<b>Encoder done.</b> K, V are fixed for the rest of this sentence — the encoder box will not light up again. Press <b>Generate next token</b> to run the decoder's first step.";
+    } else {
+      var made = TARGET.slice(0, genCount).join(" ");
+      say.innerHTML = "<b>Token "+genCount+" — \""+TARGET[genCount-1]+".\"</b> The decoder ran masked self-attention on \""+made+"\" so far, producing a fresh Q. That Q was scored against the <em>same</em> K, V from the encoder — computed once, never redone — to pull the source-sentence content this position needs."
+        + (genCount >= TARGET.length ? "<br><b>Done.</b> Encoder ran once; cross-attention ran "+TARGET.length+" times — once per generated token, reading that same K, V every time." : "");
+    }
   }
-  gid("cr-run").onclick = function(){
-    state = (state + 1) % STEPS.length;
+  function flash(){
+    decBox.setAttribute("class", "box on");
+    crossBox.setAttribute("class", "box on");
+    qarr.setAttribute("class", "edge on-att");
+    outArrow.setAttribute("class", "edge on-att");
+    kv.setAttribute("class", "edge on-att");
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(settle, REDUCED ? 0 : 550);
+  }
+  gid("cr-encode").onclick = function(){
+    if (encoded) return;
+    encoded = true;
+    kv.setAttribute("class", "edge on-att");
+    encBox.setAttribute("class", "box on");
+    render();
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(function(){ encBox.setAttribute("class","box done"); kv.setAttribute("class","edge"); }, REDUCED ? 0 : 550);
+  };
+  gid("cr-gen").onclick = function(){
+    if (!encoded || genCount >= TARGET.length) return;
+    genCount++;
+    flash();
     render();
   };
-  gid("cr-reset").onclick = function(){ state = 0; render(); };
+  gid("cr-reset").onclick = function(){
+    clearTimeout(flashTimer);
+    encoded = false; genCount = 0;
+    [encBox, decBox, crossBox].forEach(function(b){ b.setAttribute("class", "box"); });
+    [kv, qarr, outArrow].forEach(function(e){ e.setAttribute("class", "edge"); });
+    render();
+  };
   render();
 })();
 
