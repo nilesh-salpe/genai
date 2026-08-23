@@ -285,6 +285,26 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     <figcaption>Same six-hidden-unit network, same random weights — only the activation switches. In <b>Linear</b> mode the curve is exactly one straight line, always, no matter how many times you reroll the weights: the collapse equation above, made visible. Switch to <b>ReLU</b> and each hidden unit that crosses zero in this range contributes one dashed kink — the curve is still made of straight pieces, but now it can bend at each one.</figcaption>
   </figure>
 
+  <p>Random kinks are one thing — can a network actually <em>learn</em> to put its kinks where a target curve needs them? Below, a fixed wiggly target (dashed) is hidden from the network; only its error against sampled points is. Set the hidden-unit count, hit fit, and watch.</p>
+
+  <figure class="w" id="fitfig">
+    <div class="head">
+      <span class="title">How many kinks does it take? · fit a wiggly target</span>
+      <div class="ctrls">
+        <button class="att on" id="fit-relu">ReLU (kinked)</button>
+        <button id="fit-linear">Linear (no kink)</button>
+        <button class="fwd" id="fit-run">Fit to target</button>
+        <button id="fit-reset">New random start</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="slider-row"><label for="fit-h">hidden units</label><input type="range" id="fit-h" min="1" max="10" step="1" value="1"><span class="val" id="fit-hv">1</span></div>
+      <canvas id="fit" width="820" height="300" aria-label="Plot of a fixed wiggly target curve and a piecewise-linear network trying to fit it, with an adjustable number of hidden units"></canvas>
+      <div class="readout" id="fit-say"></div>
+    </div>
+    <figcaption>The dashed curve is a fixed target the network never sees directly — only its error against sampled points does. At <b>1 hidden unit</b>, hit <b>Fit to target</b> and watch the error stop falling early: one kink is one bend, and the curve needs more than that. Push hidden units to <b>6–8</b> and fit again — more kinks, more straight pieces, and the fitted curve tracks the wiggle closely, with the error an order of magnitude lower. Switch to <b>Linear</b> at any unit count and fit again: the best possible straight line stays a poor compromise no matter how many "hidden units" sit behind it, because with no kink they all collapse into one line regardless of count — the collapse equation above, now with a number attached to how badly it fits. This is a <em>width</em> question — how many units one layer needs — not yet a <em>depth</em> question about stacking more layers; Part 2 builds a real layer next.</figcaption>
+  </figure>
+
   <table>
     <tr><th>Function</th><th>Derivative</th><th>The story</th></tr>
     <tr><td class="shape">ReLU max(0,x)</td><td class="shape">1 if x&gt;0, else 0</td><td>Cheapest kink. Derivative exactly 1 on the positive side — see §9 for why that is the point. Can "die" at zero.</td></tr>
@@ -854,6 +874,90 @@ function softmax(z){ var m=Math.max.apply(null,z); var e=z.map(function(v){retur
   gid("kink-linear").onclick=function(){ kinkMode=false; this.classList.add("on"); gid("kink-relu").classList.remove("on"); draw(); };
   gid("kink-reroll").onclick=reroll;
   reroll();
+})();
+
+/* ===== FIT TO TARGET (kink capacity) ===== */
+(function(){
+  var cv=gid("fit"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("fit-say");
+  var hSlider=gid("fit-h"), hVal=gid("fit-hv");
+  var x0=-4, x1=4, N=48, xs=[], ts=[];
+  function target(x){ return 0.9*Math.sin(1.3*x) + 0.06*x; }
+  for(var k=0;k<N;k++){ var xv=x0+(x1-x0)*k/(N-1); xs.push(xv); ts.push(target(xv)); }
+
+  var H=1, w1=[], b1=[], w2=[], b2=0, mode="relu", fitting=null;
+  function initNet(){
+    w1=[]; b1=[]; w2=[];
+    for(var i=0;i<H;i++){ w1.push((Math.random()*2-1)*1.1); b1.push((Math.random()*2-1)*3.2); w2.push((Math.random()*2-1)*0.5); }
+    b2=0;
+  }
+  function forward(x){
+    var s=b2, hs=[], zs=[];
+    for(var i=0;i<H;i++){ var z=w1[i]*x+b1[i]; var h=mode==="relu"?Math.max(0,z):z; zs.push(z); hs.push(h); s+=w2[i]*h; }
+    return {y:s, z:zs, h:hs};
+  }
+  function mse(){
+    var e=0;
+    for(var k=0;k<N;k++){ var d=forward(xs[k]).y-ts[k]; e+=d*d; }
+    return e/N;
+  }
+  function trainStep(lr){
+    var gw1=new Array(H).fill(0), gb1=new Array(H).fill(0), gw2=new Array(H).fill(0), gb2=0;
+    for(var k=0;k<N;k++){
+      var f=forward(xs[k]), diff=f.y-ts[k], dy=2*diff/N;
+      gb2+=dy;
+      for(var i=0;i<H;i++){
+        gw2[i]+=dy*f.h[i];
+        var dh=dy*w2[i];
+        var dz=mode==="relu" ? (f.z[i]>0?dh:0) : dh;
+        gw1[i]+=dz*xs[k];
+        gb1[i]+=dz;
+      }
+    }
+    for(var i=0;i<H;i++){ w1[i]-=lr*gw1[i]; b1[i]-=lr*gb1[i]; w2[i]-=lr*gw2[i]; }
+    b2-=lr*gb2;
+  }
+
+  function draw(){
+    var W=cv.width,Hh=cv.height; ctx.clearRect(0,0,W,Hh);
+    var y0=-2.2,y1=2.2;
+    function px(v){ return 46+(v-x0)/(x1-x0)*(W-66); }
+    function py(v){ return Hh-34-(v-y0)/(y1-y0)*(Hh-54); }
+    grid(ctx,W,Hh,8,8,x0,x1,y0,y1,px,py);
+    ctx.strokeStyle="#8399A8"; ctx.beginPath(); ctx.moveTo(px(x0),py(0)); ctx.lineTo(px(x1),py(0)); ctx.stroke();
+
+    ctx.strokeStyle="#B31E55"; ctx.setLineDash([5,4]); ctx.lineWidth=2;
+    ctx.beginPath();
+    for(var k=0;k<N;k++){ var yy=py(ts[k]); if(k===0) ctx.moveTo(px(xs[k]),yy); else ctx.lineTo(px(xs[k]),yy); }
+    ctx.stroke(); ctx.setLineDash([]);
+
+    ctx.strokeStyle="#0B8B8B"; ctx.lineWidth=2.6; ctx.beginPath();
+    var M=200;
+    for(var j=0;j<=M;j++){ var xv=x0+(x1-x0)*j/M; var yy=py(forward(xv).y); if(j===0) ctx.moveTo(px(xv),yy); else ctx.lineTo(px(xv),yy); }
+    ctx.stroke();
+
+    var e=mse();
+    say.innerHTML="<span style='color:#B31E55'>▬ ▬</span> target &nbsp; <span style='color:#0B8B8B'>—</span> network ("+(mode==="relu"?"ReLU":"linear")+", "+H+" hidden unit"+(H===1?"":"s")+")<br>mean squared error = <b style='color:"+(e<0.05?'#0B8B8B':'#B31E55')+"'>"+fmt(e,3)+"</b>"+(fitting?" &nbsp;·&nbsp; fitting…":"");
+  }
+
+  function stopFit(){ if(fitting){ clearInterval(fitting); fitting=null; } }
+
+  hSlider.oninput=function(){ H=parseInt(this.value,10); hVal.textContent=H; stopFit(); initNet(); draw(); };
+  gid("fit-relu").onclick=function(){ mode="relu"; this.classList.add("on"); gid("fit-linear").classList.remove("on"); stopFit(); initNet(); draw(); };
+  gid("fit-linear").onclick=function(){ mode="linear"; this.classList.add("on"); gid("fit-relu").classList.remove("on"); stopFit(); initNet(); draw(); };
+  gid("fit-reset").onclick=function(){ stopFit(); initNet(); draw(); };
+  gid("fit-run").onclick=function(){
+    stopFit();
+    if(REDUCED){ for(var s=0;s<600;s++) trainStep(0.03); draw(); return; }
+    var n=0;
+    fitting=setInterval(function(){
+      for(var s=0;s<15;s++) trainStep(0.03);
+      n++; draw();
+      if(n>=40){ clearInterval(fitting); fitting=null; draw(); }
+    },50);
+  };
+
+  initNet(); draw();
 })();
 
 /* ===== SOFTMAX DERIVATION ===== */
