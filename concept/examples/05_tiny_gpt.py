@@ -1,19 +1,19 @@
 """
 A small, real, decoder-only Transformer -- character-level, trained on a
 handful of sentences (the same "The animal didn't cross the street because
-it was too tired" example part-1-maths.html §11 and part-5-architecture.html
-use throughout), generating new text one sampled character at a time.
+it was too tired" example part-5-transformer-architecture.html §01 uses),
+generating new text one sampled character at a time.
 
 Unlike 01-04 in this folder, this one is intentionally NOT hand-derived
-NumPy -- it is PyTorch, on purpose. part-4-pytorch.html's whole argument is
+NumPy -- it is PyTorch, on purpose. part-3-pytorch.html's whole argument is
 that autograd exists so you stop re-deriving backward passes by hand once
 you already understand what one is; this file is that argument, applied.
-Every *architectural* piece is still exactly what part-1-maths.html §10-11
-and part-5-architecture.html derive -- sinusoidal positional encoding,
-scaled dot-product causal self-attention, the pre-norm residual block, and
+Every *architectural* piece is still exactly what part-5-transformer-
+architecture.html §02-06 derive -- sinusoidal positional encoding, scaled
+dot-product causal self-attention, the pre-norm residual block, and (§08)
 temperature / top-k / top-p sampling -- just assembled with nn.Module and
-trained with five calls (part-4-pytorch.html §5-6) instead of a hand-written
-backward() function.
+trained with five calls (part-3-pytorch.html §05-06) instead of a
+hand-written backward() function.
 
 Run directly: python3 05_tiny_gpt.py
 Needs only PyTorch (pip install torch).
@@ -33,7 +33,7 @@ torch.manual_seed(0)
 # A real model uses subword tokens (BPE) so it doesn't need one embedding
 # row per possible word. At this toy scale that machinery buys nothing --
 # a vocabulary of ~30 characters trains in seconds on a CPU and every step
-# stays inspectable. See part-6-build-gpt.html §3 for the actual trade-off.
+# stays inspectable. See part-6-llm.html §02 for the actual trade-off.
 
 CORPUS = """
 the animal didn't cross the street because it was too tired.
@@ -64,16 +64,16 @@ DATA = encode(CORPUS)
 # ---------------------------------------------------------------------------
 D_MODEL = 32
 N_HEADS = 4
-D_HEAD = D_MODEL // N_HEADS       # part-1-maths.html §11: d_k = d_model / h
+D_HEAD = D_MODEL // N_HEADS       # part-5-transformer-architecture.html §05: d_k = d_model / h
 N_BLOCKS = 3
-FFN_HIDDEN = 4 * D_MODEL          # the paper's 4x ratio (part-5 §5), scaled down
+FFN_HIDDEN = 4 * D_MODEL          # the paper's 4x ratio (part-5-transformer-architecture.html §06), scaled down
 BLOCK_SIZE = 48                   # max context length this model was trained on
 DROPOUT = 0.0
 
 
 def sinusoidal_positional_encoding(max_len, d_model):
-    """Exactly part-1-maths.html §10's PE(pos,2i)=sin(...), PE(pos,2i+1)=cos(...) --
-    a fixed buffer, no parameters, computed once."""
+    """Exactly part-5-transformer-architecture.html §02's PE(pos,2i)=sin(...),
+    PE(pos,2i+1)=cos(...) -- a fixed buffer, no parameters, computed once."""
     pe = torch.zeros(max_len, d_model)
     pos = torch.arange(max_len).unsqueeze(1).float()
     div = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
@@ -83,10 +83,10 @@ def sinusoidal_positional_encoding(max_len, d_model):
 
 
 class CausalSelfAttention(nn.Module):
-    """part-1-maths.html §11: softmax(QK^T/sqrt(d_k))V, masked so position i
-    never sees j > i (part-1-maths.html "Causal masking"). Multi-head: h
+    """part-5-transformer-architecture.html §03: softmax(QK^T/sqrt(d_k))V,
+    masked so position i never sees j > i (§04's causal mask). Multi-head: h
     independent (Q,K,V) triples run in parallel and get concatenated
-    (part-1-maths.html "Multi-head, and the block")."""
+    (§05's multi-head attention)."""
 
     def __init__(self, d_model, n_heads, block_size):
         super().__init__()
@@ -95,8 +95,8 @@ class CausalSelfAttention(nn.Module):
         self.wk = nn.Linear(d_model, d_model, bias=False)
         self.wv = nn.Linear(d_model, d_model, bias=False)
         self.wo = nn.Linear(d_model, d_model, bias=False)
-        # torch.tril: part-5-architecture.html/class-notes' causal mask, built
-        # once and reused -- registered as a buffer so .to(device) moves it too.
+        # torch.tril: part-5-transformer-architecture.html §04's causal mask,
+        # built once and reused -- registered as a buffer so .to(device) moves it too.
         self.register_buffer("mask", torch.tril(torch.ones(block_size, block_size)).bool())
 
     def forward(self, x):
@@ -116,8 +116,8 @@ class CausalSelfAttention(nn.Module):
 
 
 class DecoderBlock(nn.Module):
-    """Pre-norm residual block, part-1-maths.html §11's exact equation:
-    x' = x + MHA(LN(x));  x'' = x' + FFN(LN(x'))."""
+    """Pre-norm residual block, part-5-transformer-architecture.html §06's
+    exact equation: x' = x + MHA(LN(x));  x'' = x' + FFN(LN(x'))."""
 
     def __init__(self, d_model, n_heads, ffn_hidden, block_size):
         super().__init__()
@@ -157,12 +157,11 @@ class TinyGPT(nn.Module):
 
     @torch.no_grad()
     def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None, top_p=None):
-        """part-5-architecture.html §6: logits -> temperature -> (optional)
-        top-k / top-p filtering -> softmax -> sample -> feed the sampled
-        token back in as the newest piece of context. Autoregressive, one
-        character at a time (part-5-architecture.html §01's "problem you
-        would not anticipate" -- generation cannot skip ahead any more than
-        a causal decoder can attend ahead)."""
+        """part-5-transformer-architecture.html §08: logits -> temperature ->
+        (optional) top-k / top-p filtering -> softmax -> sample -> feed the
+        sampled token back in as the newest piece of context. Autoregressive,
+        one character at a time -- generation cannot skip ahead any more than
+        a causal decoder can attend ahead (§04)."""
         self.eval()
         for _ in range(max_new_tokens):
             idx_cond = idx[:, -BLOCK_SIZE:]
@@ -188,7 +187,7 @@ class TinyGPT(nn.Module):
 
 
 # ---------------------------------------------------------------------------
-# Training -- part-4-pytorch.html §5's five calls, nothing new
+# Training -- part-3-pytorch.html §05's five calls, nothing new
 # ---------------------------------------------------------------------------
 
 def get_batch(batch_size, block_size):
