@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SPR2FRFBQ1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SPR2FRFBQ1');
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLMs From Scratch v2 — PyTorch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF2F5; --card:#FFFFFF; --ink:#15222E; --ink-2:#4B5F6E; --ink-3:#8399A8; --rule:#CBD8E0;
+  --fwd:#0B8B8B; --fwd-soft:#D3EDED;
+  --back:#D8811C; --back-soft:#F8E7CE;
+  --loss:#B31E55;
+  --attn:#5A4A9F;
+  --measure:34rem; --wide:52rem;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background-color:var(--paper);
+  background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);
+  background-size:28px 28px;background-position:-1px -1px;
+  color:var(--ink);font-family:"Spectral",Georgia,serif;font-size:17px;line-height:1.68}
+body::before{content:"";position:fixed;inset:0;background:var(--paper);opacity:.82;pointer-events:none;z-index:0}
+.shell{position:relative;z-index:1;max-width:var(--wide);margin:0 auto;padding:0 1.25rem 6rem}
+h1,h2,h3,.eyebrow,.ui,button,input,label,table{font-family:"Space Grotesk",system-ui,sans-serif}
+code,.mono,.eq{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+header.top{padding:4.5rem 0 2rem;max-width:var(--measure)}
+.kicker{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 1.4rem}
+h1{font-size:clamp(2rem,5.6vw,3.2rem);line-height:1.03;letter-spacing:-.03em;font-weight:700;margin:0 0 1.1rem}
+h1 em{font-style:normal;color:var(--fwd)}
+.standfirst{font-size:1.12rem;color:var(--ink-2);margin:0 0 2rem}
+.progress{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin:0 0 3rem;padding:.85rem .95rem;background:var(--card);border:1px solid var(--rule);font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.02em;max-width:var(--wide)}
+.progress a{color:var(--ink-2);text-decoration:none;padding:.28rem .6rem;border:1px solid var(--rule);border-radius:2px;white-space:nowrap;transition:border-color .15s,background .15s,color .15s}
+.progress a:hover{border-color:var(--ink);color:var(--ink)}
+.progress a.here{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+section{margin:4.5rem 0 0}
+.eyebrow{display:flex;align-items:baseline;gap:.85rem;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.5rem}
+.eyebrow .num{font-family:"IBM Plex Mono",monospace;color:var(--fwd);font-weight:600}
+.eyebrow .line{flex:1;height:1px;background:var(--rule)}
+h2{font-size:clamp(1.4rem,3.4vw,1.95rem);line-height:1.15;letter-spacing:-.02em;margin:.1rem 0 1.1rem;font-weight:700;max-width:var(--measure)}
+h3{font-size:1.05rem;letter-spacing:-.01em;margin:2.2rem 0 .6rem;font-weight:600}
+p{margin:0 0 1.1rem;max-width:var(--measure)}
+ul,ol{max-width:var(--measure);padding-left:1.15rem;margin:0 0 1.1rem}
+li{margin-bottom:.4rem}
+strong{font-weight:600}
+blockquote{margin:1.6rem 0;padding:.2rem 0 .2rem 1.3rem;border-left:3px solid var(--fwd);max-width:var(--measure);font-size:1.04rem}
+table{border-collapse:collapse;width:100%;max-width:var(--wide);margin:1.4rem 0;font-size:.86rem}
+th,td{text-align:left;padding:.55rem .7rem;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:600;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--ink-3)}
+figure.w{margin:2.5rem 0;background:var(--card);border:1px solid var(--rule);max-width:var(--wide)}
+figure.w .head{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.7rem 1.1rem;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+figure.w .title{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+figure.w .body{padding:1.2rem 1.1rem}
+figure.w figcaption{padding:.75rem 1.1rem 1rem;font-size:.85rem;color:var(--ink-2);border-top:1px dashed var(--rule)}
+figure.w figcaption b{color:var(--ink);font-weight:600}
+.ctrls{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+button{font-size:.78rem;font-weight:500;padding:.42rem .85rem;border:1px solid var(--ink);background:var(--card);color:var(--ink);cursor:pointer;border-radius:2px;transition:background .15s,color .15s}
+button:hover{background:var(--ink);color:var(--card)}
+button.fwd{border-color:var(--fwd);color:var(--fwd)} button.fwd:hover{background:var(--fwd);color:#fff}
+button.back{border-color:var(--loss);color:var(--loss)} button.back:hover{background:var(--loss);color:#fff}
+button[disabled]{opacity:.35;cursor:not-allowed}
+.readout{font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--ink-2);margin-top:.7rem;line-height:1.65}
+.readout b{color:var(--ink);font-weight:600}
+.mrow{display:flex;gap:2rem;flex-wrap:wrap;align-items:flex-start}
+.mlabel{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.5rem}
+.mgrid{display:grid;gap:.35rem}
+.mcell{width:44px;height:36px;display:flex;align-items:center;justify-content:center;border:1px solid var(--rule);background:var(--paper);font-family:"IBM Plex Mono",monospace;font-size:.85rem;transition:background .3s,border-color .3s,color .3s}
+.mcell.changed{background:var(--back-soft);border-color:var(--back);color:var(--back);font-weight:600}
+pre{background:var(--card);border:1px solid var(--rule);padding:1rem 1.2rem;overflow-x:auto;font-family:'IBM Plex Mono',monospace;font-size:.8rem;line-height:1.6;max-width:100%}
+.node{fill:#fff;stroke:var(--ink-3);stroke-width:1.4;transition:fill .3s,stroke .3s}
+.node.tracked{stroke:var(--fwd)}
+.node.on{fill:var(--fwd-soft);stroke:var(--fwd);stroke-width:2}
+.node.grad{fill:var(--loss);opacity:.15}
+.node.grad.on{opacity:1;fill:#F7DDE7;stroke:var(--loss);stroke-width:2}
+.elbl{font-family:"IBM Plex Mono",monospace;font-size:11px;fill:var(--ink-3)}
+.elbl.hd{font-size:12px;fill:var(--ink);font-weight:500}
+.eedge{stroke:var(--rule);stroke-width:1.6;fill:none}
+.eedge.on{stroke:var(--fwd);stroke-width:2.2}
+.eedge.gon{stroke:var(--loss);stroke-width:2.2;stroke-dasharray:4,3}
+.callout{max-width:var(--wide);margin:1.6rem 0;padding:1rem 1.2rem;background:var(--fwd-soft);border:1px solid var(--fwd);border-radius:2px}
+.callout .h{font-weight:700;margin-bottom:.3rem}
+.callout p{margin-bottom:0;max-width:100%}
+details.ex{max-width:var(--wide);margin:.8rem 0;padding:.8rem 1rem;background:var(--card);border:1px solid var(--rule)}
+details.ex summary{cursor:pointer;font-weight:600;color:var(--fwd)}
+footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-size:.85rem;color:var(--ink-3);max-width:var(--measure)}
+@media (max-width:640px){body{font-size:16px}.shell{padding:0 1rem 4rem}figure.w .body{padding:1rem .8rem}}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms !important;animation-duration:.01ms !important}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<nav class="progress" aria-label="Course progress">
+  <a href="part-0-big-picture.html">0 · Big Picture</a>
+  <a href="part-1-foundations.html">1 · Foundations</a>
+  <a href="part-2-pytorch.html" class="here">2 · PyTorch</a>
+  <a href="part-3-neural-network.html">3 · Neural Network</a>
+  <a href="part-4-build-neural-networks.html">4 · Build NNs</a>
+  <a href="part-5-transformer-architecture.html">5 · Transformer Arch.</a>
+  <a href="part-6-llm.html">6 · LLM</a>
+  <a href="part-7-illustrated.html">7 · Illustrated</a>
+  <a href="part-8-references.html">8 · References</a>
+</nav>
+
+<header class="top">
+  <p class="kicker">v2 · part two of nine</p>
+  <h1>The practical <em>tool</em>, before the from-scratch build</h1>
+  <p class="standfirst">Part 1 derives every formula a network needs, by hand. Part 3 will write a full network's backward pass, also by hand. This page sits between them: the tool a working engineer actually reaches for, so that when Part 3 opens the hood completely, you already know exactly what shape you're aiming for — and exactly how much a framework is doing for you.</p>
+</header>
+
+<section>
+  <div class="eyebrow"><span class="num">01</span><span>Why a framework, at all</span><span class="line"></span></div>
+  <h2>What a from-scratch backward pass costs you</h2>
+  <p>Part 1 derives, by hand, every calculus fact a neural network needs: the derivative, the chain rule, the gradient. Part 3 goes one step further and writes out a full network's <strong>backward pass</strong> — the actual arithmetic that turns "the loss was too high" into "here's exactly how to adjust each of 100,000+ numbers" — using nothing but those hand-derived formulas.</p>
+  <p>That's necessary once: you cannot trust a mechanism you've never opened, and Part 3 opens it completely. It is also <strong>not something you want to repeat by hand every time</strong>. Swap ReLU for GELU, add a residual connection, add attention — and every formula has to be re-derived and the backward pass rewritten, correctly, from scratch, every single time.</p>
+  <blockquote><p>PyTorch's one job is to remember how a number was produced, so it can undo that recipe with the chain rule automatically — the same chain rule Part 1 built, just applied by software instead of by hand. This is not a new idea replacing the old one. It is the old one, automated. You still write the <em>forward</em> pass in plain code. You never write <span class="mono">backward()</span> yourself.</p></blockquote>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">02</span><span>The data structure</span><span class="line"></span></div>
+  <h2>A tensor is a NumPy array with a memory</h2>
+  <p>A <span class="mono">torch.Tensor</span> holds numbers exactly like a NumPy array — same shape, same dtype concept, and on the CPU they even <strong>share the same underlying memory layout</strong>, which is why converting between them is free. The difference: a tensor can additionally run on a GPU, and — the part that matters here — it can <strong>record the operations performed on it</strong>, which a plain array never does.</p>
+
+  <table>
+    <tr><th>Attribute</th><th>What it tells you</th><th>Default</th></tr>
+    <tr><td class="mono">.shape</td><td>Dimensions, same convention as NumPy</td><td>—</td></tr>
+    <tr><td class="mono">.dtype</td><td>Numeric type of every element</td><td class="mono">float32</td></tr>
+    <tr><td class="mono">.device</td><td>Where it physically lives</td><td class="mono">cpu</td></tr>
+    <tr><td class="mono">.requires_grad</td><td>Whether operations on it get recorded</td><td class="mono">False</td></tr>
+  </table>
+
+  <figure class="w" id="tenfig">
+    <div class="head">
+      <span class="title">Copy vs. share · the same array, two constructors</span>
+      <div class="ctrls"><button class="back" id="ten-mutate">Mutate the original array</button><button id="ten-reset">Reset</button></div>
+    </div>
+    <div class="body">
+      <div class="mrow">
+        <div>
+          <div class="mlabel">arr &nbsp;(the NumPy array)</div>
+          <div class="mgrid" id="ten-arr" style="grid-template-columns:repeat(3,auto)"></div>
+        </div>
+        <div>
+          <div class="mlabel">torch.tensor(arr)</div>
+          <div class="mgrid" id="ten-copy" style="grid-template-columns:repeat(3,auto)"></div>
+        </div>
+        <div>
+          <div class="mlabel">torch.as_tensor(arr)</div>
+          <div class="mgrid" id="ten-share" style="grid-template-columns:repeat(3,auto)"></div>
+        </div>
+      </div>
+      <div class="readout" id="ten-say">arr = [1, 2, 3]. Both tensors currently agree with it. Press <b>Mutate</b> to set arr[0] = 99 and see which one notices.</div>
+    </div>
+    <figcaption>The <b style="color:var(--back)">orange</b> cell changed because it shares memory with <span class="mono">arr</span>; the other did not, because it holds an independent copy taken at construction time. This is a real bug source: a pipeline that assumes a copy, given a view, will see values change underneath it later in the script.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">03</span><span>The core mechanism</span><span class="line"></span></div>
+  <h2>Autograd: replaying the recipe backwards</h2>
+  <p>Set <span class="mono">requires_grad=True</span> on a tensor and every operation performed on it from that point gets silently recorded into a graph — not executed differently, just <em>logged</em>. Ordinary input data never needs this; weights and biases need it, because they're exactly the numbers you intend to update.</p>
+  <p>Calling <span class="mono">.backward()</span> on a final scalar (the loss) walks that recorded graph in reverse, applies the chain rule at every step — precisely the way Part 1 built it — and deposits the result in each tracked tensor's <span class="mono">.grad</span>.</p>
+
+  <figure class="w" id="agfig">
+    <div class="head">
+      <span class="title">A tiny network · x=[1,2], W₁, W₂, y=[1,0]</span>
+      <div class="ctrls">
+        <button class="fwd" id="ag-fwd">Forward</button>
+        <button class="back" id="ag-back" disabled>Backward</button>
+        <button id="ag-reset">Reset</button>
+      </div>
+    </div>
+    <div class="body">
+      <svg id="ag" viewBox="0 0 660 190" role="img" aria-label="Diagram of a two-layer network's autograd graph with animated forward and backward passes"></svg>
+      <div class="readout" id="ag-say">Nothing has run yet. Press <b>Forward</b> to build the graph, then <b>Backward</b> to walk it in reverse.</div>
+    </div>
+    <figcaption><span class="mono">W₁</span>'s two rows give pre-activations <span class="mono">[3, −3]</span> — the second hidden unit is negative, so ReLU zeroes it. Watch <b>W₁</b>'s second row after Backward: it comes back as <b>exactly zero</b>, because that unit contributed nothing on the forward pass and so can carry no blame backward. Part 3 builds this exact backward pass by hand; here, autograd arrives at the same numbers automatically.</figcaption>
+  </figure>
+
+  <div class="callout">
+    <p class="h">Trap: reading <code>.grad</code> before calling <code>.backward()</code></p>
+    <p>A tensor's <span class="mono">.grad</span> is <span class="mono">None</span> until <span class="mono">.backward()</span> has actually run — not zero, <span class="mono">None</span>. Forgetting this produces a confusing <span class="mono">NoneType</span> error a step away from where the real mistake is.</p>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">04</span><span>Defining a model</span><span class="line"></span></div>
+  <h2><span class="mono">nn.Module</span>: architecture as a class</h2>
+  <p>Every PyTorch model subclasses <span class="mono">nn.Module</span>. Layers get declared in <span class="mono">__init__</span>; how data flows through them is written once, in a method literally called <span class="mono">forward</span>. Calling <span class="mono">model(x)</span> runs <span class="mono">forward</span> automatically — that's a plain Python mechanism (<span class="mono">__call__</span>), not framework magic.</p>
+
+  <p><strong>A preview of what Part 3 builds by hand.</strong> Below is a <span class="mono">784 → 128 → 64 → 10</span> network — the architecture Part 3 derives from raw arithmetic, one weight matrix and one nonlinearity at a time.</p>
+
+<pre><code>class MLP(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.l1 = nn.Linear(784, 128)
+        self.l2 = nn.Linear(128, 64)
+        self.l3 = nn.Linear(64, 10)
+
+    def forward(self, x):
+        x = F.relu(self.l1(x))
+        x = F.relu(self.l2(x))
+        return self.l3(x)   # logits — softmax lives in the loss, not here</code></pre>
+
+  <p style="margin-bottom:0">Two things worth noticing. First, each layer's input width has to be stated explicitly — PyTorch infers nothing about width from context; you still design the shape ladder yourself. Second, this returns raw <strong>logits</strong>, not probabilities: <span class="mono">nn.CrossEntropyLoss</span> applies softmax internally, so applying it yourself first and passing the result in is a real, common, and silent bug.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">05</span><span>Fitting it</span><span class="line"></span></div>
+  <h2>The training loop, translated</h2>
+  <p>Whatever the architecture, training is always the same five-step pattern — Part 3 spells out <em>forward → loss → backward → update, repeat</em> in full arithmetic; PyTorch just gives each step one call:</p>
+<pre><code>pred = model(X)              # forward — one pass through every layer
+loss = criterion(pred, y)    # loss — compare against the true labels
+loss.backward()              # backward — autograd fills in every .grad
+optimizer.step()             # update — each parameter moves against its gradient
+optimizer.zero_grad()        # reset — clear .grad before the next batch</code></pre>
+  <div class="callout">
+    <p class="h">Trap: the last call is the one people forget</p>
+    <p><span class="mono">.backward()</span> <strong>adds</strong> new gradients onto whatever is already sitting in <span class="mono">.grad</span> — it does not overwrite. Skip <span class="mono">zero_grad()</span> and every batch's gradient piles on top of the last one, silently; training still runs, the loss curve just never makes sense.</p>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">06</span><span>Full example</span><span class="line"></span></div>
+  <h2>An MNIST classifier, in PyTorch</h2>
+  <p>Everything above, assembled — a complete, runnable classifier. Same architecture, same ≈109,386 parameters, that Part 3 will build by hand.</p>
+<pre><code>import torch, torch.nn as nn, torch.nn.functional as F
+
+class MLP(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.l1 = nn.Linear(784, 128)
+        self.l2 = nn.Linear(128, 64)
+        self.l3 = nn.Linear(64, 10)
+    def forward(self, x):
+        x = F.relu(self.l1(x))
+        x = F.relu(self.l2(x))
+        return self.l3(x)
+
+device = torch.accelerator.current_accelerator() if torch.accelerator.is_available() else "cpu"
+model = MLP().to(device)
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+
+def train_epoch(loader):
+    model.train()
+    for X, y in loader:
+        X, y = X.to(device), y.to(device)
+        pred = model(X); loss = criterion(pred, y)
+        loss.backward(); optimizer.step(); optimizer.zero_grad()
+
+def evaluate(loader):
+    model.eval()
+    correct = total = 0
+    with torch.no_grad():
+        for X, y in loader:
+            X, y = X.to(device), y.to(device)
+            pred = model(X).argmax(dim=1)
+            correct += (pred == y).sum().item(); total += y.size(0)
+    return correct / total</code></pre>
+
+  <table>
+    <tr><th>Concept</th><th>Here, PyTorch</th><th>Part 3, NumPy (forward pointer)</th></tr>
+    <tr><td>Layer = matrix multiply</td><td class="mono">nn.Linear(in, out)</td><td class="mono">A @ W.T + b</td></tr>
+    <tr><td>Backward pass</td><td class="mono">loss.backward()</td><td>~10 lines, hand-derived</td></tr>
+    <tr><td>Gradient descent</td><td class="mono">optimizer.step()</td><td class="mono">W -= lr * dW</td></tr>
+    <tr><td>He initialization</td><td>default (Kaiming-uniform)</td><td class="mono">rng.normal(0, sqrt(2/n_in))</td></tr>
+  </table>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">07</span><span>Practicalities</span><span class="line"></span></div>
+  <h2>Device placement, and saving what you trained</h2>
+  <p><strong>Device.</strong> PyTorch never moves anything for you. Detect what's available once, then explicitly call <span class="mono">.to(device)</span> on both the model and every batch of data.</p>
+  <div class="callout">
+    <p class="h">Trap: a missing GPU fails silently</p>
+    <p>If no accelerator is attached, PyTorch does not error — it quietly runs everything on CPU, correctly but far slower. Print the device you're actually using at the start of every script.</p>
+  </div>
+  <p><strong>Train vs. eval mode.</strong> <span class="mono">model.train()</span> / <span class="mono">.eval()</span> switch layers like Dropout and BatchNorm between training and inference behavior. <span class="mono">torch.no_grad()</span> is separate: it skips building the autograd graph entirely. Use both together at inference.</p>
+  <p style="margin-bottom:0"><strong>Saving.</strong> A model is architecture plus parameters, kept deliberately separate:</p>
+<pre><code>torch.save(model.state_dict(), "model.pth")
+# later, in a script that already defines class MLP:
+model = MLP()
+model.load_state_dict(torch.load("model.pth"))
+model.eval()</code></pre>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">08</span><span>Trade-offs</span><span class="line"></span></div>
+  <h2>PyTorch vs. the alternative</h2>
+  <p>Keras/TensorFlow historically favored compiling the whole computation graph upfront; PyTorch builds it step by step as code actually executes — "define-by-run."</p>
+  <table>
+    <tr><th></th><th>PyTorch</th><th>Keras / TensorFlow</th></tr>
+    <tr><td>Execution</td><td>Define-by-run</td><td>Historically compile-first</td></tr>
+    <tr><td>Custom logic</td><td>Drop any custom function into a model</td><td>Sequential API allows none; Functional allows some</td></tr>
+    <tr><td>Where it dominates</td><td>Research — inventing new architectures</td><td>Historically, production</td></tr>
+  </table>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">09</span><span>Reference</span><span class="line"></span></div>
+  <h2>Traps and a cheatsheet</h2>
+  <table>
+    <tr><th>Symptom</th><th>Likely cause</th></tr>
+    <tr><td>Shape mismatch on the first batch</td><td>Trace <span class="mono">input_shape → output_shape</span> through every layer by hand</td></tr>
+    <tr><td>Loss trends downward, then suddenly wrong</td><td>Forgot <span class="mono">optimizer.zero_grad()</span> — gradients are accumulating</td></tr>
+    <tr><td>Eval accuracy looks worse than expected</td><td>Forgot <span class="mono">model.eval()</span> — Dropout is still randomly zeroing units</td></tr>
+    <tr><td>A downstream step sees data change unexpectedly</td><td class="mono">as_tensor</td></tr>
+    <tr><td>Training is correct but mysteriously slow</td><td>Check <span class="mono">print(device)</span> — silently running on CPU</td></tr>
+  </table>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">10</span><span>Practice</span><span class="line"></span></div>
+  <h2>Exercises</h2>
+  <ol>
+    <li>A tensor <span class="mono">x</span> was created with <span class="mono">requires_grad=False</span>, the default. You call <span class="mono">y = x * 2; y.sum().backward()</span>. What happens, and why?</li>
+    <li>You train for 10 epochs but forget <span class="mono">optimizer.zero_grad()</span>. Loss decreases at first, then behaves strangely. Explain the mechanism.</li>
+    <li><span class="mono">arr = np.array([1,2,3]); t = torch.tensor(arr); arr[0] = 99</span>. What is <span class="mono">t[0]</span> now?</li>
+  </ol>
+  <details class="ex">
+    <summary>Answers</summary>
+    <ol>
+      <li>Autograd never tracked <span class="mono">x</span>, so nothing upstream requires a gradient — <span class="mono">.backward()</span> either raises or gives <span class="mono">x.grad = None</span>. Fix: set <span class="mono">requires_grad</span> explicitly on whatever you intend to update.</li>
+      <li><span class="mono">.backward()</span> adds each batch's gradient onto whatever is already in <span class="mono">.grad</span>. Gradients grow across batches, so the effective step size silently increases — loss trends down briefly, then destabilizes.</li>
+      <li><span class="mono">1</span> — <span class="mono">torch.tensor()</span> copies, so <span class="mono">t[0]</span> is unaffected by the later mutation. (With <span class="mono">torch.as_tensor(arr)</span> instead, the answer would be <span class="mono">99</span> — see §02's widget.)</li>
+    </ol>
+  </details>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">11</span><span>Glossary</span><span class="line"></span></div>
+  <h2>Terms from this part</h2>
+  <table>
+    <tr><th>Term</th><th>Plain-language meaning</th></tr>
+    <tr><td>Tensor</td><td>A NumPy-array-like object that can additionally track how it was computed</td></tr>
+    <tr><td class="mono">requires_grad</td><td>Marks a tensor for gradient tracking; <span class="mono">False</span> by default</td></tr>
+    <tr><td class="mono">.grad</td><td>Where a tracked tensor's gradient is deposited after <span class="mono">.backward()</span> — <span class="mono">None</span> until then</td></tr>
+    <tr><td>Autograd</td><td>PyTorch's system for recording operations and replaying them backward via the chain rule</td></tr>
+    <tr><td class="mono">nn.Module</td><td>Base class for a model; separates architecture from data flow</td></tr>
+    <tr><td>Optimizer</td><td>Applies gradient descent using each parameter's <span class="mono">.grad</span></td></tr>
+    <tr><td class="mono">state_dict</td><td>A model's parameters alone, without its architecture</td></tr>
+  </table>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">12</span><span>Onward</span><span class="line"></span></div>
+  <h2>What Part 3 opens up</h2>
+  <p>A tensor is a NumPy array that can additionally track how it was computed. <span class="mono">requires_grad=True</span> marks what should get a gradient; <span class="mono">.backward()</span> computes it via the chain rule, automatically. Everything above is a tool wrapped around ideas Part 1 already built from arithmetic — what's different is <em>who writes the backward pass</em>. Part 3 opens that hood completely: the same architecture previewed above, derived from nothing but the dot product, the chain rule, and the gradient, with its backward pass written out by hand.</p>
+  <p><a href="part-3-neural-network.html">Continue to Part 3 — build the network itself →</a></p>
+</section>
+
+<footer>
+  <p>Reduced-motion preferences are respected throughout; every animation degrades to its final state.</p>
+</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+var REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function gid(i){ return document.getElementById(i); }
+function fmt(v,d){ return Number(v).toFixed(d===undefined?2:d); }
+
+/* ===== TENSOR COPY VS SHARE ===== */
+(function(){
+  var arrEl=gid("ten-arr"), copyEl=gid("ten-copy"), shareEl=gid("ten-share");
+  if(!arrEl) return;
+  var say=gid("ten-say");
+  var ORIG=[1,2,3];
+  var arr, copy, share, mutated;
+  function reset(){ arr=ORIG.slice(); copy=ORIG.slice(); share=ORIG.slice(); mutated=false; }
+  reset();
+  function cell(v, changed){
+    var d=document.createElement("div");
+    d.className="mcell"+(changed?" changed":"");
+    d.textContent=v;
+    return d;
+  }
+  function render(){
+    [arrEl,copyEl,shareEl].forEach(function(e){ e.innerHTML=""; });
+    arr.forEach(function(v,i){ arrEl.appendChild(cell(v, mutated && i===0)); });
+    copy.forEach(function(v,i){ copyEl.appendChild(cell(v, false)); });
+    share.forEach(function(v,i){ shareEl.appendChild(cell(v, mutated && i===0)); });
+    say.innerHTML = mutated
+      ? "arr[0] set to <b>99</b>. <span style='color:var(--fwd)'><b>torch.tensor(arr)</b></span> still shows <b>1</b> — it copied at construction time. <span style='color:var(--back)'><b>torch.as_tensor(arr)</b></span> now shows <b>99</b> too — it shares memory with arr, so it sees the change."
+      : "arr = [1, 2, 3]. Both tensors currently agree with it. Press <b>Mutate</b> to set arr[0] = 99 and see which one notices.";
+  }
+  gid("ten-mutate").onclick=function(){
+    if(mutated) return;
+    arr[0]=99; share[0]=99; mutated=true; render();
+  };
+  gid("ten-reset").onclick=function(){ reset(); render(); };
+  render();
+})();
+
+/* ===== AUTOGRAD GRAPH ===== */
+(function(){
+  var svg=gid("ag"); if(!svg) return;
+  var say=gid("ag-say");
+  function el(tag, attrs){
+    var e=document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for(var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+  function box(x,y,w,h,lines,cls){
+    var r=el("rect",{x:x,y:y,width:w,height:h,rx:4}); r.setAttribute("class","node "+(cls||"")); svg.appendChild(r);
+    lines.forEach(function(l,i){
+      var t=el("text",{x:x+w/2,y:y+h/2-(lines.length-1)*7+i*14+4,"text-anchor":"middle"});
+      t.setAttribute("class","elbl hd"); t.textContent=l; svg.appendChild(t);
+    });
+    return r;
+  }
+  function arrow(x1,y1,x2,y2,cls){
+    var l=el("line",{x1:x1,y1:y1,x2:x2,y2:y2}); l.setAttribute("class","eedge "+(cls||"")); svg.appendChild(l); return l;
+  }
+
+  var nx=box(20,75,80,40,["x","[1, 2]"]);
+  var w1=box(20,15,80,40,["W₁","(2×2)"],"tracked");
+  var z1=box(150,75,80,40,["z₁","[3, −3]"]);
+  var a1=box(280,75,80,40,["a₁=ReLU(z₁)","[3, 0]"]);
+  var w2=box(280,15,80,40,["W₂","(2×2)"],"tracked");
+  var z2=box(410,75,80,40,["z₂","softmax→ŷ"]);
+  var loss=box(540,75,100,40,["loss","vs y=[1,0]"]);
+
+  var e1=arrow(100,95,150,95); var e1b=arrow(60,55,60,75);
+  var e2=arrow(230,95,280,95);
+  var e3=arrow(360,95,410,95); var e3b=arrow(320,55,320,75);
+  var e4=arrow(490,95,540,95);
+
+  var gW1=box(20,140,80,36,["∂L/∂W₁","(row 2 = 0)"],"grad");
+  var gW2=box(280,140,80,36,["∂L/∂W₂"],"grad");
+
+  var FWD=[nx,w1,z1,a1,w2,z2,loss];
+  var FWD_EDGES=[e1,e1b,e2,e3,e3b,e4];
+  var state="idle"; // idle, forward, backward
+  var fwdStep=-1, backStep=-1;
+
+  function clearAll(){
+    FWD.forEach(function(n){ n.setAttribute("class", n===w1||n===w2 ? "node tracked":"node"); });
+    FWD_EDGES.forEach(function(e){ e.setAttribute("class","eedge"); });
+    gW1.setAttribute("class","node grad"); gW2.setAttribute("class","node grad");
+  }
+  function render(){
+    clearAll();
+    if(state==="forward"){
+      for(var i=0;i<=fwdStep && i<FWD.length;i++) FWD[i].setAttribute("class", (FWD[i]===w1||FWD[i]===w2?"node tracked on":"node on"));
+      for(var j=0;j<fwdStep && j<FWD_EDGES.length;j++) FWD_EDGES[j].setAttribute("class","eedge on");
+    } else if(state==="backward"){
+      FWD.forEach(function(n){ n.setAttribute("class", (n===w1||n===w2?"node tracked":"node")+" on"); });
+      FWD_EDGES.forEach(function(e){ e.setAttribute("class","eedge on"); });
+      if(backStep>=1) gW2.setAttribute("class","node grad on");
+      if(backStep>=2) gW1.setAttribute("class","node grad on");
+    }
+    var say_html;
+    if(state==="idle") say_html="Nothing has run yet. Press <b>Forward</b> to build the graph, then <b>Backward</b> to walk it in reverse.";
+    else if(state==="forward") say_html="<b>Forward pass, step "+(fwdStep+1)+"/7.</b> Each op gets silently recorded — this is exactly Part 3's forward pass, just logged as it goes.";
+    else say_html = backStep<1
+      ? "<b>Backward, step 1.</b> Autograd starts at the loss and walks back — Part 1 §07's chain rule, applied automatically."
+      : backStep===1
+      ? "<b>Backward, step 2.</b> <span class='mono'>∂L/∂W₂</span> computed — this layer's blame."
+      : "<b>Backward, step 3 — done.</b> <span class='mono'>∂L/∂W₁</span> computed. Its second row is <b>exactly zero</b>: the hidden unit it feeds was switched off by ReLU on the forward pass, so it can carry no blame back. <span class='mono'>x</span> never gets a <span class='mono'>.grad</span> at all — only tensors with <span class='mono'>requires_grad=True</span> get one, and plain input data never has it set.";
+    say.innerHTML=say_html;
+    gid("ag-back").disabled = (state==="idle") || (state==="forward" && fwdStep<FWD.length-1) || (state==="backward" && backStep>=2);
+    gid("ag-fwd").disabled = state==="backward";
+  }
+  gid("ag-fwd").onclick=function(){
+    if(state==="idle"){ state="forward"; fwdStep=0; }
+    else if(state==="forward" && fwdStep<FWD.length-1){ fwdStep++; }
+    render();
+  };
+  gid("ag-back").onclick=function(){
+    if(state==="forward"){
+      if(fwdStep<FWD.length-1) return;
+      state="backward"; backStep=0;
+      render();
+      return;
+    }
+    backStep=Math.min(2, backStep+1);
+    render();
+  };
+  gid("ag-reset").onclick=function(){ state="idle"; fwdStep=-1; backStep=-1; render(); };
+  render();
+})();
+})();
+</script>
+</body>
+</html>

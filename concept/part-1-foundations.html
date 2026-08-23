@@ -94,18 +94,19 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <nav class="progress" aria-label="Course progress">
   <a href="part-0-big-picture.html">0 · Big Picture</a>
   <a href="part-1-foundations.html" class="here">1 · Foundations</a>
-  <a href="part-2-neural-network.html">2 · Neural Network</a>
-  <a href="part-3-examples.html">3 · Examples</a>
-  <a href="part-4-attention.html">4 · Attention</a>
-  <a href="part-5-transformer.html">5 · Transformer</a>
+  <a href="part-2-pytorch.html">2 · PyTorch</a>
+  <a href="part-3-neural-network.html">3 · Neural Network</a>
+  <a href="part-4-build-neural-networks.html">4 · Build NNs</a>
+  <a href="part-5-transformer-architecture.html">5 · Transformer Arch.</a>
   <a href="part-6-llm.html">6 · LLM</a>
   <a href="part-7-illustrated.html">7 · Illustrated</a>
+  <a href="part-8-references.html">8 · References</a>
 </nav>
 
 <header class="top">
-  <p class="kicker">v2 · part one of seven</p>
+  <p class="kicker">v2 · part one of nine</p>
   <h1>The plain <em>maths</em>, before any network</h1>
-  <p class="standfirst">Ten small tools, built from nothing but arithmetic: functions, sums, vectors, matrices, exponentials, derivatives, the chain rule, the gradient, and probability. No neural network appears anywhere on this page — Part 2 puts every one of these to work. If a tool below is already familiar, skim it; the goal is that nothing in Part 2 ever uses a symbol this page didn't first build.</p>
+  <p class="standfirst">Ten small tools, built from nothing but arithmetic: functions, sums, vectors, matrices, exponentials, derivatives, the chain rule, the gradient, and probability. No neural network appears anywhere on this page — Part 3 puts every one of these to work. If a tool below is already familiar, skim it; the goal is that nothing in Part 3 ever uses a symbol this page didn't first build.</p>
 </header>
 
 <section>
@@ -153,8 +154,10 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
       <canvas id="dot" width="820" height="300" style="cursor:grab" aria-label="Two draggable vectors and their dot product"></canvas>
       <div class="readout" id="dot-say"></div>
     </div>
-    <figcaption>Swing the arrows together and the dot product grows; cross <b>90°</b> and it flips sign. Perpendicular means "unrelated" — exactly zero. This one number is the entire idea Part 4 builds attention out of: how much does this word agree with that one.</figcaption>
+    <figcaption>Swing the arrows together and the dot product grows; cross <b>90°</b> and it flips sign. Perpendicular means "unrelated" — exactly zero. This one number is the entire idea Part 5 builds attention out of: how much does this word agree with that one.</figcaption>
   </figure>
+
+  <p><strong>The geometric reading.</strong> Define length by Pythagoras, <span class="mono">‖a‖ = √(Σaᵢ²)</span>. Then <span class="mono">a · b = ‖a‖ ‖b‖ cos θ</span> — the same number, computed from lengths and the angle between them instead of coordinates. You can see why in 2D: rotate the axes so <span class="mono">a</span> points along x. Then <span class="mono">a = (‖a‖, 0)</span> and <span class="mono">b = (‖b‖cos θ, ‖b‖sin θ)</span>, and the dot product is <span class="mono">‖a‖‖b‖cos θ + 0</span>. Rotating never changes a dot product, so this holds generally — and it's why the widget above always shows both readings agreeing.</p>
 </section>
 
 <section>
@@ -189,7 +192,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     <tr><td class="shape">eˣ &gt; 0 always</td><td>A sum of positive numbers can become proportions</td></tr>
     <tr><td class="shape">eᵃ·eᵇ = eᵃ⁺ᵇ</td><td>Shifting every input the same amount changes no ratio</td></tr>
     <tr><td class="shape">log(ab) = log a + log b</td><td><b>The defining property</b> — turns multiplication into addition</td></tr>
-    <tr><td class="shape">d/dx log x = 1/x</td><td>Used directly in Part 2's loss-function gradient</td></tr>
+    <tr><td class="shape">d/dx log x = 1/x</td><td>Used directly in Part 3's loss-function gradient</td></tr>
   </table>
 </div>
 
@@ -197,6 +200,8 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   <div class="eyebrow"><span class="num">07</span><span>Rates of change</span><span class="line"></span></div>
   <h2>The derivative: how steep, right here</h2>
   <p><span class="mono">f(x) = x²</span> barely moves near <span class="mono">x=0</span> and rockets upward near <span class="mono">x=10</span> — "the derivative" names the steepness at one exact point. Pick two nearby points, draw the line through them (a <strong>secant</strong>), and shrink the gap toward zero: the secant settles onto the <strong>tangent</strong>, and its slope is <span class="mono">f′(x)</span>.</p>
+
+  <p><strong>The core idea.</strong> A derivative answers one question: nudge the input by a tiny amount — does the output go up or down, and how fast? That sign and size are exactly what's needed to improve something without trying every possible value. <strong>Why it matters in practice:</strong> a network starts out with random weights, and training is nothing but repeatedly asking each weight "would increasing you make the loss better or worse, and by roughly how much?" The derivative is the only tool that answers that question directly — Part 3 §11 turns it into the exact update rule used to train every network in this course.</p>
 
   <figure class="w" id="tanfig">
     <div class="head">
@@ -213,9 +218,25 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
   </figure>
 
   <h3>The chain rule: rates feeding rates</h3>
-  <p><span class="mono">h(x) = (2x+1)²</span> is an inner function <span class="mono">g(x)=2x+1</span> feeding an outer one <span class="mono">f(u)=u²</span>. Nudge <span class="mono">x</span>; that nudges <span class="mono">g</span> by rate <span class="mono">g′(x)</span>; that nudge in <span class="mono">g</span> then nudges <span class="mono">f</span> by a further rate <span class="mono">f′(g(x))</span>. Two rates back to back multiply:</p>
+  <p><strong>The problem it solves.</strong> §01 showed that a network is nothing but functions feeding functions, many layers deep. Expanding a hundred nested functions into one formula and differentiating that directly is hopeless — and you never have to. The chain rule says: differentiate one function at a time, at the point the previous one handed you, and multiply the rates together.</p>
+  <p><span class="mono">h(x) = (2x+1)²</span> is an inner function <span class="mono">g(x)=2x+1</span> feeding an outer one <span class="mono">f(u)=u²</span>. Nudge <span class="mono">x</span> by a tiny <span class="mono">Δx</span>; that nudges <span class="mono">g</span>'s output by <span class="mono">g′(x)·Δx</span>; that nudge in <span class="mono">g</span> then nudges <span class="mono">f</span>'s output by a further factor <span class="mono">f′(g(x))</span>. Two rates back to back multiply — that's the whole rule:</p>
   <span class="eq">d/dx f(g(x)) = f′(g(x)) · g′(x)</span>
-  <p>This is not a trick — it's bookkeeping for "one rate feeding into another" — and it is the entire idea behind backpropagation, just with thousands of layers of nesting instead of two.</p>
+
+  <figure class="w" id="chainfig">
+    <div class="head">
+      <span class="title">A nudge, scaled twice · drag x and Δx</span>
+      <div class="ctrls"></div>
+    </div>
+    <div class="body">
+      <div class="slider-row"><label for="cr-x">point x</label><input type="range" id="cr-x" min="-2" max="2" step="0.1" value="0.5"><span class="val" id="cr-xv">0.5</span></div>
+      <div class="slider-row"><label for="cr-dx">nudge Δx</label><input type="range" id="cr-dx" min="0.05" max="2" step="0.05" value="1"><span class="val" id="cr-dxv">1.00</span></div>
+      <canvas id="chain" width="820" height="290" aria-label="A nudge to x flowing through g then f, scaled by each function's local rate, compared against the exact change in h"></canvas>
+      <div class="readout" id="cr-say"></div>
+    </div>
+    <figcaption>The bars show the size of the nudge at each stage: <span class="mono">Δx</span> going in, <span class="mono">Δg = g′(x)·Δx</span> after the first machine, and <span class="mono">Δh</span> after the second — both the chain rule's estimate and the true change. Drag <b>Δx</b> down toward zero and the estimate bar converges onto the exact bar: the chain rule is a straight-line prediction of what a curved function does, exact only for an infinitesimal nudge — precisely the same "shrink the gap" idea as the secant above.</figcaption>
+  </figure>
+
+  <p>This is not a trick — it's bookkeeping for "one rate feeding into another" — and it is the entire idea behind backpropagation: a loss sits at the end of a hundred nested functions, and the chain rule is what lets you find how one early weight affects it without ever writing that hundred-function formula out.</p>
 </section>
 
 <section>
@@ -261,14 +282,14 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 
   <h3>Expected value and spread</h3>
   <p><strong>E[X] = Σᵢ pᵢxᵢ</strong> — multiply each outcome by its probability and add: a probability-weighted average, the long-run balance point. <strong>Variance</strong>, <span class="mono">E[(X−E[X])²]</span>, is the expected squared distance from that balance point; its square root is the <strong>standard deviation</strong>, the typical size of a deviation.</p>
-  <p style="margin-bottom:0"><strong>One fact worth holding onto:</strong> for independent quantities, variances add — so summing <span class="mono">n</span> independent unit-variance things gives spread <span class="mono">√n</span>, not <span class="mono">n</span>, because the random signs partially cancel. Part 4 uses exactly this to explain why attention needs a <span class="mono">√d_k</span> scaling factor.</p>
+  <p style="margin-bottom:0"><strong>One fact worth holding onto:</strong> for independent quantities, variances add — so summing <span class="mono">n</span> independent unit-variance things gives spread <span class="mono">√n</span>, not <span class="mono">n</span>, because the random signs partially cancel. Part 5 uses exactly this to explain why attention needs a <span class="mono">√d_k</span> scaling factor.</p>
 </section>
 
 <section>
   <div class="eyebrow"><span class="num">11</span><span>Onward</span><span class="line"></span></div>
-  <h2>What Part 2 assumes from here</h2>
-  <p>A function as an input/output machine, Σ as an addition loop, vectors and matrices as bundles of numbers with a well-defined way to multiply, exp/log undoing each other, the derivative and chain rule computed without ever taking a limit by hand, the gradient as one partial derivative per input, and probability — including the conditional kind — as the language for "how sure, and does new information change that." Nothing in Part 2 is new machinery; it's these ten tools, pointed at a network for the first time.</p>
-  <p><a href="part-2-neural-network.html">Continue to Part 2 — build the network itself →</a></p>
+  <h2>What Part 2 and Part 3 assume from here</h2>
+  <p>A function as an input/output machine, Σ as an addition loop, vectors and matrices as bundles of numbers with a well-defined way to multiply, exp/log undoing each other, the derivative and chain rule computed without ever taking a limit by hand, the gradient as one partial derivative per input, and probability — including the conditional kind — as the language for "how sure, and does new information change that." Nothing in Part 2 or Part 3 is new machinery; it's these ten tools, pointed at a network for the first time.</p>
+  <p><a href="part-2-pytorch.html">Continue to Part 2 — the practical tool →</a></p>
 </section>
 
 <footer>
@@ -342,6 +363,7 @@ function grid(ctx,W,H,nx,ny,x0,x1,y0,y1,px,py){
     ctx.lineTo(px(v.x)-11*Math.cos(ang-0.4), py(v.y)+11*Math.sin(ang-0.4));
     ctx.lineTo(px(v.x)-11*Math.cos(ang+0.4), py(v.y)+11*Math.sin(ang+0.4));
     ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(px(v.x),py(v.y),9,0,Math.PI*2); ctx.globalAlpha=.18; ctx.fill(); ctx.globalAlpha=1;
     ctx.font="13px 'IBM Plex Mono',monospace";
     ctx.fillText(lab,px(v.x)+13,py(v.y)-6);
   }
@@ -356,11 +378,16 @@ function grid(ctx,W,H,nx,ny,x0,x1,y0,y1,px,py){
     var dot=a.x*b.x+a.y*b.y;
     var la=Math.hypot(a.x,a.y), lb=Math.hypot(b.x,b.y);
     var cos=dot/(la*lb||1), ang=Math.acos(Math.max(-1,Math.min(1,cos)))*180/Math.PI;
+    ctx.strokeStyle=dot>=0?"#0B8B8B":"#B31E55"; ctx.globalAlpha=.25; ctx.lineWidth=15;
+    ctx.beginPath(); ctx.arc(px(0),py(0),42,-Math.atan2(a.y,a.x),-Math.atan2(b.y,b.x),
+      ((Math.atan2(b.y,b.x)-Math.atan2(a.y,a.x)+2*Math.PI)%(2*Math.PI))>Math.PI);
+    ctx.stroke(); ctx.globalAlpha=1;
     arrow(a,"#0B8B8B","a"); arrow(b,"#5A4A9F","b");
     var col=dot>=0?"#0B8B8B":"#B31E55";
     say.innerHTML="a = ["+fmt(a.x,1)+", "+fmt(a.y,1)+"] &nbsp; b = ["+fmt(b.x,1)+", "+fmt(b.y,1)+"]<br>"+
       "a · b = "+fmt(a.x,1)+"×"+fmt(b.x,1)+" + "+fmt(a.y,1)+"×"+fmt(b.y,1)+
       " = <b style='color:"+col+"'>"+fmt(dot,2)+"</b> &nbsp; (angle "+fmt(ang,0)+"°)<br>"+
+      "‖a‖‖b‖cos θ = "+fmt(la,2)+" × "+fmt(lb,2)+" × cos("+fmt(ang,0)+"°) = <b>"+fmt(la*lb*cos,2)+"</b> &nbsp; ✓ same number<br>"+
       "<b style='color:"+col+"'>"+(ang<85?"aligned — they agree":ang<95?"perpendicular — unrelated, ≈ 0":"opposed — they disagree")+"</b>";
   }
   function pos(e){
@@ -496,6 +523,74 @@ function grid(ctx,W,H,nx,ny,x0,x1,y0,y1,px,py){
     say.innerHTML="secant slope = (f(a+h)−f(a))/h = <b style='color:#B31E55'>"+fmt(secSlope,2)+"</b> &nbsp;·&nbsp; tangent slope (derivative) = 2a = <b style='color:#0B8B8B'>"+fmt(tanSlope,2)+"</b> &nbsp;·&nbsp; gap = <b>"+fmt(Math.abs(secSlope-tanSlope),2)+"</b>";
   }
   sa.oninput=draw; sh.oninput=draw; draw();
+})();
+
+/* ===== CHAIN RULE ===== */
+(function(){
+  var cv=gid("chain"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("cr-say"), sx=gid("cr-x"), sdx=gid("cr-dx");
+  function box(cx,cy,w,h,lines,col){
+    ctx.strokeStyle=col; ctx.lineWidth=1.6; ctx.strokeRect(cx-w/2,cy-h/2,w,h);
+    ctx.fillStyle=col; ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+    lines.forEach(function(l,i){ ctx.fillText(l, cx, cy - (lines.length-1)*8 + i*16 + 4); });
+  }
+  function arrow(x1,y1,x2,y2,col){
+    ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    var ang=Math.atan2(y2-y1,x2-x1);
+    ctx.beginPath(); ctx.moveTo(x2,y2);
+    ctx.lineTo(x2-9*Math.cos(ang-0.4),y2-9*Math.sin(ang-0.4));
+    ctx.lineTo(x2-9*Math.cos(ang+0.4),y2-9*Math.sin(ang+0.4));
+    ctx.closePath(); ctx.fill();
+  }
+  function bar(cx,by0,maxH,barW,label,val,denom,col){
+    var hh=Math.min(maxH, Math.abs(val)/denom*maxH);
+    var top = val>=0 ? by0+maxH-hh : by0+maxH;
+    ctx.fillStyle=col; ctx.fillRect(cx-barW/2, top, barW, Math.max(hh,2));
+    ctx.strokeStyle="#8399A8"; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(cx-barW/2-6,by0+maxH); ctx.lineTo(cx+barW/2+6,by0+maxH); ctx.stroke();
+    ctx.fillStyle="#15222E"; ctx.font="11px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+    ctx.fillText(label, cx, by0+maxH+20);
+    ctx.fillText(fmt(val,2), cx, (top-8>by0-2?top-8:by0-2));
+  }
+  function draw(){
+    var x=parseFloat(sx.value); gid("cr-xv").textContent=fmt(x,1);
+    var dx=parseFloat(sdx.value); gid("cr-dxv").textContent=fmt(dx,2);
+    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
+
+    var u=2*x+1, gp=2, h=u*u, fp=2*u;
+    var x2=x+dx, u2=2*x2+1, h2=u2*u2;
+    var dg=u2-u, dhExact=h2-h, dhChain=fp*gp*dx;
+
+    var y=68;
+    ctx.fillStyle="#15222E"; ctx.font="13px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+    ctx.fillText("x = "+fmt(x,2), 55, y+5);
+    arrow(95,y,205,y,"#8399A8");
+    ctx.fillStyle="#8399A8"; ctx.font="11px 'IBM Plex Mono',monospace";
+    ctx.fillText("g′(x) = "+fmt(gp,0), 150, y-12);
+    box(290,y,150,54,["g(x) = 2x+1","= "+fmt(u,2)],"#0B8B8B");
+    arrow(365,y,470,y,"#8399A8");
+    ctx.fillStyle="#8399A8"; ctx.font="11px 'IBM Plex Mono',monospace";
+    ctx.fillText("f′(u) = 2u = "+fmt(fp,2), 417, y-12);
+    box(560,y,160,54,["f(u) = u²","= "+fmt(h,2)],"#5A4A9F");
+    arrow(640,y,730,y,"#8399A8");
+    ctx.fillStyle="#15222E"; ctx.font="13px 'IBM Plex Mono',monospace"; ctx.textAlign="right";
+    ctx.fillText("h(x) = "+fmt(h,2), 812, y+5);
+
+    var by0=160, maxH=85, barW=85, gap=175;
+    var denom=Math.max(Math.abs(dx),Math.abs(dg),Math.abs(dhChain),Math.abs(dhExact),0.25);
+    bar(105,by0,maxH,barW,"Δx",dx,denom,"#8399A8");
+    bar(105+gap,by0,maxH,barW,"Δg",dg,denom,"#0B8B8B");
+    bar(105+2*gap,by0,maxH,barW,"Δh (chain est.)",dhChain,denom,"#5A4A9F");
+    bar(105+3*gap,by0,maxH,barW,"Δh (exact)",dhExact,denom,"#B31E55");
+
+    var gapv=Math.abs(dhChain-dhExact);
+    say.innerHTML="Δx = "+fmt(dx,2)+" → Δg = g′(x)·Δx = 2×"+fmt(dx,2)+" = <b style='color:#0B8B8B'>"+fmt(dg,2)+"</b> (exact — g is linear)<br>"+
+      "chain-rule estimate: Δh ≈ f′(u)·g′(x)·Δx = "+fmt(fp,2)+"×2×"+fmt(dx,2)+" = <b style='color:#5A4A9F'>"+fmt(dhChain,2)+"</b><br>"+
+      "exact Δh = h(x+Δx) − h(x) = <b style='color:#B31E55'>"+fmt(dhExact,2)+"</b> &nbsp; gap = <b>"+fmt(gapv,3)+"</b><br>"+
+      "<b>"+(gapv<0.05?"shrink Δx enough and the two agree to three decimals — the chain rule nails it in the limit.":"shrink Δx toward zero and watch the gap close — the chain rule is a straight-line prediction, exact only for an infinitesimal nudge.")+"</b>";
+  }
+  sx.oninput=draw; sdx.oninput=draw; draw();
 })();
 
 /* ===== GRADIENT ===== */

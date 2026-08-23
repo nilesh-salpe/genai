@@ -7,153 +7,135 @@
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-SPR2FRFBQ1');
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Neural Networks and Transformers — an interactive course</title>
+<title>Neural Networks and Transformers, v2 — Built From Scratch</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--paper:#EDF2F5;--card:#FFF;--ink:#15222E;--ink-2:#4B5F6E;--ink-3:#8399A8;--rule:#CBD8E0;
---fwd:#0B8B8B;--back:#D8811C;--loss:#B31E55;--attn:#5A4A9F;--measure:34rem;--wide:52rem}
+:root{
+  --paper:#EDF2F5; --card:#FFFFFF; --ink:#15222E; --ink-2:#4B5F6E; --ink-3:#8399A8; --rule:#CBD8E0;
+  --fwd:#0B8B8B; --fwd-soft:#D3EDED;
+  --back:#D8811C; --back-soft:#F8E7CE;
+  --loss:#B31E55; --loss-soft:#F7DDE7;
+  --attn:#5A4A9F; --attn-soft:#E2DDF2;
+  --measure:34rem; --wide:56rem;
+}
 *{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
 body{margin:0;background-color:var(--paper);
-background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);
-background-size:28px 28px;background-position:-1px -1px;
-color:var(--ink);font-family:"Spectral",Georgia,serif;font-size:17px;line-height:1.68}
+  background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);
+  background-size:28px 28px;background-position:-1px -1px;
+  color:var(--ink);font-family:"Spectral",Georgia,serif;font-size:17px;line-height:1.68}
 body::before{content:"";position:fixed;inset:0;background:var(--paper);opacity:.82;pointer-events:none;z-index:0}
-.shell{position:relative;z-index:1;max-width:var(--wide);margin:0 auto;padding:0 1.25rem 5rem}
-h1,h2,h3,.kicker,.num,.tag,.meta{font-family:"Space Grotesk",system-ui,sans-serif}
-.mono,code{font-family:"IBM Plex Mono",ui-monospace,monospace}
-header{padding:5rem 0 2.5rem;max-width:var(--measure)}
+.shell{position:relative;z-index:1;max-width:var(--wide);margin:0 auto;padding:0 1.25rem 6rem}
+h1,h2,h3,.eyebrow,.kicker{font-family:"Space Grotesk",system-ui,sans-serif}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+header.top{padding:4.5rem 0 2rem;max-width:40rem}
 .kicker{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 1.4rem}
-h1{font-size:clamp(2rem,5.6vw,3.2rem);line-height:1.03;letter-spacing:-.03em;font-weight:700;margin:0 0 1.1rem}
+h1{font-size:clamp(2.1rem,6vw,3.4rem);line-height:1.03;letter-spacing:-.03em;font-weight:700;margin:0 0 1.1rem}
 h1 em{font-style:normal;color:var(--attn)}
-.standfirst{font-size:1.12rem;color:var(--ink-2);margin:0 0 1.5rem}
-p{max-width:var(--measure);margin:0 0 1.1rem}
-.legend{display:flex;gap:1.4rem;flex-wrap:wrap;font-family:"IBM Plex Mono",monospace;font-size:.75rem;color:var(--ink-2);border-top:1px solid var(--rule);padding-top:1rem;max-width:var(--measure)}
-.swatch{display:inline-block;width:.65rem;height:.65rem;border-radius:50%;margin-right:.45rem}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem;margin:2.5rem 0}
-a.card{display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--rule);padding:1.4rem;transition:border-color .18s,transform .18s}
-a.card:hover{border-color:var(--attn);transform:translateY(-2px)}
-a.card:focus-visible{outline:2px solid var(--attn);outline-offset:3px}
-a.card .num{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--attn);font-weight:600}
-a.card h2{font-size:1.25rem;letter-spacing:-.02em;margin:.5rem 0 .6rem;font-weight:700;line-height:1.2}
-a.card p{font-size:.92rem;color:var(--ink-2);margin:0 0 .9rem;max-width:100%}
-a.card .meta{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);border-top:1px dashed var(--rule);padding-top:.7rem}
-ul{max-width:var(--measure);padding-left:1.15rem}
-li{margin-bottom:.35rem}
-h3{font-size:1.02rem;margin:2.4rem 0 .7rem;font-weight:600;letter-spacing:-.01em}
-footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-size:.85rem;color:var(--ink-3);max-width:var(--measure)}
-@media (prefers-reduced-motion:reduce){a.card{transition:none}a.card:hover{transform:none}}
+.standfirst{font-size:1.14rem;color:var(--ink-2);margin:0 0 1rem;max-width:40rem}
+p{margin:0 0 1.1rem}
+a{color:var(--fwd)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.1rem;margin:2.5rem 0}
+.card{display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--rule);padding:1.3rem 1.4rem;transition:border-color .15s,transform .15s;border-top:3px solid var(--fwd)}
+.card:hover{border-color:var(--ink);transform:translateY(-2px)}
+.card.attn{border-top-color:var(--attn)}
+.card .n{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.5rem}
+.card h2{font-family:"Space Grotesk",sans-serif;font-size:1.15rem;font-weight:700;margin:0 0 .5rem;letter-spacing:-.01em}
+.card p{font-size:.92rem;color:var(--ink-2);margin:0}
+section{margin:4rem 0 0}
+.eyebrow{display:flex;align-items:baseline;gap:.85rem;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:1.1rem}
+.eyebrow .line{flex:1;height:1px;background:var(--rule)}
+.box{max-width:40rem;margin:1.5rem 0;padding:1.3rem 1.4rem;background:var(--card);border:1px solid var(--rule);border-top:3px solid var(--attn)}
+.box .h{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:1.02rem;margin-bottom:.4rem}
+.box p{max-width:100%;font-size:.94rem;color:var(--ink-2)}
+.v1link{font-family:"IBM Plex Mono",monospace;font-size:.82rem;color:var(--ink-3)}
+footer{margin-top:5rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-size:.85rem;color:var(--ink-3);max-width:40rem}
+footer a{color:var(--ink-2)}
+@media (max-width:640px){body{font-size:16px}.shell{padding:0 1rem 4rem}}
 </style>
 </head>
 <body>
 <div class="shell">
-<header>
-  <p class="kicker">Seven parts · forty-two live derivations</p>
-  <h1>Neural networks and <em>transformers</em>, built from scratch</h1>
-  <p class="standfirst">A course in seven parts. The zeroth builds the plain maths underneath everything else — functions, derivatives, expected value — with no machine learning in sight; the first derives every neural-network and transformer formula from the problem it solves; the second assembles them into a working digit classifier; the third builds four more models from that same toolkit, easiest first, and trains them in front of you. The fourth swaps hand-written backward passes for PyTorch's autograd; the fifth fills in the architecture the first part left out — encoder vs. decoder, cross-attention, decoding; the sixth wires all of it into a small GPT you train and sample from yourself. Nothing is asserted before it is motivated.</p>
-  <div class="legend">
-    <span><span class="swatch" style="background:var(--fwd)"></span>forward</span>
-    <span><span class="swatch" style="background:var(--back)"></span>backward</span>
-    <span><span class="swatch" style="background:var(--loss)"></span>loss</span>
-    <span><span class="swatch" style="background:var(--attn)"></span>attention</span>
-  </div>
-  <p style="font-size:.85rem;color:var(--ink-3);margin-top:1rem">A second, differently-structured pass through the same material — intuition first, attention split into its own part, one capstone walkthrough at the end: <a href="v2/index.html" style="color:var(--attn)">try v2 →</a></p>
+
+<header class="top">
+  <p class="kicker">Neural networks and Transformers, built from scratch · v2</p>
+  <h1>From <em>arithmetic</em> to a working language model</h1>
+  <p class="standfirst">A free, self-contained course in nine parts. No calculus, linear algebra, or ML background assumed — just arithmetic, and roughly two hours a part. Every idea is built before it's used, checked against small numbers you can verify by hand, and made checkable through a live widget rather than just described.</p>
+  <p class="v1link">Prefer the original single-track version? <a href="v1/index.html">See v1 →</a></p>
 </header>
 
-<div class="cards">
-  <a class="card" href="part-0-foundations.html">
-    <span class="num">Part zero</span>
-    <h2>Foundations</h2>
-    <p>The maths under the maths, with no neural network in sight: functions as machines, Σ as a for-loop, vectors, the dot product, matrices, exponentials and logarithms, the derivative built from a secant line sliding into a tangent, the chain rule as two rates flowing through a network of boxes, the gradient as one derivative per input, and expected value as a balance point.</p>
-    <div class="meta">7 interactive figures</div>
-  </a>
-  <a class="card" href="part-1-maths.html">
-    <span class="num">Part one</span>
-    <h2>The maths</h2>
-    <p>Softmax derived from two failed attempts, cross-entropy forced out of what "surprise" must mean, backpropagation, and then attention built in five steps — ending at the variance argument for √d<sub>k</sub>.</p>
-    <div class="meta">10 interactive figures</div>
-  </a>
-  <a class="card" href="part-2-build.html">
-    <span class="num">Part two</span>
-    <h2>Actually build one</h2>
-    <p>784 → 128 → 64 → 10. Every shape, all 109,386 parameters counted, the permutation test that motivates CNNs, and sixty lines of NumPy with a hand-written backward pass.</p>
-    <div class="meta">12 interactive figures</div>
-  </a>
-  <a class="card" href="part-3-examples.html">
-    <span class="num">Part three</span>
-    <h2>See it in code</h2>
-    <p>Four more models, ordered easiest to hardest, each a self-contained hand-derived NumPy implementation you can run: a spiral classifier, a small convolutional network, a minimal attention layer that retrieves by content, and causal self-attention predicting what comes next.</p>
-    <div class="meta">4 interactive figures · 4 Python files</div>
-  </a>
-  <a class="card" href="bonus-curve-fitting.html">
-    <span class="num">Sandbox</span>
-    <h2>Play with it yourself</h2>
-    <p>A standalone sandbox: train a small network live against a target function of 1 to 4 input features, with layer count, width, activation, and learning rate all exposed as sliders. Four features don't mean four curves — one function of a higher-dimensional input, viewed one slice at a time.</p>
-    <div class="meta">Live in-browser training</div>
-  </a>
-  <a class="card" href="part-4-pytorch.html">
-    <span class="num">Part four</span>
-    <h2>PyTorch, not from scratch</h2>
-    <p>The bridge from Part 2's hand-written backward pass to autograd: tensors, requires_grad, nn.Module, and the training loop translated line by line — the same 60-line NumPy model, rebuilt to prove nothing changed but who writes the gradients.</p>
-    <div class="meta">3 interactive figures</div>
-  </a>
-  <a class="card" href="part-5-architecture.html">
-    <span class="num">Part five</span>
-    <h2>The full architecture</h2>
-    <p>What Part 1 left out: encoder vs. decoder vs. both, cross-attention wiring an already-finished encoder into a generating decoder, why the original paper became the field's reference point, and how logits actually turn into words — temperature, top-k, top-p.</p>
-    <div class="meta">4 interactive figures</div>
-  </a>
-  <a class="card" href="part-6-build-gpt.html">
-    <span class="num">Part six</span>
-    <h2>Build a tiny GPT</h2>
-    <p>Every prior part's ingredient, assembled: a real decoder-only Transformer in PyTorch, trained on a toy corpus in seconds, sampled from with your own temperature/top-k/top-p settings — plus the full, runnable, gap-free source.</p>
-    <div class="meta">2 interactive figures · 1 Python file</div>
-  </a>
-  <a class="card" href="bonus-transformer-lab.html">
-    <span class="num">Live Lab</span>
-    <h2>Watch a transformer learn</h2>
-    <p>A second sandbox: a real decoder-only Transformer, hand-derived (no autograd, gradient-checked to ~1e-8) and trained live in your browser. Trace one step through the whole pipeline, or train continuously and watch the loss curve, a real weight matrix, and live neuron activations move.</p>
-    <div class="meta">Live in-browser training</div>
-  </a>
-  <a class="card" href="bonus-transformer-illustrated.html">
-    <span class="num">Illustrated</span>
-    <h2>Transformer visualizer</h2>
-    <p>A third sandbox: a deterministic, step-by-step walkthrough of one sentence — "the cat sat on the mat" — through tokenization, embeddings, Q/K/V, attention, residuals, the feed-forward network, four stacked layers, and final next-token prediction. Click through 14 steps or hit play.</p>
-    <div class="meta">14-step illustrated walkthrough</div>
-  </a>
-  <a class="card" href="references.html">
-    <span class="num">Further reading</span>
-    <h2>References</h2>
-    <p>The papers and explainers behind the course — "Attention Is All You Need," ResNet, Layer Normalization, the Illustrated and Annotated Transformer write-ups, and a couple of places to go deeper than any single part covers.</p>
-    <div class="meta">9 sources</div>
-  </a>
-</div>
+<section>
+  <div class="eyebrow"><span>All nine parts, in order</span><span class="line"></span></div>
+  <div class="cards">
+    <a class="card" href="part-0-big-picture.html">
+      <div class="n">Part 0</div>
+      <h2>Big Picture</h2>
+      <p>What a neural network, an LLM, and attention actually are — in plain language, with two toy animations, no maths yet.</p>
+    </a>
+    <a class="card" href="part-1-foundations.html">
+      <div class="n">Part 1</div>
+      <h2>Foundations</h2>
+      <p>Functions, vectors, matrices, exponentials, derivatives, the chain rule, the gradient, and probability — the plain maths every later part leans on.</p>
+    </a>
+    <a class="card" href="part-2-pytorch.html">
+      <div class="n">Part 2</div>
+      <h2>PyTorch</h2>
+      <p>The practical tool, before the from-scratch build: tensors, autograd, nn.Module, and the training loop, translated from Part 1's raw formulas.</p>
+    </a>
+    <a class="card" href="part-3-neural-network.html">
+      <div class="n">Part 3</div>
+      <h2>Neural Network</h2>
+      <p>Why depth needs a kink, softmax, cross-entropy, gradient descent, backpropagation by hand, and what goes wrong in deep stacks.</p>
+    </a>
+    <a class="card" href="part-4-build-neural-networks.html">
+      <div class="n">Part 4</div>
+      <h2>Build Neural Networks</h2>
+      <p>The same machinery on four problems: a spiral classifier, a convolution filter, retrieval by similarity, and a causal mask.</p>
+    </a>
+    <a class="card attn" href="part-5-transformer-architecture.html">
+      <div class="n">Part 5</div>
+      <h2>Transformer Architecture</h2>
+      <p>The paper, Q/K/V, the √d_k scaling argument, multi-head attention, positional encoding, the full block, encoder/decoder, cross-attention, and sampling — "Attention Is All You Need," derived and assembled.</p>
+    </a>
+    <a class="card" href="part-6-llm.html">
+      <div class="n">Part 6</div>
+      <h2>LLM</h2>
+      <p>Tokenization, the assembled model with the whole multi-block architecture animated in motion, and a real training + generation loop.</p>
+    </a>
+    <a class="card attn" href="part-7-illustrated.html">
+      <div class="n">Part 7</div>
+      <h2>Illustrated</h2>
+      <p>The capstone: one real sentence, walked through the entire pipeline, step by step, with every step naming the part that built it.</p>
+    </a>
+    <a class="card" href="part-8-references.html">
+      <div class="n">Part 8</div>
+      <h2>References</h2>
+      <p>The papers and explainers this course draws on — where each idea originally came from, or where it's explained a second way.</p>
+    </a>
+  </div>
+</section>
 
-<h3>Who this is for</h3>
-<p>Anyone comfortable adding, multiplying, and dividing — nothing more. Part zero builds function notation, vectors and matrices, exponentials and logarithms, derivatives, and expected value and variance, all from scratch and with no neural network in sight; part one puts every one of those tools to work. No machine learning background assumed anywhere.</p>
-
-<h3>What the widgets are for</h3>
-<p>Change an input and watch the stated consequence happen, for example:</p>
-<ul>
-  <li>Add 100 to every logit and watch softmax not move — shift-invariance, and why real code subtracts the max</li>
-  <li>Test three candidate loss functions against "independent surprises add" — only −log p survives, at every setting</li>
-  <li>Turn off the ÷√d<sub>k</sub> and watch attention's gradient collapse</li>
-  <li>Set all weights to zero and watch a network fail to move at all</li>
-  <li>Shuffle an image's pixels and see why a dense layer does not care</li>
-</ul>
-
-<h3>Running it</h3>
-<p>Every page is a single self-contained HTML file — no build step, no dependencies, no network calls beyond the web font. Open any file directly in a browser, or serve the folder with <code class="mono">python3 -m http.server</code>. Part three's Python files need only NumPy (and scikit-learn, for one bundled dataset) — run any of them directly: <code class="mono">python3 examples/01_mlp_spiral_classifier.py</code>. Part six's is the one exception that needs PyTorch: <code class="mono">pip install torch && python3 examples/05_tiny_gpt.py</code>.</p>
+<section>
+  <div class="eyebrow"><span>How this course works</span><span class="line"></span></div>
+  <div class="box">
+    <div class="h">Every widget makes one claim checkable</div>
+    <p>A slider or a button exists to let you verify a specific stated consequence — not to decorate the page. Drag the gradient widget's direction handle and watch the rate of change peak exactly when it aligns with the gradient; set a learning rate too high and watch the loss visibly diverge. If a figure doesn't let you check something, it's been cut.</p>
+  </div>
+  <div class="box">
+    <div class="h">Generic maths first, network maths second</div>
+    <p>Part 1 never mentions a neural network. Every tool it builds — a dot product, a derivative, a probability — gets used for the first time in Part 3, so that by the time a formula shows up in later parts, nothing in it is unfamiliar.</p>
+  </div>
+</section>
 
 <footer>
-  <p>Reduced-motion preferences are respected throughout; every animation degrades to its final state.</p>
-  <p>A personal footnote: not the author's first pass at a weighted-matrix model. A <a href="https://nileshsalpe.blogspot.com/2007/12/salpes-response-index-for-calculating.html">2007 blog post</a> proposed predicting human behaviour with a matrix of pairwise influence weights, explicitly likened to neural-network weights — the same shape of object attention uses, though without attention's defining move: those weights were symmetric and fixed, not computed per-query from content. A precursor in form, not in mechanism.</p>
+  <p>Built from scratch, in the browser, with no dependencies beyond Google Fonts.</p>
+  <p>More from the author: <a href="https://nileshsalpe.blogspot.com/2007/12/salpes-response-index-for-calculating.html?zx=fc0fd89e8d8194f" target="_blank" rel="noopener">nileshsalpe.blogspot.com →</a></p>
 </footer>
 </div>
 </body>

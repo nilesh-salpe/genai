@@ -91,16 +91,17 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <nav class="progress" aria-label="Course progress">
   <a href="part-0-big-picture.html" class="here">0 · Big Picture</a>
   <a href="part-1-foundations.html">1 · Foundations</a>
-  <a href="part-2-neural-network.html">2 · Neural Network</a>
-  <a href="part-3-examples.html">3 · Examples</a>
-  <a href="part-4-attention.html">4 · Attention</a>
-  <a href="part-5-transformer.html">5 · Transformer</a>
+  <a href="part-2-pytorch.html">2 · PyTorch</a>
+  <a href="part-3-neural-network.html">3 · Neural Network</a>
+  <a href="part-4-build-neural-networks.html">4 · Build NNs</a>
+  <a href="part-5-transformer-architecture.html">5 · Transformer Arch.</a>
   <a href="part-6-llm.html">6 · LLM</a>
   <a href="part-7-illustrated.html">7 · Illustrated</a>
+  <a href="part-8-references.html">8 · References</a>
 </nav>
 
 <header class="top">
-  <p class="kicker">v2 · part zero of seven · no maths yet</p>
+  <p class="kicker">v2 · part zero of nine · no maths yet</p>
   <h1>What are we actually <em>building</em>?</h1>
   <p class="standfirst">Before a single formula, this page answers one question in plain language: what is a neural network, what does "training" mean, and what does a Transformer add that makes it able to write? No equations. No code. Just the shape of the idea — so that when the maths arrives in Part 1, you already know what it's *for*.</p>
 </header>
@@ -123,7 +124,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
       <canvas id="box" width="820" height="260" aria-label="A box with adjustable dials, an input, an output, and a wrongness meter that shrinks as it is trained"></canvas>
       <div class="readout" id="box-say">The dials start random. Press <b>Train</b> and watch the guess drift toward the target, and the wrongness meter shrink.</div>
     </div>
-    <figcaption>There's no formula on this page yet — just the shape of the idea. Each round: guess, compare to the right answer, nudge every dial a little toward "less wrong." <b>Part 1</b> gives that nudge an actual name and an actual formula; <b>Part 2</b> builds a real one of these out of real numbers.</figcaption>
+    <figcaption>There's no formula on this page yet — just the shape of the idea. Each round: guess, compare to the right answer, nudge every dial a little toward "less wrong." <b>Part 1</b> gives that nudge an actual name and an actual formula; <b>Part 3</b> builds a real one of these out of real numbers.</figcaption>
   </figure>
 </section>
 
@@ -150,7 +151,7 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
       <svg id="attnsvg" viewBox="0 0 820 190" role="img" aria-label="A sentence where clicking a word draws lines to the other words it depends on, with thicker lines for stronger dependence"></svg>
       <div class="readout" id="attn-say">Click <b>it</b> and watch the line to <b>trophy</b> thicken — that's the word this one leans on to mean anything.</div>
     </div>
-    <figcaption>There's no formula behind these line weights yet — they're hand-picked to show the shape of the idea. <b>Part 4</b> replaces "hand-picked" with an actual number, computed the same way for every sentence, ever: a dot product, a softmax, done once per pair of words. This one mechanism — <strong>attention</strong> — is most of what makes a Transformer a Transformer.</figcaption>
+    <figcaption>There's no formula behind these line weights yet — they're hand-picked to show the shape of the idea. <b>Part 5</b> replaces "hand-picked" with an actual number, computed the same way for every sentence, ever: a dot product, a softmax, done once per pair of words. This one mechanism — <strong>attention</strong> — is most of what makes a Transformer a Transformer.</figcaption>
   </figure>
 </section>
 

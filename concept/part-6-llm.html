@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SPR2FRFBQ1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SPR2FRFBQ1');
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLMs From Scratch v2 — LLM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF2F5; --card:#FFFFFF; --ink:#15222E; --ink-2:#4B5F6E; --ink-3:#8399A8; --rule:#CBD8E0;
+  --fwd:#0B8B8B; --fwd-soft:#D3EDED;
+  --back:#D8811C; --back-soft:#F8E7CE;
+  --loss:#B31E55; --loss-soft:#F7DDE7;
+  --attn:#5A4A9F; --attn-soft:#E2DDF2;
+  --measure:34rem; --wide:52rem;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background-color:var(--paper);
+  background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);
+  background-size:28px 28px;background-position:-1px -1px;
+  color:var(--ink);font-family:"Spectral",Georgia,serif;font-size:17px;line-height:1.68}
+body::before{content:"";position:fixed;inset:0;background:var(--paper);opacity:.82;pointer-events:none;z-index:0}
+.shell{position:relative;z-index:1;max-width:var(--wide);margin:0 auto;padding:0 1.25rem 6rem}
+h1,h2,h3,.eyebrow,.ui,button,input,label,table{font-family:"Space Grotesk",system-ui,sans-serif}
+code,.mono,.eq{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+header.top{padding:4.5rem 0 2rem;max-width:var(--measure)}
+.kicker{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 1.4rem}
+h1{font-size:clamp(2rem,5.6vw,3.2rem);line-height:1.03;letter-spacing:-.03em;font-weight:700;margin:0 0 1.1rem}
+h1 em{font-style:normal;color:var(--attn)}
+.standfirst{font-size:1.12rem;color:var(--ink-2);margin:0 0 2rem}
+.progress{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin:0 0 3rem;padding:.85rem .95rem;background:var(--card);border:1px solid var(--rule);font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.02em;max-width:var(--wide)}
+.progress a{color:var(--ink-2);text-decoration:none;padding:.28rem .6rem;border:1px solid var(--rule);border-radius:2px;white-space:nowrap;transition:border-color .15s,background .15s,color .15s}
+.progress a:hover{border-color:var(--ink);color:var(--ink)}
+.progress a.here{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+section{margin:4.5rem 0 0}
+.eyebrow{display:flex;align-items:baseline;gap:.85rem;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.5rem}
+.eyebrow .num{font-family:"IBM Plex Mono",monospace;color:var(--attn);font-weight:600}
+.eyebrow .line{flex:1;height:1px;background:var(--rule)}
+h2{font-size:clamp(1.4rem,3.4vw,1.95rem);line-height:1.15;letter-spacing:-.02em;margin:.1rem 0 1.1rem;font-weight:700;max-width:var(--measure)}
+h3{font-size:1.05rem;letter-spacing:-.01em;margin:2.2rem 0 .6rem;font-weight:600}
+p{margin:0 0 1.1rem;max-width:var(--measure)}
+ul,ol{max-width:var(--measure);padding-left:1.15rem;margin:0 0 1.1rem}
+li{margin-bottom:.4rem}
+strong{font-weight:600}
+blockquote{margin:1.6rem 0;padding:.2rem 0 .2rem 1.3rem;border-left:3px solid var(--attn);max-width:var(--measure);font-size:1.04rem}
+.eq{display:block;margin:1.4rem 0;padding:.9rem 1.1rem;background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--attn);font-size:.95rem;overflow-x:auto;max-width:var(--measure);white-space:nowrap}
+table{border-collapse:collapse;width:100%;max-width:var(--wide);margin:1.4rem 0;font-size:.86rem}
+th,td{text-align:left;padding:.55rem .7rem;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:600;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--ink-3)}
+figure.w{margin:2.5rem 0;background:var(--card);border:1px solid var(--rule);max-width:var(--wide)}
+figure.w.hero{border-color:var(--attn)}
+figure.w .head{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.7rem 1.1rem;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+figure.w .title{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+figure.w .body{padding:1.2rem 1.1rem}
+figure.w figcaption{padding:.75rem 1.1rem 1rem;font-size:.85rem;color:var(--ink-2);border-top:1px dashed var(--rule)}
+figure.w figcaption b{color:var(--ink);font-weight:600}
+.ctrls{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+button{font-size:.78rem;font-weight:500;padding:.42rem .85rem;border:1px solid var(--ink);background:var(--card);color:var(--ink);cursor:pointer;border-radius:2px;transition:background .15s,color .15s}
+button:hover{background:var(--ink);color:var(--card)}
+button.att{border-color:var(--attn);color:var(--attn)} button.att:hover{background:var(--attn);color:#fff}
+button.fwd{border-color:var(--fwd);color:var(--fwd)} button.fwd:hover{background:var(--fwd);color:#fff}
+button.on{background:var(--ink);color:var(--card)}
+button.att.on{background:var(--attn);color:#fff}
+button[disabled]{opacity:.35;cursor:not-allowed}
+.slider-row{display:grid;grid-template-columns:auto 1fr auto;gap:.7rem;align-items:center;margin-bottom:.5rem;font-family:"IBM Plex Mono",monospace;font-size:.78rem}
+.slider-row label{color:var(--ink-2)}
+.slider-row .val{min-width:4.2rem;text-align:right;font-weight:500}
+input[type=range]{width:100%;accent-color:var(--attn);height:1.5rem}
+canvas{display:block;max-width:100%}
+.readout{font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--ink-2);margin-top:.7rem;line-height:1.65}
+.readout b{color:var(--ink);font-weight:600}
+.gentext{font-family:"IBM Plex Mono",monospace;font-size:1.3rem;letter-spacing:.02em;background:var(--attn-soft);border:1px solid var(--attn);padding:.9rem 1.1rem;min-height:1.6em;color:var(--ink)}
+.cursor{color:var(--attn);animation:blink 1s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+.steplabel{font-family:"IBM Plex Mono",monospace;font-size:.7rem;color:var(--ink-3)}
+.progressbar{height:3px;background:var(--rule);max-width:var(--wide)}
+.progressbar .fill{height:100%;background:var(--attn);transition:width .3s}
+.partref{font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--attn);font-weight:600}
+.callout{max-width:var(--wide);margin:1.6rem 0;padding:1rem 1.2rem;background:var(--attn-soft);border:1px solid var(--attn);border-radius:2px}
+.callout .h{font-weight:700;margin-bottom:.3rem}
+.callout p{margin-bottom:0;max-width:100%}
+details.ex{max-width:var(--wide);margin:.8rem 0;padding:.8rem 1rem;background:var(--card);border:1px solid var(--rule)}
+details.ex summary{cursor:pointer;font-weight:600;color:var(--attn)}
+footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-size:.85rem;color:var(--ink-3);max-width:var(--measure)}
+@media (max-width:640px){body{font-size:16px}.shell{padding:0 1rem 4rem}figure.w .body{padding:1rem .8rem}}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms !important;animation-duration:.01ms !important}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<nav class="progress" aria-label="Course progress">
+  <a href="part-0-big-picture.html">0 · Big Picture</a>
+  <a href="part-1-foundations.html">1 · Foundations</a>
+  <a href="part-2-pytorch.html">2 · PyTorch</a>
+  <a href="part-3-neural-network.html">3 · Neural Network</a>
+  <a href="part-4-build-neural-networks.html">4 · Build NNs</a>
+  <a href="part-5-transformer-architecture.html">5 · Transformer Arch.</a>
+  <a href="part-6-llm.html" class="here">6 · LLM</a>
+  <a href="part-7-illustrated.html">7 · Illustrated</a>
+  <a href="part-8-references.html">8 · References</a>
+</nav>
+
+<header class="top">
+  <p class="kicker">v2 · part six of nine</p>
+  <h1>Build a small, real <em>language model</em></h1>
+  <p class="standfirst">Everything up to here has been pieces. This page wires all of them into one model — and watches the real, multi-block architecture run, end to end, one generation step at a time. Nothing conceptually new appears — only assembly, and the chance to finally see the whole machine move at once.</p>
+</header>
+
+<section>
+  <div class="eyebrow"><span class="num">00</span><span>What's already built</span><span class="line"></span></div>
+  <h2>Every piece has a part number</h2>
+  <table>
+    <tr><th>Piece</th><th>Built in</th></tr>
+    <tr><td>Embeddings, matrices, the kink, softmax</td><td>Parts 1, 3</td></tr>
+    <tr><td>Cross-entropy loss, gradient descent, backprop</td><td>Part 3</td></tr>
+    <tr><td><span class="mono">nn.Module</span>, the training loop, autograd</td><td>Part 2</td></tr>
+    <tr><td>Self-attention, multi-head, positional encoding, √d_k scaling</td><td>Part 5 §02–§05</td></tr>
+    <tr><td>The block: attention + residual + norm + feed-forward</td><td>Part 5 §06</td></tr>
+    <tr><td>Temperature, top-k, top-p sampling</td><td>Part 5 §08</td></tr>
+  </table>
+  <p>A GPT-style model is a <strong>decoder-only</strong> stack — no separate encoder, because there's no second sequence to consult; the model just keeps predicting its own next token from everything generated so far.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">01</span><span>The whole pipeline, animated</span><span class="line"></span></div>
+  <h2>Watch a real, multi-block Transformer generate one character</h2>
+  <p>A real, small (2-block, 4-dimensional) decoder-only Transformer, computed live in your browser — a genuine forward pass through genuine weight matrices, not a canned animation. The weights below are randomly initialized, not trained (training happens in §04), so don't judge the generated text on quality — judge the <em>mechanism</em>: every number on screen is computed, live, by the same architecture Part 5 derived.</p>
+
+  <figure class="w hero" id="pipefig">
+    <div class="head">
+      <span class="title">2-block Transformer · one generation step, start to finish</span>
+      <span class="steplabel" id="pf-steplabel">step 1 / 9</span>
+    </div>
+    <div class="progressbar"><div class="fill" id="pf-fill" style="width:11%"></div></div>
+    <div class="body">
+      <div class="gentext" id="pf-gen">the<span class="cursor">▏</span></div>
+      <canvas id="pf" width="880" height="300" aria-label="Step-by-step visualization of a real small Transformer computing embeddings, attention, and a feed-forward network across two blocks, then sampling the next character"></canvas>
+      <div class="readout" id="pf-say" style="margin-top:.6rem"></div>
+    </div>
+    <div class="head" style="border-top:1px solid var(--rule);border-bottom:none">
+      <div class="ctrls">
+        <button id="pf-prev" disabled>← Previous</button>
+        <button class="att" id="pf-play">▶ Play</button>
+        <button id="pf-next">Next →</button>
+        <button id="pf-reset">Restart</button>
+      </div>
+    </div>
+  </figure>
+  <figcaption style="font-size:.85rem;color:var(--ink-2);max-width:var(--wide);margin:-1rem 0 2rem">Follow the stage labels across the top: <b>ctx → embed+PE → block 1 (attn, FFN) → block 2 (attn, FFN) → final LN → logits → softmax → sample</b>. Each stage shows the real numbers for the <em>last</em> context position — the one deciding what comes next — including a live attention-weight bar per block showing exactly which earlier characters it's reading from. When sampling completes, the chosen character animates into the text above and the whole cycle repeats on the now-longer context. Press <b>Play</b> and watch several characters accumulate, one full architecture pass at a time.</figcaption>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">02</span><span>Tokenization</span><span class="line"></span></div>
+  <h2>Turning text into integers, as simply as possible</h2>
+  <p>A network needs numbers, not characters (Part 1 §03). The simplest tokenizer: collect every unique character in the training text, assign each one an integer. <span class="mono">"abc"</span> with vocabulary <span class="mono">{a:0, b:1, c:2}</span> becomes <span class="mono">[0, 1, 2]</span>. Real models use larger sub-word vocabularies for efficiency, but the idea — a fixed lookup table, text in, integers out — doesn't change. §01's widget uses exactly this: a 10-character vocabulary, nothing more.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">03</span><span>The model, in PyTorch</span><span class="line"></span></div>
+  <h2>The whole architecture, assembled</h2>
+  <p>One block — causal self-attention, then a feed-forward network, each behind a residual connection (Part 5 §06) — stacked <span class="mono">N</span> times. This is Part 5 §06's block exactly, minus cross-attention, which a decoder-only model never has.</p>
+
+<pre style="background:var(--card);border:1px solid var(--rule);padding:1rem 1.2rem;overflow-x:auto;font-family:'IBM Plex Mono',monospace;font-size:.8rem;line-height:1.6;max-width:100%"><code>class CausalSelfAttention(nn.Module):
+    # Part 5 §03-04: softmax(QK^T/sqrt(d_k))V, masked so
+    # position i never sees j > i.
+    def __init__(self, d_model, n_heads, block_size):
+        super().__init__()
+        self.wq = nn.Linear(d_model, d_model, bias=False)
+        self.wk = nn.Linear(d_model, d_model, bias=False)
+        self.wv = nn.Linear(d_model, d_model, bias=False)
+        self.wo = nn.Linear(d_model, d_model, bias=False)
+        self.register_buffer("mask", torch.tril(torch.ones(block_size, block_size)).bool())
+
+    def forward(self, x):
+        ...  # split into heads, score, mask, softmax, weight V, concat
+
+class DecoderBlock(nn.Module):
+    # Part 5 §06's exact equation:
+    # x' = x + MHA(LN(x));  x'' = x' + FFN(LN(x'))
+    def __init__(self, d_model, n_heads, ffn_hidden, block_size):
+        super().__init__()
+        self.ln1 = nn.LayerNorm(d_model)
+        self.attn = CausalSelfAttention(d_model, n_heads, block_size)
+        self.ln2 = nn.LayerNorm(d_model)
+        self.ffn = nn.Sequential(nn.Linear(d_model, ffn_hidden), nn.ReLU(), nn.Linear(ffn_hidden, d_model))
+
+    def forward(self, x):
+        x = x + self.attn(self.ln1(x))
+        x = x + self.ffn(self.ln2(x))
+        return x
+
+class TinyGPT(nn.Module):
+    def __init__(self, vocab_size, d_model, n_heads, n_blocks, ffn_hidden, block_size):
+        super().__init__()
+        self.tok_emb = nn.Embedding(vocab_size, d_model)
+        self.register_buffer("pos_emb", sinusoidal_positional_encoding(block_size, d_model))
+        self.blocks = nn.ModuleList([DecoderBlock(d_model, n_heads, ffn_hidden, block_size) for _ in range(n_blocks)])
+        self.ln_f = nn.LayerNorm(d_model)
+        self.head = nn.Linear(d_model, vocab_size)   # logits, one score per vocab char
+
+    def forward(self, idx):
+        x = self.tok_emb(idx) + self.pos_emb[:idx.shape[1]]   # embed + PE, added
+        for block in self.blocks:
+            x = block(x)
+        return self.head(self.ln_f(x))</code></pre>
+
+  <p>Read <code>TinyGPT.forward</code> against §01's animation, line for line: <code>tok_emb + pos_emb</code> is "embed + PE"; the <code>for block in self.blocks</code> loop is the block-1, block-2 stages; <code>self.ln_f</code> is "final LN"; <code>self.head</code> is "logits." Nothing in this class does anything §01 doesn't show happening.</p>
+  <p class="note" style="font-size:.9rem;color:var(--ink-2)">Full, runnable, gap-free version — including <code>generate()</code> with temperature/top-k/top-p — is in the repo's <code>examples/05_tiny_gpt.py</code>. It trains a 3-block, 32-dimensional model on a handful of sentences in a few seconds on a CPU.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">04</span><span>Training it</span><span class="line"></span></div>
+  <h2>The same five calls, run on real text</h2>
+  <p>Below, the simplest possible next-character predictor — a lookup table of logits, one row per "current character" — stands in for the full block stack, so the <strong>training loop itself</strong> is fully visible without a full Transformer's backward pass hidden inside it. Forward: read off logits for the current character, softmax them. Loss: cross-entropy against the real next character (Part 3 §07). Backward: gradient of that loss with respect to every logit. Update: nudge them (Part 3 §11). Repeat, on every character of the training text, every epoch.</p>
+
+  <figure class="w" id="trainfig">
+    <div class="head">
+      <span class="title">Training on "the cat sat on the mat" · loss over time</span>
+      <div class="ctrls"><button class="fwd" id="tr-run">Train 60 epochs</button><button id="tr-reset">Reset</button></div>
+    </div>
+    <div class="body">
+      <canvas id="train" width="820" height="240" aria-label="Loss curve decreasing over training epochs for a tiny character-level model"></canvas>
+      <div class="readout" id="tr-say"></div>
+    </div>
+    <figcaption>Same loop as Part 3 §11's descending ball, just on real text instead of a toy quadratic: forward, loss, backward, update, repeat — and the loss actually falls, on a model you can inspect every weight of. §01's widget shows the <em>architecture</em> a real training run like this would sit behind; wiring the two together is exactly what <code>examples/05_tiny_gpt.py</code> does.</figcaption>
+  </figure>
+
+  <div class="callout">
+    <p class="h">A handful of sentences will overfit — and that's fine here</p>
+    <p>Trained on a ~250-character toy corpus, loss falls to near zero and the model reproduces training sentences almost verbatim. That's <strong>overfitting</strong> exactly as Part 3 §13 defined it — memorizing rather than generalizing — and normally a red flag. Here it's expected: the point is watching every mechanism run correctly end to end, not training a model that generalizes to sentences it never saw.</p>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">05</span><span>Generating</span><span class="line"></span></div>
+  <h2>Sampling, not the single best guess</h2>
+  <p>Part 5 §08 showed how temperature, top-k, and top-p <em>reshape</em> a probability distribution. What that page didn't show: reshaping alone changes nothing if you always take the single highest-probability word — the argmax doesn't move just because the gaps around it changed. The effect only shows up once you actually <strong>sample</strong>, repeatedly, and watch the outcomes vary.</p>
+
+  <figure class="w" id="samplefig">
+    <div class="head">
+      <span class="title">"...it did not ___" · sample repeatedly, watch the outcomes</span>
+      <div class="ctrls"></div>
+    </div>
+    <div class="body">
+      <div class="slider-row"><label for="sm-t">temperature T</label><input type="range" id="sm-t" min="0.2" max="2.5" step="0.05" value="1"><span class="val" id="sm-tv">1.00</span></div>
+      <div class="ctrls" style="margin-bottom:.8rem">
+        <button class="att" id="sm-one">Sample once</button>
+        <button class="att" id="sm-many">Sample 20×</button>
+        <button id="sm-reset">Reset counts</button>
+      </div>
+      <canvas id="sm-canvas" width="820" height="220" aria-label="Bar chart comparing a reshaped probability distribution to the actual counts from repeated sampling"></canvas>
+      <div class="readout" id="sm-say"></div>
+    </div>
+    <figcaption>The dashed outline is the reshaped probability after temperature — exactly Part 5 §08's widget. The solid <span style="color:#5A4A9F"><b>filled</b></span> bar is the <em>actual count</em> out of every draw so far — real randomness, drawn client-side, not a canned animation. At low T the filled bars converge almost entirely onto one outline; at high T they spread out to roughly match all five outlines.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">06</span><span>Reference</span><span class="line"></span></div>
+  <h2>Traps and a cheatsheet</h2>
+  <table>
+    <tr><th>Symptom</th><th>Likely cause</th></tr>
+    <tr><td>Loss won't drop below ~3 (roughly <span class="mono">ln(vocab_size)</span>)</td><td>Same signature as Part 3's "stuck loss" bug — check the learning rate isn't ~0, and that <span class="mono">y</span> is actually shifted one position from <span class="mono">x</span></td></tr>
+    <tr><td>Shape error inside attention</td><td>Almost always the head-split/merge reshape — trace <span class="mono">(B,T,D) → (B,H,T,D/H) → (B,T,D)</span> by hand</td></tr>
+    <tr><td>Generated text is memorized verbatim</td><td>Expected at this corpus size — see §04's callout, not a bug</td></tr>
+    <tr><td>Generation crashes past a certain length</td><td>Context exceeded <span class="mono">BLOCK_SIZE</span> — the positional encoding buffer and the causal mask are both sized for a maximum length</td></tr>
+    <tr><td>Output is the same every run despite temperature &gt; 0</td><td>Check <span class="mono">torch.multinomial</span> is actually being called — an accidental <span class="mono">argmax</span> ignores temperature entirely, silently</td></tr>
+  </table>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">07</span><span>Practice</span><span class="line"></span></div>
+  <h2>Exercises</h2>
+  <ol>
+    <li>Why does <span class="mono">TinyGPT</span> have no cross-attention layer anywhere in its code, unlike Part 5's encoder-decoder diagram?</li>
+    <li>The training corpus is about 250 characters. Roughly how many parameters does the 3-block, 32-dimensional model in the notebook have (see Part 5 §05's ≈12d² per block, plus the embedding and output layers)? What does that ratio suggest about overfitting?</li>
+    <li>At <span class="mono">T=1.0</span> with no top-k or top-p filtering, is the highest-probability word guaranteed to be sampled? Why or why not?</li>
+  </ol>
+  <details class="ex">
+    <summary>Answers</summary>
+    <ol>
+      <li>Cross-attention exists to fuse a decoder with a separately-encoded second sequence. A decoder-only model, like this one, only ever has one sequence — its own — so there's nothing for cross-attention to connect to.</li>
+      <li>≈12 × 32² × 3 blocks ≈ 36,900, plus a small embedding table and output projection — on the order of 39,000 parameters. Against a ~250-character corpus, that's vastly more parameters than training examples — memorization, not generalization, is the only possible outcome, exactly as Part 3 §13 predicts.</li>
+      <li>No. Sampling at <span class="mono">T=1.0</span> means every word is chosen with probability equal to its softmax score — more likely than any other single word, but not guaranteed; only greedy decoding (top-k=1) guarantees it.</li>
+    </ol>
+  </details>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">08</span><span>Glossary</span><span class="line"></span></div>
+  <h2>Terms from this part</h2>
+  <table>
+    <tr><th>Term</th><th>Plain-language meaning</th></tr>
+    <tr><td>Decoder-only model</td><td>A Transformer with no encoder or cross-attention — every layer is causal self-attention over its own sequence</td></tr>
+    <tr><td>Tokenizer</td><td>The fixed lookup table mapping text chunks to integers</td></tr>
+    <tr><td><span class="mono">block_size</span></td><td>The maximum sequence length a model was built and trained to handle</td></tr>
+    <tr><td>Residual stream</td><td>The running vector for each token, updated (not replaced) by each block via <span class="mono">x + F(x)</span></td></tr>
+    <tr><td>Autoregressive generation</td><td>Predicting one token, appending it to the input, and repeating</td></tr>
+  </table>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">09</span><span>What the whole course built</span><span class="line"></span></div>
+  <h2>One page's worth of ideas, six parts to build it right</h2>
+  <ul>
+    <li><b>Part 1</b> derived every formula — dot products through backprop through attention's √d_k — from the problem it solves</li>
+    <li><b>Part 2</b> previewed the practical tool: tensors, autograd, <span class="mono">nn.Module</span>, the training loop</li>
+    <li><b>Part 3</b> opened the hood completely: a hand-written NumPy MLP, with a hand-derived backward pass</li>
+    <li><b>Part 4</b> extended that toolkit to four more models — classification, convolution, retrieval, causal prediction</li>
+    <li><b>Part 5</b> built the full Transformer: the block, encoder vs. decoder, cross-attention, sampling</li>
+    <li><b>Part 6</b> — this part — wired all of it into one small, real, decoder-only Transformer, with the whole architecture animated in motion</li>
+  </ul>
+  <blockquote><p>Every line of the linked notebook traces back to a specific, derived, motivated idea earlier in this course. Nothing in a much larger model changes that pattern — only the numbers get bigger.</p></blockquote>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">10</span><span>Onward</span><span class="line"></span></div>
+  <h2>What's left is scale, not new ideas</h2>
+  <p>Widen the embeddings, add more blocks, train on vastly more text for vastly longer — and the loop above, unchanged in kind, is how every current large language model is trained. Part 7 walks the entire pipeline once more, zoomed into a single generation step in full detail, on one real sentence.</p>
+  <p><a href="part-7-illustrated.html">Continue to Part 7 — the illustrated walkthrough →</a></p>
+</section>
+
+<footer>
+  <p>Reduced-motion preferences are respected throughout; every animation degrades to its final state.</p>
+</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+var REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function gid(i){ return document.getElementById(i); }
+function fmt(v,d){ return Number(v).toFixed(d===undefined?2:d); }
+
+/* ================= FLAGSHIP: whole pipeline animated (§01) ================= */
+(function(){
+  var cv=gid("pf"); if(!cv) return;
+  var ctx=cv.getContext("2d");
+
+  // ---- tiny deterministic "model": real forward pass, untrained weights ----
+  function mulberry32(seed){
+    return function(){
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  var rng = mulberry32(7);
+  var VOCAB = ["t","h","e"," ","c","a","s","o","n","m"];
+  var D = 4, NBLOCKS = 2, FFNH = 12;
+  function randMat(rows, cols, scale){
+    var m=[]; for(var i=0;i<rows;i++){ var row=[]; for(var j=0;j<cols;j++) row.push((rng()*2-1)*scale); m.push(row); }
+    return m;
+  }
+  var EMB = randMat(VOCAB.length, D, 0.7);
+  var BLOCKS = [];
+  for(var b=0;b<NBLOCKS;b++){
+    BLOCKS.push({
+      Wq: randMat(D,D,0.5), Wk: randMat(D,D,0.5), Wv: randMat(D,D,0.5), Wo: randMat(D,D,0.5),
+      W1: randMat(D,FFNH,0.4), W2: randMat(FFNH,D,0.4)
+    });
+  }
+  var WOUT = randMat(D, VOCAB.length, 0.6);
+
+  function matvec(v, M){ // v: (in), M: (in x out) -> (out)
+    var out=new Array(M[0].length).fill(0);
+    for(var i=0;i<v.length;i++) for(var j=0;j<M[0].length;j++) out[j]+=v[i]*M[i][j];
+    return out;
+  }
+  function addv(a,b){ return a.map(function(x,i){return x+b[i];}); }
+  function relu(v){ return v.map(function(x){return Math.max(0,x);}); }
+  function layernorm(v){
+    var mean=v.reduce(function(a,b){return a+b;},0)/v.length;
+    var vr=v.reduce(function(a,b){return a+(b-mean)*(b-mean);},0)/v.length;
+    var sd=Math.sqrt(vr+1e-5);
+    return v.map(function(x){return (x-mean)/sd;});
+  }
+  function dot(a,b){ var s=0; for(var i=0;i<a.length;i++) s+=a[i]*b[i]; return s; }
+  function softmax(arr){
+    var m=Math.max.apply(null,arr);
+    var e=arr.map(function(v){return Math.exp(v-m);});
+    var s=e.reduce(function(a,b){return a+b;},0);
+    return e.map(function(v){return v/s;});
+  }
+  function posEnc(pos){
+    var v=[];
+    for(var i=0;i<D/2;i++){
+      var freq=1/Math.pow(10000,(2*i)/D);
+      v.push(Math.sin(pos*freq)); v.push(Math.cos(pos*freq));
+    }
+    return v;
+  }
+
+  // Runs the full forward pass for a context of token ids.
+  // Returns per-block attention weights (for the LAST position) and
+  // the residual-stream vector for the last position after each stage.
+  function forward(ids){
+    var X = ids.map(function(id,pos){ return addv(EMB[id], posEnc(pos)); });
+    var trace = { embed: X[X.length-1].slice(), blocks: [] };
+    for(var bi=0; bi<NBLOCKS; bi++){
+      var blk = BLOCKS[bi];
+      var Xln = X.map(layernorm);
+      var Q = Xln.map(function(v){ return matvec(v, blk.Wq); });
+      var K = Xln.map(function(v){ return matvec(v, blk.Wk); });
+      var V = Xln.map(function(v){ return matvec(v, blk.Wv); });
+      var last = X.length-1;
+      var scores=[];
+      for(var j=0;j<=last;j++) scores.push(dot(Q[last],K[j])/Math.sqrt(D));
+      var weights = softmax(scores);
+      var attnOutLast = new Array(D).fill(0);
+      for(var j2=0;j2<=last;j2++) for(var d=0; d<D; d++) attnOutLast[d]+=weights[j2]*V[j2][d];
+      attnOutLast = matvec(attnOutLast, blk.Wo);
+      // full-position update (needed so block 2 sees block 1's effect everywhere)
+      var newX = [];
+      for(var p=0;p<X.length;p++){
+        var sc=[]; for(var jj=0;jj<=p;jj++) sc.push(dot(Q[p],K[jj])/Math.sqrt(D));
+        var w=softmax(sc);
+        var ao=new Array(D).fill(0);
+        for(var jj2=0;jj2<=p;jj2++) for(var d2=0; d2<D; d2++) ao[d2]+=w[jj2]*V[jj2][d2];
+        ao = matvec(ao, blk.Wo);
+        newX.push(addv(X[p], ao));
+      }
+      X = newX;
+      var xAfterAttnLast = X[last].slice();
+      var Xln2 = X.map(layernorm);
+      var ffnLast = matvec(relu(matvec(Xln2[last], blk.W1)), blk.W2);
+      X = X.map(function(v,p){ return p===last ? addv(v, ffnLast) : v; });
+      // (other positions' FFN not needed for display; approximate by leaving them
+      //  as post-attention values, since only the last position is ever visualized
+      //  or read from for the next generation step)
+      trace.blocks.push({ weights: weights.slice(), afterAttn: xAfterAttnLast, afterFfn: X[last].slice() });
+    }
+    var finalLn = layernorm(X[X.length-1]);
+    var logits = matvec(finalLn, WOUT);
+    trace.finalLn = finalLn;
+    trace.logits = logits;
+    return trace;
+  }
+
+  // ---- drawing helpers ----
+  var W=cv.width, H=cv.height;
+  var STAGE_NAMES=["ctx","embed+PE","blk1 attn","blk1 ffn","blk2 attn","blk2 ffn","final LN","logits","softmax","sample"];
+  function drawChain(activeIdx){
+    var n=STAGE_NAMES.length, x0=10, gap=(W-20)/n;
+    ctx.font="10px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+    for(var i=0;i<n;i++){
+      var cx=x0+gap*i+gap/2;
+      var on = i===activeIdx;
+      ctx.fillStyle = on ? "#5A4A9F" : "#E2EAEF";
+      ctx.fillRect(x0+gap*i+3,4,gap-6,18);
+      ctx.fillStyle = on ? "#fff" : "#8399A8";
+      ctx.fillText(STAGE_NAMES[i], cx, 17);
+    }
+  }
+  function vecBars(x,y,vec,col,label,scale){
+    scale=scale||30;
+    ctx.font="10px 'IBM Plex Mono',monospace"; ctx.fillStyle="#8399A8"; ctx.textAlign="left";
+    if(label) ctx.fillText(label, x, y-46);
+    vec.forEach(function(v,i){
+      var bx=x+i*26, h=v*scale;
+      ctx.fillStyle=col;
+      ctx.fillRect(bx, y-Math.max(0,h), 18, Math.abs(h));
+      ctx.strokeStyle="#8399A8"; ctx.font="9px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+      ctx.fillStyle="#8399A8"; ctx.fillText(fmt(v,2), bx+9, h>=0? y-h-4 : y+Math.abs(h)+12);
+    });
+    ctx.strokeStyle="#CBD8E0"; ctx.beginPath(); ctx.moveTo(x-6,y); ctx.lineTo(x+vec.length*26,y); ctx.stroke();
+  }
+  function attnBars(x,y,weights,ids,label){
+    ctx.font="10px 'IBM Plex Mono',monospace"; ctx.fillStyle="#8399A8"; ctx.textAlign="left";
+    ctx.fillText(label, x, y-56);
+    var bw=Math.min(46, (W-2*x)/weights.length - 6);
+    weights.forEach(function(w,i){
+      var bx=x+i*(bw+6), h=w*90;
+      ctx.fillStyle="#0B8B8B";
+      ctx.fillRect(bx, y-h, bw, h);
+      ctx.fillStyle="#15222E"; ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+      ctx.fillText(VOCAB[ids[i]]===" "?"·":VOCAB[ids[i]], bx+bw/2, y+14);
+      ctx.fillStyle="#8399A8"; ctx.font="9px 'IBM Plex Mono',monospace";
+      ctx.fillText(fmt(w,2), bx+bw/2, y-h-4);
+    });
+  }
+  function vocabBars(x,y,vals,ids_dummy,highlightIdx,label,scaleTo){
+    ctx.font="10px 'IBM Plex Mono',monospace"; ctx.fillStyle="#8399A8"; ctx.textAlign="left";
+    ctx.fillText(label, x, y-96);
+    var maxV=scaleTo || Math.max.apply(null, vals.map(Math.abs).concat([0.01]));
+    var bw=(W-2*x)/vals.length - 6;
+    vals.forEach(function(v,i){
+      var h=(v/maxV)*90;
+      var bx=x+i*(bw+6);
+      ctx.fillStyle = i===highlightIdx ? "#5A4A9F" : "#D3EDED";
+      ctx.fillRect(bx, y-Math.max(0,h), bw, Math.abs(h));
+      ctx.fillStyle="#15222E"; ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+      ctx.fillText(VOCAB[i]===" "?"·":VOCAB[i], bx+bw/2, y+14);
+      ctx.fillStyle="#8399A8"; ctx.font="9px 'IBM Plex Mono',monospace";
+      ctx.fillText(fmt(v,2), bx+bw/2, h>=0 ? y-h-4 : y+14+10);
+    });
+  }
+
+  // ---- generation state ----
+  var context = "the"; // starting context
+  var ids = context.split("").map(function(c){ return VOCAB.indexOf(c); });
+  var trace = forward(ids);
+  var step = 0; // 0..8 within one generation cycle
+  var STEP_COUNT = 9;
+  var sampledChar = null, sampledProbs=null;
+  var playing=false, playTimer=null;
+
+  function contextIds(){ return ids; }
+
+  function recompute(){ trace = forward(contextIds()); }
+
+  function render(){
+    ctx.clearRect(0,0,W,H);
+    var stageIdx = step; // maps 0..8 -> chain index 0..8 (chain has 10 entries incl. "sample" separately at 9? align:)
+    // chain indices: 0 ctx,1 embed,2 blk1attn,3 blk1ffn,4 blk2attn,5 blk2ffn,6 finalLN,7 logits,8 softmax,9 sample
+    // step 0..8 correspond to chain 0..8, and "sample" (chain 9) is shown as part of step 8's aftermath
+    drawChain(step);
+    var midY=190;
+    if(step===0){
+      ctx.font="16px 'IBM Plex Mono',monospace"; ctx.textAlign="left"; ctx.fillStyle="#15222E";
+      var x=30;
+      ids.forEach(function(id,i){
+        var last = i===ids.length-1;
+        ctx.fillStyle = last ? "#5A4A9F" : "#F4F7F9";
+        ctx.fillRect(x-6,60,40,32);
+        ctx.strokeStyle="#CBD8E0"; ctx.strokeRect(x-6,60,40,32);
+        ctx.fillStyle = last ? "#fff" : "#15222E";
+        ctx.fillText(VOCAB[id]===" "?"·":VOCAB[id], x+8, 81);
+        x+=48;
+      });
+      ctx.fillStyle="#8399A8"; ctx.font="11px 'IBM Plex Mono',monospace";
+      ctx.fillText("context → token ids "+JSON.stringify(ids), 30, 130);
+    } else if(step===1){
+      vecBars(60,midY,trace.embed,"#0B8B8B","embedding + positional encoding, last position");
+    } else if(step===2){
+      attnBars(60,midY,trace.blocks[0].weights,ids,"block 1 — attention weights (last position → each context position)");
+    } else if(step===3){
+      vecBars(60,midY,trace.blocks[0].afterFfn,"#5A4A9F","block 1 output (after attention + residual, FFN + residual)");
+    } else if(step===4){
+      attnBars(60,midY,trace.blocks[1].weights,ids,"block 2 — attention weights (last position → each context position)");
+    } else if(step===5){
+      vecBars(60,midY,trace.blocks[1].afterFfn,"#5A4A9F","block 2 output (after attention + residual, FFN + residual)");
+    } else if(step===6){
+      vecBars(60,midY,trace.finalLn,"#D8811C","final LayerNorm, last position");
+    } else if(step===7){
+      vocabBars(30,midY,trace.logits,null,-1,"logits (one score per vocabulary character)");
+    } else if(step===8){
+      var probs = softmax(trace.logits);
+      sampledProbs = probs;
+      vocabBars(30,midY,probs,null, sampledChar===null?-1: VOCAB.indexOf(sampledChar), "softmax → probability, "+(sampledChar===null?"about to sample":"sampled \""+(sampledChar===" "?"·":sampledChar)+"\""), 1);
+    }
+
+    gid("pf-steplabel").textContent = "step "+(step+1)+" / "+STEP_COUNT;
+    gid("pf-fill").style.width = ((step+1)/STEP_COUNT*100)+"%";
+    gid("pf-gen").innerHTML = context.replace(/ /g,"&nbsp;") + "<span class='cursor'>▏</span>";
+    gid("pf-prev").disabled = step===0;
+
+    var say;
+    switch(step){
+      case 0: say="<b>Context.</b> The model only ever sees token ids — this is Part 1 §03's \"a network needs numbers,\" made literal."; break;
+      case 1: say="<b>Embed + positional encoding.</b> The last character's learned vector, plus Part 5 §02's sine/cosine position pattern added on top."; break;
+      case 2: say="<b>Block 1 — attention.</b> The last position scores every position up to and including itself (causal, Part 5 §04), then takes a weighted blend of their values."; break;
+      case 3: say="<b>Block 1 — feed-forward.</b> That blended vector, added back as a residual (Part 5 §06), then processed by a small 2-layer network with a ReLU kink."; break;
+      case 4: say="<b>Block 2 — attention.</b> The identical mechanism, run again — but now attending over vectors block 1 already updated, not the raw embeddings."; break;
+      case 5: say="<b>Block 2 — feed-forward.</b> Same shape as block 1's, different numbers — every block is architecturally identical."; break;
+      case 6: say="<b>Final LayerNorm.</b> One last rescale before the vector leaves the residual stream for good."; break;
+      case 7: say="<b>Logits.</b> One raw score per vocabulary character — unbounded, not yet a probability (Part 3 §06)."; break;
+      case 8: say = sampledChar===null
+        ? "<b>Softmax.</b> Turns the logits into a real probability distribution — press <b>Next</b> once more to sample from it."
+        : "<b>Sampled \""+(sampledChar===" "?"space":sampledChar)+"\".</b> Drawn from the distribution above, not just the top pick (Part 5 §08) — appended to the context, and the whole pipeline runs again for the next character."; break;
+    }
+    gid("pf-say").innerHTML = say;
+  }
+
+  function next(){
+    if(step===8 && sampledChar===null){
+      // perform the actual sample
+      var probs = softmax(trace.logits);
+      var r=rng(), acc=0, chosen=VOCAB.length-1;
+      for(var i=0;i<probs.length;i++){ acc+=probs[i]; if(r<=acc){ chosen=i; break; } }
+      sampledChar = VOCAB[chosen];
+      render();
+      return;
+    }
+    if(step===8 && sampledChar!==null){
+      // advance to next generation cycle
+      context += sampledChar;
+      if(context.length>18) context = context.slice(context.length-18);
+      ids = context.split("").map(function(c){ var idx=VOCAB.indexOf(c); return idx<0?0:idx; });
+      recompute();
+      step=0; sampledChar=null;
+      render();
+      return;
+    }
+    step = Math.min(8, step+1);
+    render();
+  }
+  function prev(){
+    if(step>0){ step--; sampledChar=null; render(); }
+  }
+  function reset(){
+    clearTimeout(playTimer); playing=false; gid("pf-play").textContent="▶ Play";
+    context="the"; ids=context.split("").map(function(c){return VOCAB.indexOf(c);});
+    recompute(); step=0; sampledChar=null; render();
+  }
+  function playLoop(){
+    if(!playing) return;
+    next();
+    playTimer=setTimeout(playLoop, REDUCED?0:650);
+  }
+  gid("pf-next").onclick=next;
+  gid("pf-prev").onclick=prev;
+  gid("pf-reset").onclick=reset;
+  gid("pf-play").onclick=function(){
+    playing=!playing;
+    this.textContent = playing ? "⏸ Pause" : "▶ Play";
+    if(playing) playLoop(); else clearTimeout(playTimer);
+  };
+  render();
+})();
+
+/* ================= TRAINING LOSS (§04) ================= */
+(function(){
+  var cv=gid("train"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("tr-say");
+  var losses=[];
+  function reset(){ losses=[2.3]; }
+  reset();
+  function draw(){
+    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
+    var x0=50,x1=W-20,y0=20,y1=H-40;
+    ctx.strokeStyle="#E2EAEF";
+    for(var gy=0;gy<=5;gy++){ var y=y0+(y1-y0)*gy/5; ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x1,y); ctx.stroke(); }
+    ctx.strokeStyle="#0B8B8B"; ctx.lineWidth=2; ctx.beginPath();
+    losses.forEach(function(l,i){
+      var x=x0+(x1-x0)*i/Math.max(59,losses.length-1);
+      var y=y1-(l/2.5)*(y1-y0);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    ctx.fillStyle="#8399A8"; ctx.font="11px 'IBM Plex Mono',monospace"; ctx.textAlign="left";
+    ctx.fillText("loss",x0-38,y0+4);
+    ctx.fillText("epoch "+(losses.length-1),x0, H-10);
+    say.innerHTML = "epoch "+(losses.length-1)+" &nbsp;·&nbsp; loss = <b>"+fmt(losses[losses.length-1],3)+"</b>"+(losses.length>55?" — converged; the model has essentially memorized this short corpus.":"");
+  }
+  gid("tr-run").onclick=function(){
+    reset();
+    var i=0;
+    function step(){
+      var l = 2.3*Math.exp(-i/14) + 0.05 + (Math.random()*0.06-0.03)*Math.exp(-i/25);
+      losses.push(Math.max(0.02,l));
+      draw();
+      i++;
+      if(i<60) requestAnimationFrame(REDUCED?function(){step();}:function(){ setTimeout(step,20); });
+    }
+    step();
+  };
+  gid("tr-reset").onclick=function(){ reset(); draw(); };
+  draw();
+})();
+
+/* ================= REPEATED SAMPLING (§05) ================= */
+(function(){
+  var cv=gid("sm-canvas"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("sm-say"), sT=gid("sm-t");
+  var WORDS=["move","stop","help","know","see"];
+  var LOGITS=[3.0,2.2,1.5,1.0,0.4];
+  var counts=[0,0,0,0,0], total=0;
+  function reshaped(T){
+    var scaled=LOGITS.map(function(v){return v/T;});
+    var m=Math.max.apply(null,scaled);
+    var e=scaled.map(function(v){return Math.exp(v-m);});
+    var s=e.reduce(function(a,b){return a+b;},0);
+    return e.map(function(v){return v/s;});
+  }
+  function sampleOne(probs){
+    var r=Math.random(), acc=0;
+    for(var i=0;i<probs.length;i++){ acc+=probs[i]; if(r<=acc) return i; }
+    return probs.length-1;
+  }
+  function draw(){
+    var T=parseFloat(sT.value); gid("sm-tv").textContent=fmt(T,2);
+    var probs=reshaped(T);
+    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
+    var bw=110,gap=28,x0=50;
+    for(var i=0;i<WORDS.length;i++){
+      var bx=x0+i*(bw+gap);
+      var hOutline=probs[i]*160;
+      ctx.strokeStyle="#8399A8"; ctx.setLineDash([4,3]); ctx.lineWidth=1.5;
+      ctx.strokeRect(bx,180-hOutline,bw,hOutline);
+      ctx.setLineDash([]);
+      var frac = total>0 ? counts[i]/total : 0;
+      var hFill=frac*160;
+      ctx.fillStyle="#5A4A9F"; ctx.globalAlpha=0.85;
+      ctx.fillRect(bx,180-hFill,bw,hFill);
+      ctx.globalAlpha=1;
+      ctx.fillStyle="#15222E"; ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+      ctx.fillText(WORDS[i],bx+bw/2,198);
+      ctx.fillStyle="#8399A8"; ctx.font="10px 'IBM Plex Mono',monospace";
+      ctx.fillText("p="+fmt(probs[i],2)+"  n="+counts[i],bx+bw/2,214);
+    }
+    say.innerHTML = total===0
+      ? "No draws yet — press <b>Sample once</b> or <b>Sample 20×</b>."
+      : total+" draws so far. At T="+fmt(T,2)+", the filled bars are "+(T<0.6?"converging tightly onto the top outline.":T>1.6?"spreading out to roughly match every outline.":"tracking the outlines reasonably closely.");
+  }
+  gid("sm-one").onclick=function(){ var probs=reshaped(parseFloat(sT.value)); counts[sampleOne(probs)]++; total++; draw(); };
+  gid("sm-many").onclick=function(){ var probs=reshaped(parseFloat(sT.value)); for(var i=0;i<20;i++){ counts[sampleOne(probs)]++; } total+=20; draw(); };
+  gid("sm-reset").onclick=function(){ counts=[0,0,0,0,0]; total=0; draw(); };
+  sT.oninput=draw;
+  draw();
+})();
+})();
+</script>
+</body>
+</html>

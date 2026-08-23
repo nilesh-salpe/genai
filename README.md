@@ -7,11 +7,11 @@ A free, self-contained interactive course. No calculus, linear algebra, or ML ba
 ## What's here
 
 - **`concept/`** — the course itself, deployed to GitHub Pages on every push to `main` (`.github/workflows/pages.yml`), no build step. Every page is a single self-contained HTML file — inline styles, inline scripts, no dependencies beyond Google Fonts.
-  - `index.html` — landing page
-  - `part-0-foundations.html` … `part-6-build-gpt.html` — the seven numbered parts, in order
-  - `bonus-curve-fitting.html`, `bonus-transformer-lab.html`, `bonus-transformer-illustrated.html` — standalone interactive sandboxes
-  - `references.html` — further reading
-  - `code/`, `examples/` — the Python/notebook implementations Part 3 and Part 6 link out to
+  - `index.html` — landing page for the current course (nine parts, Part 0 through Part 8)
+  - `part-0-big-picture.html` … `part-8-references.html` — the nine numbered parts, in order
+  - `code/`, `examples/` — the Python/notebook implementations several parts link out to
+  - `drafts/` — markdown drafts for course content, written before conversion to HTML
+  - `v1/` — the original single-track version of the course (seven parts), archived but still live at `/v1/` for anyone with existing links; cross-linked with the current version from both landing pages
 - **`notebooks/`** — unrelated reference notebooks (annotated Transformer, attention visualization), not part of the course flow
 
 ## Running locally

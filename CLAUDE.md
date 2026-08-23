@@ -4,10 +4,11 @@ This repo hosts **"Neural networks and transformers, built from scratch"** — a
 
 ## Structure
 
-- `concept/index.html` — landing page, one card per part/sandbox.
-- `concept/part-0-foundations.html` … `part-6-build-gpt.html` — the seven numbered parts, in order.
-- `concept/bonus-curve-fitting.html`, `bonus-transformer-lab.html`, `bonus-transformer-illustrated.html` — standalone interactive sandboxes, linked from the same nav.
-- `concept/code/`, `concept/examples/` — the Python/notebook implementations Part 3 and Part 6 link out to.
+- `concept/index.html` — landing page for the current course, one card per part.
+- `concept/part-0-big-picture.html` … `part-8-references.html` — the nine numbered parts, in order (0 Big Picture, 1 Foundations, 2 PyTorch, 3 Neural Network, 4 Build Neural Networks, 5 Transformer Architecture, 6 LLM, 7 Illustrated, 8 References).
+- `concept/code/`, `concept/examples/` — the Python/notebook implementations several parts link out to.
+- `concept/drafts/` — markdown drafts of course content, written and reviewed before conversion to HTML. When adding a new part or a substantial rewrite, draft it here first.
+- `concept/v1/` — the original seven-part single-track version of the course, archived but still deployed live at `/v1/` (not deleted — existing links to it must keep working). Cross-linked with the current course from both landing pages ("See v1" / "try v2"). Treat `v1/` as frozen: fix only broken links or build-breaking issues there, don't extend its content — new work goes into the numbered parts at `concept/` root.
 - `notebooks/` — unrelated reference notebooks (annotated Transformer, attention visualization), not part of the course flow.
 
 Every course page is a single self-contained HTML file: inline `<style>`, inline `<script>`, no dependencies beyond Google Fonts. Open any file directly in a browser or serve `concept/` with `python3 -m http.server`. New pages should follow the same pattern — copy the `<style>` block and canvas/SVG widget conventions from an existing part rather than introducing a new design system or a build step.

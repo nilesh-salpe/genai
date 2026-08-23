@@ -73,16 +73,17 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
 <nav class="progress" aria-label="Course progress">
   <a href="part-0-big-picture.html">0 · Big Picture</a>
   <a href="part-1-foundations.html">1 · Foundations</a>
-  <a href="part-2-neural-network.html">2 · Neural Network</a>
-  <a href="part-3-examples.html">3 · Examples</a>
-  <a href="part-4-attention.html">4 · Attention</a>
-  <a href="part-5-transformer.html">5 · Transformer</a>
+  <a href="part-2-pytorch.html">2 · PyTorch</a>
+  <a href="part-3-neural-network.html">3 · Neural Network</a>
+  <a href="part-4-build-neural-networks.html">4 · Build NNs</a>
+  <a href="part-5-transformer-architecture.html">5 · Transformer Arch.</a>
   <a href="part-6-llm.html">6 · LLM</a>
   <a href="part-7-illustrated.html" class="here">7 · Illustrated</a>
+  <a href="part-8-references.html">8 · References</a>
 </nav>
 
 <header class="top">
-  <p class="kicker">v2 · part seven of seven · the capstone</p>
+  <p class="kicker">v2 · part seven of nine · the capstone</p>
   <h1>One sentence, <em>start to finish</em></h1>
   <p class="standfirst">Everything from Parts 1–6, run once on a single real sentence, one step at a time. Nothing here is new — every step names the part that built it. Step through with Next/Previous, or press Play.</p>
 </header>
@@ -193,35 +194,35 @@ var STEPS=[
     say:"Each id becomes a learned vector — three numbers standing in for the token's meaning. Bars below zero and above zero both matter; this is Part 1 §3's \"a vector is a filled-in form,\" now with learned entries.",
     render:function(){ clear(); TOKENS.forEach(function(t,i){ tok(120+i*140,50,t,"#F4F7F9"); ctx.strokeStyle="#8399A8"; ctx.beginPath(); ctx.moveTo(120+i*140,66); ctx.lineTo(120+i*140,110); ctx.stroke(); vecBars(100+i*140,150,EMB[i],"#0B8B8B"); }); } },
 
-  { label:"Add position", part:"Part 4 §5",
-    say:"Attention alone can't tell order (Part 4 §5) — a small fixed sine/cosine pattern, different per position, is added to each embedding so \"cat sat the\" and \"the cat sat\" don't look identical to the model.",
+  { label:"Add position", part:"Part 5 §02",
+    say:"Attention alone can't tell order (Part 5 §02) — a small fixed sine/cosine pattern, different per position, is added to each embedding so \"cat sat the\" and \"the cat sat\" don't look identical to the model.",
     render:function(){ clear(); TOKENS.forEach(function(t,i){ tok(120+i*140,40,t,"#F4F7F9"); vecBars(100+i*140,110,EMB[i],"#0B8B8B"); ctx.fillStyle="#8399A8"; ctx.font="16px serif"; ctx.fillText("+",120+i*140,135); vecBars(100+i*140,175,POS[i],"#D8811C"); ctx.fillStyle="#8399A8"; ctx.font="16px serif"; ctx.fillText("↓",120+i*140,195); var sum=EMB[i].map(function(v,k){return v+POS[i][k];}); vecBars(100+i*140,250,sum,"#5A4A9F"); }); } },
 
-  { label:"Self-attention: scores", part:"Part 4 §1",
-    say:"\"Sat\" asks a query; every token's key gets scored against it via a dot product, scaled by √d_k (Part 4 §2) — Part 1 §4's \"agreement\" measure, computed for every pair at once.",
+  { label:"Self-attention: scores", part:"Part 5 §03",
+    say:"\"Sat\" asks a query; every token's key gets scored against it via a dot product, scaled by √d_k (Part 5 §03) — Part 1 §4's \"agreement\" measure, computed for every pair at once.",
     render:function(){ clear(); var scores=K.map(function(k){ return (Q[2][0]*k[0]+Q[2][1]*k[1])/Math.sqrt(2); }); bars(60,40,W-120,180,TOKENS,scores.map(function(s){return s+2;}),2); ctx.fillStyle="#8399A8"; ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="left"; ctx.fillText("raw scores for query = \"sat\" (shifted for display; only gaps matter)",40,20); } },
 
-  { label:"Self-attention: softmax", part:"Part 2 §2 · Part 4 §1",
-    say:"Softmax turns those scores into a proper probability distribution — Part 2 §2's exact formula, reused unchanged. \"Sat\" ends up attending to itself and \"cat\" more than \"the.\"",
+  { label:"Self-attention: softmax", part:"Part 3 §02 · Part 5 §03",
+    say:"Softmax turns those scores into a proper probability distribution — Part 3 §02's exact formula, reused unchanged. \"Sat\" ends up attending to itself and \"cat\" more than \"the.\"",
     render:function(){ clear(); bars(60,40,W-120,180,TOKENS,wRow,wRow.indexOf(Math.max.apply(null,wRow))); ctx.fillStyle="#8399A8"; ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="left"; ctx.fillText("attention weights (sum to 1.00)",40,20); } },
 
-  { label:"Self-attention: weighted sum", part:"Part 3 §3 · Part 4 §1",
-    say:"Multiply those weights into each token's value and add — Part 3 §3's retrieval widget, run for real. \"Sat\"'s new representation is a blend of every token's value, weighted by how much it matched.",
+  { label:"Self-attention: weighted sum", part:"Part 4 §03 · Part 5 §03",
+    say:"Multiply those weights into each token's value and add — Part 4 §03's retrieval widget, run for real. \"Sat\"'s new representation is a blend of every token's value, weighted by how much it matched.",
     render:function(){ clear(); TOKENS.forEach(function(t,i){ ctx.fillStyle="#8399A8"; ctx.font="13px 'IBM Plex Mono',monospace"; ctx.textAlign="left"; ctx.fillText(fmt(wRow[i],2)+" × value("+t+" = "+V[i]+")"+(i<2?"  +":"  ="),60,60+i*30); }); ctx.fillStyle="#5A4A9F"; ctx.font="20px 'IBM Plex Mono',monospace"; ctx.fillText(fmt(attnOut,2),60,60+3*30+10); } },
 
-  { label:"Residual + LayerNorm", part:"Part 2 §6 · Part 5 §1",
-    say:"The attention output is added back to \"sat\"'s original vector (Part 2 §6's fix for vanishing gradients), then rescaled to a stable mean and spread (LayerNorm) before the next stage sees it.",
+  { label:"Residual + LayerNorm", part:"Part 3 §06 · Part 5 §06",
+    say:"The attention output is added back to \"sat\"'s original vector (Part 3 §06's fix for vanishing gradients), then rescaled to a stable mean and spread (LayerNorm) before the next stage sees it.",
     render:function(){ clear(); vecBars(160,110,EMB[2],"#0B8B8B"); ctx.fillStyle="#8399A8"; ctx.font="18px serif"; ctx.fillText("+",280,105); vecBars(320,110,[attnOut*0.3,attnOut*0.2,attnOut*0.1],"#5A4A9F"); ctx.fillStyle="#8399A8"; ctx.font="18px serif"; ctx.fillText("→",460,105); vecBars(520,110,[0.3,-0.4,0.2],"#D8811C"); ctx.fillStyle="#8399A8"; ctx.font="11px 'IBM Plex Mono',monospace"; ctx.fillText("normalized",500,140); } },
 
-  { label:"Feed-forward + residual", part:"Part 2 §1 · Part 5 §1",
-    say:"A small two-layer network with a kink in the middle (Part 2 §1's exact machine) processes each position independently, wrapped in its own residual connection — the second half of one Transformer block.",
+  { label:"Feed-forward + residual", part:"Part 3 §01 · Part 5 §06",
+    say:"A small two-layer network with a kink in the middle (Part 3 §01's exact machine) processes each position independently, wrapped in its own residual connection — the second half of one Transformer block.",
     render:function(){ clear(); ctx.fillStyle="#8399A8"; ctx.font="13px 'IBM Plex Mono',monospace"; ctx.textAlign="center"; ctx.fillText("x → Linear → ReLU → Linear → +x",W/2,150); ctx.strokeStyle="#5A4A9F"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(150,180); ctx.lineTo(650,180); ctx.stroke(); } },
 
-  { label:"Project to vocabulary", part:"Part 2 §2 · Part 6 §3",
+  { label:"Project to vocabulary", part:"Part 3 §02 · Part 6 §3",
     say:"After N blocks (just one, here), a final linear layer scores every vocabulary word, and softmax turns those logits into a real probability distribution over what comes next.",
     render:function(){ clear(); bars(40,40,W-80,180,VOCAB,FINAL_PROBS,FINAL_PROBS.indexOf(Math.max.apply(null,FINAL_PROBS))); ctx.fillStyle="#8399A8"; ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="left"; ctx.fillText("P(next word | \"the cat sat\")",40,20); } },
 
-  { label:"Sample and continue", part:"Part 5 §3 · Part 6 §5",
+  { label:"Sample and continue", part:"Part 5 §08 · Part 6 §5",
     say:"One word is drawn from that distribution — here, \"mat\" — and appended: \"the cat sat mat\"… run the whole pipeline again for the word after that. This loop, repeated, is text generation.",
     render:function(){ clear(); ["the","cat","sat"].concat(["mat"]).forEach(function(t,i){ tok(90+i*110,60,t,i===3?"#E2DDF2":"#F4F7F9"); }); ctx.fillStyle="#5A4A9F"; ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="center"; ctx.fillText("newly sampled",90+3*110,95); ctx.strokeStyle="#CBD8E0"; ctx.setLineDash([4,3]); ctx.beginPath(); ctx.moveTo(60,130); ctx.lineTo(W-60,130); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle="#8399A8"; ctx.textAlign="left"; ctx.fillText("↻ feed this whole sequence back into step 1, predict the next word after \"mat\"",60,160); } }
 ];

@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SPR2FRFBQ1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SPR2FRFBQ1');
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLMs From Scratch v2 — Transformer Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF2F5; --card:#FFFFFF; --ink:#15222E; --ink-2:#4B5F6E; --ink-3:#8399A8; --rule:#CBD8E0;
+  --fwd:#0B8B8B; --fwd-soft:#D3EDED;
+  --back:#D8811C; --back-soft:#F8E7CE;
+  --loss:#B31E55; --loss-soft:#F7DDE7;
+  --attn:#5A4A9F; --attn-soft:#E2DDF2;
+  --measure:34rem; --wide:52rem;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background-color:var(--paper);
+  background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);
+  background-size:28px 28px;background-position:-1px -1px;
+  color:var(--ink);font-family:"Spectral",Georgia,serif;font-size:17px;line-height:1.68}
+body::before{content:"";position:fixed;inset:0;background:var(--paper);opacity:.82;pointer-events:none;z-index:0}
+.shell{position:relative;z-index:1;max-width:var(--wide);margin:0 auto;padding:0 1.25rem 6rem}
+h1,h2,h3,.eyebrow,.ui,button,input,label,table{font-family:"Space Grotesk",system-ui,sans-serif}
+code,.mono,.eq{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+header.top{padding:4.5rem 0 2rem;max-width:var(--measure)}
+.kicker{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 1.4rem}
+h1{font-size:clamp(2rem,5.6vw,3.2rem);line-height:1.03;letter-spacing:-.03em;font-weight:700;margin:0 0 1.1rem}
+h1 em{font-style:normal;color:var(--attn)}
+.standfirst{font-size:1.12rem;color:var(--ink-2);margin:0 0 2rem}
+.progress{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin:0 0 3rem;padding:.85rem .95rem;background:var(--card);border:1px solid var(--rule);font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.02em;max-width:var(--wide)}
+.progress a{color:var(--ink-2);text-decoration:none;padding:.28rem .6rem;border:1px solid var(--rule);border-radius:2px;white-space:nowrap;transition:border-color .15s,background .15s,color .15s}
+.progress a:hover{border-color:var(--ink);color:var(--ink)}
+.progress a.here{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+section{margin:4.5rem 0 0}
+.eyebrow{display:flex;align-items:baseline;gap:.85rem;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.5rem}
+.eyebrow .num{font-family:"IBM Plex Mono",monospace;color:var(--attn);font-weight:600}
+.eyebrow .line{flex:1;height:1px;background:var(--rule)}
+h2{font-size:clamp(1.4rem,3.4vw,1.95rem);line-height:1.15;letter-spacing:-.02em;margin:.1rem 0 1.1rem;font-weight:700;max-width:var(--measure)}
+h3{font-size:1.05rem;letter-spacing:-.01em;margin:2.2rem 0 .6rem;font-weight:600}
+p{margin:0 0 1.1rem;max-width:var(--measure)}
+ul,ol{max-width:var(--measure);padding-left:1.15rem;margin:0 0 1.1rem}
+li{margin-bottom:.4rem}
+strong{font-weight:600}
+blockquote{margin:1.6rem 0;padding:.2rem 0 .2rem 1.3rem;border-left:3px solid var(--attn);max-width:var(--measure);font-size:1.04rem}
+.eq{display:block;margin:1.4rem 0;padding:.9rem 1.1rem;background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--attn);font-size:.95rem;overflow-x:auto;max-width:var(--measure);white-space:nowrap}
+.eq.hero{font-size:1.05rem}
+.eq.wide{max-width:100%}
+table{border-collapse:collapse;width:100%;max-width:var(--wide);margin:1.4rem 0;font-size:.86rem}
+th,td{text-align:left;padding:.55rem .7rem;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:600;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--ink-3)}
+figure.w{margin:2.5rem 0;background:var(--card);border:1px solid var(--rule);max-width:var(--wide)}
+figure.w.hero{border-color:var(--attn)}
+figure.w .head{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.7rem 1.1rem;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+figure.w .title{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+figure.w .body{padding:1.2rem 1.1rem}
+figure.w figcaption{padding:.75rem 1.1rem 1rem;font-size:.85rem;color:var(--ink-2);border-top:1px dashed var(--rule)}
+figure.w figcaption b{color:var(--ink);font-weight:600}
+.ctrls{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+button{font-size:.78rem;font-weight:500;padding:.42rem .85rem;border:1px solid var(--ink);background:var(--card);color:var(--ink);cursor:pointer;border-radius:2px;transition:background .15s,color .15s}
+button:hover{background:var(--ink);color:var(--card)}
+button.att{border-color:var(--attn);color:var(--attn)} button.att:hover{background:var(--attn);color:#fff}
+button.fwd{border-color:var(--fwd);color:var(--fwd)} button.fwd:hover{background:var(--fwd);color:#fff}
+button.on{background:var(--ink);color:var(--card)}
+button.att.on{background:var(--attn);color:#fff}
+button[disabled]{opacity:.35;cursor:not-allowed}
+.slider-row{display:grid;grid-template-columns:auto 1fr auto;gap:.7rem;align-items:center;margin-bottom:.5rem;font-family:"IBM Plex Mono",monospace;font-size:.78rem}
+.slider-row label{color:var(--ink-2)}
+.slider-row .val{min-width:4.2rem;text-align:right;font-weight:500}
+input[type=range]{width:100%;accent-color:var(--attn);height:1.5rem}
+canvas,svg{display:block;max-width:100%}
+.readout{font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--ink-2);margin-top:.7rem;line-height:1.65}
+.readout b{color:var(--ink);font-weight:600}
+.box{max-width:var(--wide);margin:2rem 0;padding:1.3rem 1.4rem;background:var(--card);border:1px solid var(--rule);border-top:3px solid var(--attn)}
+.box .h{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:.2rem}
+.box .sub{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.9rem}
+.callout{max-width:var(--wide);margin:1.6rem 0;padding:1rem 1.2rem;background:var(--attn-soft);border:1px solid var(--attn);border-radius:2px}
+.callout .h{font-weight:700;margin-bottom:.3rem}
+.callout p{margin-bottom:0;max-width:100%}
+/* block/graph diagrams */
+.node{fill:#fff;stroke:var(--ink-3);stroke-width:1.4;transition:fill .3s,stroke .3s}
+.node.lit{fill:var(--attn-soft);stroke:var(--attn)}
+.edge{stroke:var(--rule);stroke-width:1.6;fill:none}
+.edge.on{stroke:var(--attn);stroke-width:2.4}
+.lbl{font-family:"IBM Plex Mono",monospace;font-size:11px;fill:var(--ink-3)}
+.lbl.hd{font-size:12px;fill:var(--ink);font-weight:500}
+.box2{stroke:var(--ink-3);stroke-width:1.4;fill:none;transition:stroke .3s,fill .3s}
+.box2.on{stroke:var(--attn);stroke-width:2}
+.box2.done{stroke:var(--attn);stroke-width:1.4;fill:var(--attn-soft)}
+details.ex{max-width:var(--wide);margin:.8rem 0;padding:.8rem 1rem;background:var(--card);border:1px solid var(--rule)}
+details.ex summary{cursor:pointer;font-weight:600;color:var(--attn)}
+footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-size:.85rem;color:var(--ink-3);max-width:var(--measure)}
+@media (max-width:640px){body{font-size:16px}.shell{padding:0 1rem 4rem}figure.w .body{padding:1rem .8rem}}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms !important;animation-duration:.01ms !important}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<nav class="progress" aria-label="Course progress">
+  <a href="part-0-big-picture.html">0 · Big Picture</a>
+  <a href="part-1-foundations.html">1 · Foundations</a>
+  <a href="part-2-pytorch.html">2 · PyTorch</a>
+  <a href="part-3-neural-network.html">3 · Neural Network</a>
+  <a href="part-4-build-neural-networks.html">4 · Build NNs</a>
+  <a href="part-5-transformer-architecture.html" class="here">5 · Transformer Arch.</a>
+  <a href="part-6-llm.html">6 · LLM</a>
+  <a href="part-7-illustrated.html">7 · Illustrated</a>
+  <a href="part-8-references.html">8 · References</a>
+</nav>
+
+<header class="top">
+  <p class="kicker">v2 · part five of nine</p>
+  <h1>The <em>Transformer</em>, derived and assembled</h1>
+  <p class="standfirst">Part 4's retrieval widget — a query, some keys, a softmax-weighted blend of values — was already attention's arithmetic. This page gives it the name, the matrices, the scaling factor, multiple heads, the rule against peeking, and a way to tell position apart from content — then wraps all of it into a stackable block, explains why the original paper split that block into two cooperating stacks, and covers the last mile from a trained model's raw output to an actual chosen word. Everything "Attention Is All You Need" (Vaswani et al., 2017) introduces, in one place.</p>
+</header>
+
+<section>
+  <div class="eyebrow"><span class="num">00</span><span>The paper</span><span class="line"></span></div>
+  <h2>Why this became the field's reference point</h2>
+  <p>"Attention Is All You Need" wasn't the first encoder-decoder architecture — RNN- and CNN-based sequence-to-sequence models, connected by an earlier, more limited form of attention, already existed. What was new was the paper's central claim: dispense with recurrence and convolution <em>entirely</em>, and build a sequence model out of attention alone.</p>
+  <p><strong>The problem it addressed.</strong> Recurrent models process a sequence strictly one step at a time — token <span class="mono">t</span> waits for token <span class="mono">t−1</span> to finish. That serializes training and makes long-range information fragile: a signal from token 3 has to survive being carried, step by step, all the way to token 300, and tends to fade.</p>
+  <table>
+    <tr><th></th><th>RNN-based seq2seq</th><th>Transformer</th></tr>
+    <tr><td>Processing order</td><td>Strictly sequential</td><td>Every position processed in parallel</td></tr>
+    <tr><td>Long-range info</td><td>Carried step by step; tends to fade</td><td>Any two positions are one dot product apart</td></tr>
+    <tr><td>Training cost (reported)</td><td>~2 months for a comparable task, pre-2017</td><td>3.5 days, 8 GPUs</td></tr>
+    <tr><td>Cost that grows with length</td><td>Linear, but sequential</td><td>Quadratic (§10) — the trade being made</td></tr>
+  </table>
+  <p style="margin-bottom:0">Not a marginal result: <strong>28.4 BLEU</strong> on WMT 2014 English→German, <strong>41.8 BLEU</strong> on English→French — a new state of the art. A genuine quality jump <em>and</em> a training-time collapse from months to days is the kind of result a field reorganizes around.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">01</span><span>Why attention, specifically</span><span class="line"></span></div>
+  <h2>The problem a fixed-position lookup can't solve</h2>
+  <p>Take: <em>"The animal didn't cross the street because it was too tired."</em> What does "it" refer to? To represent "it" correctly, a model needs "animal" — six words back. In a different sentence, "it" would look somewhere else entirely, so the lookup cannot be hardcoded to a fixed distance; it has to be decided per-sentence, per-word, based on content.</p>
+  <table>
+    <tr><th></th><th>Fixed window (classical NLP)</th><th>Attention</th></tr>
+    <tr><td>Cost per position</td><td>O(window size) — cheap, constant</td><td>O(n) — scales with sequence length</td></tr>
+    <tr><td>Reaches the whole sequence?</td><td>No — outside the window is structurally invisible</td><td>Yes — every position is one dot product away</td></tr>
+    <tr><td>Fails when</td><td>The answer sits further back than the window reaches</td><td>Rarely, for reach — the real cost is §10's quadratic total</td></tr>
+  </table>
+  <p style="margin-bottom:0"><strong>Each word dynamically decides which other words to read from, based on their content, not their position.</strong> That is the entire idea this page builds.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">02</span><span>Telling position from content</span><span class="line"></span></div>
+  <h2>Positional encoding: attention alone can't tell order</h2>
+  <p>Every dot product in this mechanism depends only on the vectors involved, not on where they sit in the sequence — shuffle every token and every Q·K score shuffles identically, unchanged. Without a fix, "dog bites man" and "man bites dog" would attend identically. The fix: add a fixed pattern to each token's embedding <em>before</em> attention runs, built from sines and cosines at different frequencies per dimension — like a clock's hands, several speeds at once, each one bounded and periodic:</p>
+  <span class="eq wide">PE(pos, 2i) = sin(pos / 10000^(2i/d)) &nbsp;&nbsp; PE(pos, 2i+1) = cos(pos / 10000^(2i/d))</span>
+
+  <figure class="w" id="posfig">
+    <div class="head">
+      <span class="title">Positional encoding, dimension by dimension</span>
+      <div class="ctrls"></div>
+    </div>
+    <div class="body">
+      <canvas id="pos" width="820" height="240" aria-label="Sine and cosine curves at different frequencies representing positional encoding dimensions"></canvas>
+      <div class="readout" id="pos-say">Low dimensions oscillate fast (fine position detail); high dimensions oscillate slow (coarse position, like the hour hand on a clock).</div>
+    </div>
+    <figcaption>Each row is one embedding dimension's value across 50 positions — a different frequency per row. No two positions ever produce the exact same combination across all dimensions, and because sine/cosine of a sum expands into sines and cosines of the parts, the network can learn to read off <em>relative</em> position, not just absolute position.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">03</span><span>From one query to every position</span><span class="line"></span></div>
+  <h2>Q, K, V: the same retrieval, run for the whole sequence at once</h2>
+  <p>Part 4's query, key, and value were hand-picked vectors. In a real model they're computed <em>from</em> each token's embedding, by three learned matrices: <span class="mono">Q = XWQ</span>, <span class="mono">K = XWK</span>, <span class="mono">V = XWV</span>, where <span class="mono">X</span> stacks every token's embedding as a row. Every token gets its own query ("what am I looking for"), its own key ("what do I contain, as advertised to others"), and its own value ("what I'll actually contribute if attended to").</p>
+  <span class="eq hero">Attention(Q,K,V) = softmax( QKᵀ / √d_k ) V</span>
+  <p>Read left to right: <span class="mono">QKᵀ</span> scores every query against every key at once (Part 1 §04's agreement measure, done <span class="mono">n²</span> times in one multiply); divide by <span class="mono">√d_k</span> (below); softmax turns each row into a probability distribution over positions; multiplying by <span class="mono">V</span> takes the weighted average of values.</p>
+
+  <figure class="w hero" id="qkvfig">
+    <div class="head">
+      <span class="title">A 4-token sequence, one attention head, worked in full</span>
+      <div class="ctrls"></div>
+    </div>
+    <div class="body">
+      <canvas id="qkv" width="820" height="260" aria-label="Heatmap of attention weights for a 4-token sequence after softmax"></canvas>
+      <div class="readout" id="qkv-say"></div>
+    </div>
+    <figcaption>Rows are queries, columns are keys; brightness is the attention weight after softmax. Every row sums to exactly 1 — each token's output is a full weighted blend of every token's value, with the weights read straight off this heatmap.</figcaption>
+  </figure>
+
+  <h3>Why √d_k, and not "for numerical stability"</h3>
+  <p>Suppose <span class="mono">q</span> and <span class="mono">k</span>'s entries are roughly independent, mean 0, variance 1 — what initialization and layer norm arrange. Their dot product sums <span class="mono">d_k</span> independent products; by Part 1 §10's fact, <strong>variances add</strong>, so the dot product's variance is <span class="mono">d_k</span> and its typical size is <span class="mono">√d_k</span>. As <span class="mono">d_k</span> grows, raw scores grow with it — and a confident softmax has almost no gradient. Dividing by <span class="mono">√d_k</span> undoes exactly this growth.</p>
+
+  <figure class="w" id="scalefig">
+    <div class="head">
+      <span class="title">Score spread vs. d_k · scaling on or off</span>
+      <div class="ctrls">
+        <button class="att on" id="sc-on">Scaling on</button>
+        <button id="sc-off">Scaling off</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="slider-row"><label>d_k</label><input type="range" id="sc-dk" min="4" max="512" step="4" value="64"><span class="val" id="sc-dkv">64</span></div>
+      <canvas id="scale" width="820" height="220" aria-label="Distribution of attention scores at a given d_k, with scaling toggled on or off"></canvas>
+      <div class="readout" id="sc-say"></div>
+    </div>
+    <figcaption>Push <b>d_k</b> to 512 with scaling <b>off</b>: scores spread to roughly ±23, softmax collapses to one-hot, and gradients vanish. Flip scaling <b>on</b> and the spread returns to roughly ±1 regardless of d_k — the variance argument above, made visible. In an interview, give this derivation, not "for numerical stability."</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">04</span><span>No peeking</span><span class="line"></span></div>
+  <h2>The causal mask</h2>
+  <p>A model predicting the next token must not let position <span class="mono">i</span> see positions after it, or it could simply read the answer off. Before softmax, set every score where key position <span class="mono">j &gt; i</span> to <span class="mono">−∞</span>. Since <span class="mono">e⁻∞ = 0</span>, those positions get exactly zero weight — not "very small," exactly zero — while every row still sums to 1, because the mask only redistributes attention among the allowed positions. In code this is a large negative number (like <span class="mono">−10⁹</span>) added to the score matrix before softmax, since a literal infinity would produce NaNs.</p>
+  <p style="margin-bottom:0">This is what lets training run on every position of a sequence simultaneously, in one forward pass, while keeping every position honest — a large part of why Transformers train so much faster than the recurrent models they replaced.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">05</span><span>Multiple questions at once</span><span class="line"></span></div>
+  <h2>Multi-head attention: several attention patterns in parallel</h2>
+  <p>One attention head can only ask one kind of question per position. The fix: split <span class="mono">Q</span>, <span class="mono">K</span>, <span class="mono">V</span> into <span class="mono">h</span> smaller pieces (heads), run the identical attention formula on each piece independently and in parallel, then concatenate the results back together and project once more. Each head is free to specialize — one might track nearby words, another long-range subject-verb agreement — because nothing forces them to learn the same pattern.</p>
+  <span class="eq">MultiHead(Q,K,V) = Concat(head₁, …, head_h) Wᴼ &nbsp;&nbsp; headᵢ = Attention(QWᵢQ, KWᵢK, VWᵢV)</span>
+
+  <figure class="w" id="headfig">
+    <div class="head">
+      <span class="title">Two heads, same sentence, different patterns</span>
+      <div class="ctrls">
+        <button class="att on" id="mh-1">Head 1</button>
+        <button id="mh-2">Head 2</button>
+      </div>
+    </div>
+    <div class="body">
+      <canvas id="mh" width="820" height="200" aria-label="Attention lines for one word across two different heads, showing different dependency patterns"></canvas>
+      <div class="readout" id="mh-say"></div>
+    </div>
+    <figcaption>Same word, same sentence, same underlying formula — but each head's Q/K/V projections are different learned matrices, so <b>Head 1</b> and <b>Head 2</b> genuinely disagree about what matters. Concatenating both gives the next layer access to both patterns at once.</figcaption>
+  </figure>
+  <p style="margin-bottom:0">Total cost is roughly unchanged — you're <strong>partitioning</strong> capacity among specialists, not adding it. Output shape equals input shape, which is what lets attention operations stack into blocks, next.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">06</span><span>Assembling the block</span><span class="line"></span></div>
+  <h2>Attention wrapped in residuals and normalization</h2>
+  <p>One Transformer block is attention (§03–§05) and a small feed-forward network (two linear layers with a kink between them, exactly Part 3's machine), each wrapped in a <strong>residual connection</strong> and a <strong>layer normalization</strong>:</p>
+  <span class="eq">x ← x + Attention(LayerNorm(x)) &nbsp;&nbsp; x ← x + FFN(LayerNorm(x))</span>
+  <p>The residual's <span class="mono">+x</span> is Part 3 §10's fix for vanishing gradients — a guaranteed path back to every earlier layer, however deep the stack. LayerNorm rescales each token's vector to have a stable mean and spread before every sub-layer sees it, so training doesn't have to fight ever-drifting activation scales on top of everything else.</p>
+
+  <figure class="w" id="blockfig">
+    <div class="head">
+      <span class="title">One value's path through a block · step through</span>
+      <div class="ctrls"><button class="att" id="bl-next">Next step →</button><button id="bl-reset">Reset</button></div>
+    </div>
+    <div class="body">
+      <svg id="block" viewBox="0 0 640 300" role="img" aria-label="Diagram of one Transformer block: layer norm, attention, residual add, layer norm, feed-forward, residual add"></svg>
+      <div class="readout" id="bl-say">Press <b>Next step</b> to walk one token's vector through a full block.</div>
+    </div>
+    <figcaption>Every stage this lights up is one line of the two equations above — nothing in a real Transformer block is any more exotic than this five-step path, repeated for every token, stacked many blocks deep.</figcaption>
+  </figure>
+  <p class="note" style="font-size:.9rem;color:var(--ink-2)"><strong>Note:</strong> this equation uses <strong>pre-norm</strong> (LayerNorm before each sub-layer) — the now-more-common convention. The original paper used <strong>post-norm</strong> (LayerNorm after). Both appear in real models; the residual math is identical either way.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">07</span><span>Two shapes, two jobs</span><span class="line"></span></div>
+  <h2>Why the original paper used an encoder and a decoder</h2>
+  <p>Translating "the cat sat" into French: to correctly place the feminine adjective ending, the model needs the whole source sentence available at once, with no restriction on looking ahead — there's no "future" in a sentence that's already fully given. But generating the French output must be causal — token 5 can't be produced by peeking at the token-6 answer. One stack can't satisfy both needs at once, so the paper used two: an <strong>encoder</strong> (full attention, no mask, reads the source once) and a <strong>decoder</strong> (causal self-attention, generates the target one token at a time).</p>
+
+  <table>
+    <tr><th>Architecture</th><th>Access pattern</th><th>Good at</th><th>Example</th></tr>
+    <tr><td>Encoder-only</td><td>Bidirectional — every position sees every other</td><td>Understanding a complete input: classification, fill-in-the-blank</td><td>BERT</td></tr>
+    <tr><td>Decoder-only</td><td>Causal — only backward</td><td>Generating one token at a time from what came before</td><td>GPT, and nearly every current LLM</td></tr>
+    <tr><td>Encoder-decoder</td><td>Both, connected by cross-attention</td><td>Transforming one full sequence into a different one</td><td>Translation, summarization — T5, MarianMT</td></tr>
+  </table>
+
+  <h3>Cross-attention: the wire between them</h3>
+  <p>The decoder needs to consult the encoder's finished understanding of the source. <strong>Cross-attention</strong> is the identical formula from §03 — only the source of Q, K, V changes: <strong>Q</strong> comes from the decoder's own progress so far, <strong>K</strong> and <strong>V</strong> come from the encoder's output. No mask is needed here — the encoder's output is a fully finished, already-complete thing, nothing about it is "in the future."</p>
+
+  <figure class="w" id="crossfig">
+    <div class="head">
+      <span class="title">Encoder runs once · decoder queries it repeatedly</span>
+      <div class="ctrls">
+        <button class="att" id="cr-encode">Run encoder (once)</button>
+        <button class="fwd" id="cr-gen" disabled>Generate next token →</button>
+        <button id="cr-reset">Reset</button>
+      </div>
+    </div>
+    <div class="body">
+      <svg id="cr" viewBox="0 0 640 260" role="img" aria-label="Diagram of encoder and decoder connected by cross-attention, encoder running once and decoder generating repeatedly"></svg>
+      <div class="readout" id="cr-say">Press <b>Run encoder</b> first — it reads the source sentence once and produces fixed K, V.</div>
+    </div>
+    <figcaption>Run the encoder once, then generate repeatedly: the encoder box locks into a solid state and never lights up again, while the decoder and cross-attention boxes flash on <b>every single token</b>, because each one needs a fresh Q. Same K, V, read again and again.</figcaption>
+  </figure>
+
+  <div class="callout">
+    <p class="h">No mask in cross-attention</p>
+    <p>The decoder's masked self-attention (one step earlier in the same block) enforces "no looking at the future" — but that rule is about the decoder's <em>own</em> sequence. Cross-attention isn't attending within one sequence at all; it's fusing two different, already-complete ones.</p>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">08</span><span>From numbers to a word</span><span class="line"></span></div>
+  <h2>Sampling: turning a distribution into a choice</h2>
+  <p>The stack's final layer produces logits over the vocabulary; softmax turns them into a probability distribution (Part 3 §06). Generation still needs to pick <em>one</em> token from that distribution — always the top pick and text gets repetitive; too random and it stops making sense. Three knobs, all reshaping the same distribution before a token is drawn:</p>
+  <table>
+    <tr><th>Knob</th><th>What it does</th></tr>
+    <tr><td><strong>Temperature</strong></td><td>Divides logits before softmax — below 1 sharpens toward the top pick, above 1 flattens toward uniform</td></tr>
+    <tr><td><strong>Top-k</strong></td><td>Zero out every probability outside the k largest, then renormalize and sample</td></tr>
+    <tr><td><strong>Top-p (nucleus)</strong></td><td>Keep the smallest set of top candidates whose probabilities sum to p, then sample only from those</td></tr>
+  </table>
+
+  <figure class="w" id="sampfig">
+    <div class="head">
+      <span class="title">Reshaping one distribution, three ways</span>
+      <div class="ctrls"></div>
+    </div>
+    <div class="body">
+      <div class="slider-row"><label>temperature</label><input type="range" id="sp-t" min="0.2" max="2.5" step="0.05" value="1"><span class="val" id="sp-tv">1.00</span></div>
+      <div class="slider-row"><label>top-k</label><input type="range" id="sp-k" min="1" max="10" step="1" value="10"><span class="val" id="sp-kv">10 (off)</span></div>
+      <canvas id="samp" width="820" height="220" aria-label="Bar chart of a token probability distribution reshaped by temperature and top-k"></canvas>
+      <div class="readout" id="samp-say"></div>
+    </div>
+    <figcaption>Drag <b>temperature</b> toward 0.2 and one bar dominates; toward 2.5 and the distribution flattens. Pull <b>top-k</b> down and the tail bars vanish entirely — zero probability, not just small — before whatever's left gets renormalized and sampled.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">09</span><span>The cost</span><span class="line"></span></div>
+  <h2>Attention is quadratic, and everyone cares</h2>
+  <p>Attention computes a score for <strong>every pair</strong> of positions: <span class="mono">n</span> tokens → <span class="mono">n²</span> pairs, so attention costs <span class="mono">O(n²d)</span> against the feed-forward network's <span class="mono">O(nd²)</span>. The crossover sits at <span class="mono">n = d</span>: below it, the FFN is the bottleneck; above it, the quadratic term takes over and never lets go — double the context, attention quadruples.</p>
+  <p>That single fact drives an enormous amount of downstream engineering: FlashAttention (identical maths, tiled so the n×n matrix never touches slow memory), sliding-window and sparse attention, and state-space models like Mamba.</p>
+  <p style="margin-bottom:0"><strong>KV caching.</strong> When generating one token at a time, earlier tokens' keys and values never change — so cache them. Each new token then costs <span class="mono">O(nd)</span> rather than <span class="mono">O(n²d)</span>. This is a different mechanism from §07's encoder K/V reuse — this cache is for the decoder's <em>own</em> self-attention.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">10</span><span>Reference</span><span class="line"></span></div>
+  <h2>Traps and a cheatsheet</h2>
+  <table>
+    <tr><th>Symptom / question</th><th>Resolution</th></tr>
+    <tr><td>"Isn't cross-attention just self-attention?"</td><td>Same formula, different sourcing — K/V from the encoder, Q from the decoder. Self-attention never mixes two different sequences.</td></tr>
+    <tr><td>"Why no mask in cross-attention?"</td><td>Masking enforces autoregression within one sequence. Cross-attention fuses two already-complete ones.</td></tr>
+    <tr><td>Output looks repetitive / stuck in a loop</td><td>Temperature too low, or top-k/top-p too narrow</td></tr>
+    <tr><td>Output looks incoherent</td><td>Temperature too high, or top-p threshold too generous</td></tr>
+    <tr><td>"Which should I use, top-k or top-p?"</td><td>Top-k is simpler and predictable; top-p adapts its eligible set to the model's confidence — usually the better default</td></tr>
+  </table>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">11</span><span>Practice</span><span class="line"></span></div>
+  <h2>Exercises</h2>
+  <ol>
+    <li>Why can't a decoder-only model translate a full sentence the way an encoder-decoder can, even given unlimited training data?</li>
+    <li>Temperature is set to 0.01. What happens to generation, and why?</li>
+    <li>You set top-k = 1. What sampling strategy have you accidentally reproduced?</li>
+  </ol>
+  <details class="ex">
+    <summary>Answers</summary>
+    <ol>
+      <li>It can only ever look backward. Resolving "it" in §01's example requires a word that comes later — structurally invisible to a purely causal model, no matter how much data it sees.</li>
+      <li>Generation becomes almost perfectly deterministic — the highest-logit word gets pushed to probability ≈1.</li>
+      <li>Greedy decoding — always take the single highest-probability word, with no randomness at all.</li>
+    </ol>
+  </details>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">12</span><span>Onward</span><span class="line"></span></div>
+  <h2>What Part 6 builds end to end</h2>
+  <p>Nothing in this part was a new kind of formula — it's the same softmax, the same Q/K/V, the same residual connection, pointed at a second sequence and then at a vocabulary instead of a hidden layer. A block (attention, residuals, layer norm, feed-forward), stacked many times, fed by embeddings plus positional encoding, ending in a projection to vocabulary size and a sampling step. Part 6 stops describing the architecture and writes all of it — tokenizer included — as one small, real, trainable model, with the whole multi-block stack animated end to end.</p>
+  <p><a href="part-6-llm.html">Continue to Part 6 — build an LLM →</a></p>
+</section>
+
+<footer>
+  <p>Reduced-motion preferences are respected throughout; every animation degrades to its final state.</p>
+</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+var REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function fmt(v,d){ return Number(v).toFixed(d===undefined?2:d); }
+function gid(i){ return document.getElementById(i); }
+function el(tag, attrs){
+  var e = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (var k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+
+/* ===== POSITIONAL ENCODING ===== */
+(function(){
+  var cv=gid("pos"); if(!cv) return;
+  var ctx=cv.getContext("2d");
+  var dims=8, positions=50, d=64;
+  function draw(){
+    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
+    var rowH=H/dims;
+    for(var dim=0;dim<dims;dim++){
+      var freq = 1/Math.pow(10000, (2*Math.floor(dim/2))/d);
+      var y0=dim*rowH+rowH/2;
+      ctx.strokeStyle = dim%2===0 ? "#0B8B8B" : "#5A4A9F";
+      ctx.lineWidth=1.6; ctx.beginPath();
+      for(var p=0;p<positions;p++){
+        var val = dim%2===0 ? Math.sin(p*freq) : Math.cos(p*freq);
+        var x=40+(p/positions)*(W-60);
+        var y=y0-val*(rowH*0.42);
+        if(p===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+      ctx.fillStyle="#8399A8"; ctx.font="10px 'IBM Plex Mono',monospace"; ctx.textAlign="left";
+      ctx.fillText("dim "+dim, 4, y0+3);
+    }
+  }
+  draw();
+})();
+
+/* ===== QKV HEATMAP ===== */
+(function(){
+  var cv=gid("qkv"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("qkv-say");
+  var TOKENS=["The","cat","sat","down"];
+  var Q=[[1,0],[0,1],[1,1],[-1,1]];
+  var K=[[1,-0.3],[0.2,1.3],[0.3,1.1],[1,-0.2]];
+  var n=TOKENS.length, dk=2;
+  function softmaxRow(row){
+    var m=Math.max.apply(null,row);
+    var exps=row.map(function(v){return Math.exp(v-m);});
+    var sum=exps.reduce(function(a,b){return a+b;},0);
+    return exps.map(function(v){return v/sum;});
+  }
+  var W=[];
+  for(var i=0;i<n;i++){
+    var scores=[];
+    for(var j=0;j<n;j++){
+      var dot=Q[i][0]*K[j][0]+Q[i][1]*K[j][1];
+      scores.push(dot/Math.sqrt(dk));
+    }
+    W.push(softmaxRow(scores));
+  }
+  function draw(){
+    var Wd=cv.width,Hd=cv.height; ctx.clearRect(0,0,Wd,Hd);
+    var cell=76, gx=140, gy=40;
+    ctx.font="13px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+    TOKENS.forEach(function(t,j){ ctx.fillStyle="#8399A8"; ctx.fillText(t, gx+j*cell+cell/2, gy-10); });
+    for(var i=0;i<n;i++){
+      ctx.fillStyle="#8399A8"; ctx.textAlign="right";
+      ctx.fillText(TOKENS[i], gx-14, gy+i*cell+cell/2+5);
+      for(var j=0;j<n;j++){
+        var w=W[i][j];
+        ctx.fillStyle="rgba(90,74,159,"+(0.08+0.85*w)+")";
+        ctx.fillRect(gx+j*cell,gy+i*cell,cell-4,cell-4);
+        ctx.fillStyle = w>0.4 ? "#fff" : "#15222E";
+        ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+        ctx.fillText(fmt(w,2), gx+j*cell+(cell-4)/2, gy+i*cell+(cell-4)/2+4);
+      }
+    }
+    var order=[0,1,2,3].slice().sort(function(a,b){return W[1][b]-W[1][a];});
+    say.innerHTML="Row \""+TOKENS[1]+"\" attends most to \""+TOKENS[order[0]]+"\" ("+fmt(W[1][order[0]],2)+"), then \""+TOKENS[order[1]]+"\" ("+fmt(W[1][order[1]],2)+") — weights ["+W[1].map(function(v){return fmt(v,2);}).join(", ")+"], summing to "+fmt(W[1].reduce(function(a,b){return a+b;},0),2)+".";
+  }
+  draw();
+})();
+
+/* ===== SCALING ===== */
+(function(){
+  var cv=gid("scale"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("sc-say"), slider=gid("sc-dk");
+  var scaled=true;
+  function sampleScores(dk){
+    var scores=[];
+    for(var i=0;i<400;i++){
+      var s=0;
+      for(var k=0;k<dk;k++) s += (Math.random()*2-1)*Math.sqrt(3) * (Math.random()*2-1)*Math.sqrt(3);
+      scores.push(scaled ? s/Math.sqrt(dk) : s);
+    }
+    return scores;
+  }
+  function draw(){
+    var dk=parseInt(slider.value,10); gid("sc-dkv").textContent=dk;
+    var scores=sampleScores(dk);
+    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
+    var maxAbs = scaled ? 6 : Math.max(6, Math.max.apply(null,scores.map(Math.abs))*1.1);
+    var x0=-maxAbs,x1=maxAbs;
+    function px(v){ return 50+(v-x0)/(x1-x0)*(W-70); }
+    var bins=40, counts=new Array(bins).fill(0);
+    scores.forEach(function(s){ var b=Math.floor((Math.max(x0,Math.min(x1,s))-x0)/(x1-x0)*(bins-1)); counts[b]++; });
+    var maxCount=Math.max.apply(null,counts);
+    ctx.strokeStyle="#8399A8"; ctx.beginPath(); ctx.moveTo(px(x0),H-30); ctx.lineTo(px(x1),H-30); ctx.stroke();
+    for(var b=0;b<bins;b++){
+      var bx0=x0+(x1-x0)*b/bins, bw=(x1-x0)/bins;
+      var h=(counts[b]/maxCount)*(H-60);
+      ctx.fillStyle = scaled ? "#5A4A9F" : "#B31E55";
+      ctx.fillRect(px(bx0),H-30-h,px(bx0+bw)-px(bx0)-1,h);
+    }
+    var mean=scores.reduce(function(a,b){return a+b;},0)/scores.length;
+    var variance=scores.reduce(function(a,b){return a+(b-mean)*(b-mean);},0)/scores.length;
+    say.innerHTML="d_k = "+dk+" &nbsp;·&nbsp; scaling "+(scaled?"<b style='color:#5A4A9F'>on</b>":"<b style='color:#B31E55'>off</b>")+" &nbsp;·&nbsp; typical score size ≈ <b>"+fmt(Math.sqrt(variance),2)+"</b>"+(scaled?" — stays near 1 regardless of d_k":" — grows with √d_k, exactly as the variance argument predicts");
+  }
+  gid("sc-on").onclick=function(){ scaled=true; this.classList.add("on"); gid("sc-off").classList.remove("on"); draw(); };
+  gid("sc-off").onclick=function(){ scaled=false; this.classList.add("on"); gid("sc-on").classList.remove("on"); draw(); };
+  slider.oninput=draw;
+  draw();
+})();
+
+/* ===== MULTI-HEAD ===== */
+(function(){
+  var cv=gid("mh"); if(!cv) return;
+  var say=gid("mh-say");
+  var WORDS=["The","dog","that","chased","the","cat","barked","loudly"];
+  var HEAD1={1:{0:0.15,3:0.75,6:0.6}};
+  var HEAD2={1:{0:0.7,2:0.1,6:0.15}};
+  var mode=1;
+  function positions(){
+    var x=20, pos=[];
+    WORDS.forEach(function(w){ pos.push(x); x+=w.length*9+24; });
+    return pos;
+  }
+  function render(){
+    var ctx=cv.getContext("2d");
+    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
+    var pos=positions(), y=100;
+    var weights = mode===1 ? HEAD1[1] : HEAD2[1];
+    Object.keys(weights).forEach(function(k){
+      var j=parseInt(k,10), w=weights[k];
+      var x1=pos[1]+WORDS[1].length*4, x2=pos[j]+WORDS[j].length*4;
+      var midY=y-30-w*60;
+      ctx.strokeStyle="#5A4A9F"; ctx.lineWidth=1+w*6; ctx.globalAlpha=0.3+w*0.6;
+      ctx.beginPath(); ctx.moveTo(x1,y-10); ctx.quadraticCurveTo((x1+x2)/2,midY,x2,y-10); ctx.stroke();
+      ctx.globalAlpha=1;
+    });
+    ctx.font="15px 'IBM Plex Mono',monospace"; ctx.textAlign="left";
+    WORDS.forEach(function(w,i){
+      ctx.fillStyle = i===1 ? "#5A4A9F" : (weights[i]!==undefined ? "#15222E" : "#8399A8");
+      if(i===1) ctx.font="600 15px 'IBM Plex Mono',monospace"; else ctx.font="15px 'IBM Plex Mono',monospace";
+      ctx.fillText(w, pos[i], y);
+    });
+    var top = Object.keys(weights).reduce(function(best,k){ return weights[k]>weights[best]?k:best; }, Object.keys(weights)[0]);
+    say.innerHTML=(mode===1?"<b>Head 1</b>":"<b>Head 2</b>")+' — "dog" attends most to "'+WORDS[top]+'" ('+fmt(weights[top],2)+'). '+(mode===1?"This head tracks the verb it's the subject of, even several words away.":"This head tracks the immediately preceding determiner — a purely local pattern.");
+  }
+  gid("mh-1").onclick=function(){ mode=1; this.classList.add("on"); gid("mh-2").classList.remove("on"); render(); };
+  gid("mh-2").onclick=function(){ mode=2; this.classList.add("on"); gid("mh-1").classList.remove("on"); render(); };
+  render();
+})();
+
+/* ===== BLOCK DIAGRAM ===== */
+(function(){
+  var svg=gid("block"); if(!svg) return;
+  var say=gid("bl-say");
+  function box(x,y,w,h,label){
+    var r=el("rect",{x:x,y:y,width:w,height:h,rx:4}); r.setAttribute("class","box2"); svg.appendChild(r);
+    var t=el("text",{x:x+w/2,y:y+h/2+4,"text-anchor":"middle"}); t.setAttribute("class","lbl hd"); t.textContent=label; svg.appendChild(t);
+    return r;
+  }
+  function arrow(x1,y1,x2,y2){
+    var l=el("line",{x1:x1,y1:y1,x2:x2,y2:y2}); l.setAttribute("class","edge"); svg.appendChild(l); return l;
+  }
+  var boxes=[
+    box(260,10,120,40,"input x"),
+    box(260,70,120,40,"LayerNorm"),
+    box(260,130,120,40,"Attention"),
+    box(230,190,180,40,"x + Attention(·)"),
+    box(230,250,180,40,"LayerNorm → FFN → +x")
+  ];
+  arrow(320,50,320,70); arrow(320,110,320,130); arrow(320,170,320,190); arrow(320,230,320,250);
+
+  var STEPS = [
+    {b:0, say:"<b>Step 0 — input.</b> One token's vector, arriving at this block."},
+    {b:1, say:"<b>Step 1 — LayerNorm.</b> Rescaled to a stable mean and spread before attention sees it."},
+    {b:2, say:"<b>Step 2 — Attention.</b> §03's full mechanism, run against every other token in the sequence."},
+    {b:3, say:"<b>Step 3 — residual add.</b> The attention output is added back to the original x — the +1 gradient path from Part 3 §10."},
+    {b:4, say:"<b>Step 4 — LayerNorm → feed-forward → residual add.</b> The identical pattern runs again with a feed-forward network in place of attention. What comes out feeds the next block, or becomes the model's final output."}
+  ];
+  var state=-1;
+  var domBoxes=boxes;
+  function render(){
+    domBoxes.forEach(function(b){ b.setAttribute("class","box2"); });
+    if(state>=0) domBoxes[STEPS[state].b].setAttribute("class","box2 on");
+    say.innerHTML = state<0 ? "Press <b>Next step</b> to walk one token's vector through a full block." : STEPS[state].say;
+    gid("bl-next").disabled = state>=STEPS.length-1;
+  }
+  gid("bl-next").onclick=function(){ state=Math.min(STEPS.length-1,state+1); render(); };
+  gid("bl-reset").onclick=function(){ state=-1; render(); };
+  render();
+})();
+
+/* ===== CROSS-ATTENTION ===== */
+(function(){
+  var svg=gid("cr"); if(!svg) return;
+  var say=gid("cr-say");
+  function box(x,y,w,h,id){ var r=el("rect",{x:x,y:y,width:w,height:h,rx:4}); r.setAttribute("class","box2"); r.id=id; svg.appendChild(r); return r; }
+  function label(x,y,text,cls,anchor){ var t=el("text",{x:x,y:y,"text-anchor":anchor||"middle"}); t.setAttribute("class",cls||"lbl"); t.textContent=text; svg.appendChild(t); return t; }
+  function arrow(x1,y1,x2,y2,id){ var l=el("line",{x1:x1,y1:y1,x2:x2,y2:y2}); l.setAttribute("class","edge"); l.id=id; svg.appendChild(l); return l; }
+
+  var SOURCE=["the","cat","sat","down"], TARGET=["le","chat","s'est","assis"];
+  var encBox=box(40,40,220,100,"encbox");
+  label(150,30,"ENCODER","lbl hd");
+  label(150,60,'"'+SOURCE.join(" ")+'"',"lbl mono");
+  label(150,80,"self-attention, no mask","lbl");
+  var encStatus=label(150,118,"not run yet","lbl c-att");
+
+  var decBox=box(380,40,220,170,"decbox");
+  label(490,30,"DECODER","lbl hd");
+  label(490,75,"masked self-attention","lbl");
+  label(490,95,"→ produces Q from tokens so far","lbl");
+  var decStatus=label(490,118,"generated: (none)","lbl mono");
+
+  var crossBox=box(410,138,160,50,"crossbox");
+  label(490,158,"cross-attention","lbl hd");
+  label(490,176,"Q here, K/V below","lbl");
+
+  var kv=arrow(260,90,410,155,"kvarrow");
+  var qarr=arrow(490,105,490,138,"qarrow");
+  label(335,105,"K, V","lbl c-att");
+  var outArrow=arrow(490,188,490,210,"outarrow");
+  label(490,225,"→ feed-forward → next block","lbl");
+  var tally=label(20,245,"","lbl","start");
+
+  var encoded=false, genCount=0, flashTimer=null;
+  function settle(){
+    [decBox,crossBox].forEach(function(b){ b.setAttribute("class","box2"); });
+    [qarr,outArrow,kv].forEach(function(e){ e.setAttribute("class","edge"); });
+    render();
+  }
+  function render(){
+    encBox.setAttribute("class", encoded?"box2 done":"box2");
+    encStatus.textContent = encoded ? "K, V fixed ✓" : "not run yet";
+    decStatus.textContent = "generated: "+(genCount?TARGET.slice(0,genCount).join(" "):"(none)");
+    gid("cr-gen").disabled = !encoded || genCount>=TARGET.length;
+    gid("cr-encode").disabled = encoded;
+    if(!encoded){
+      say.innerHTML="Press <b>Run encoder</b> first — it reads the source sentence once and produces fixed K, V.";
+    } else if(genCount===0){
+      say.innerHTML="<b>Encoder done.</b> K, V are fixed for the rest of this sentence — the encoder box won't light up again. Press <b>Generate next token</b>.";
+    } else {
+      var made=TARGET.slice(0,genCount).join(" ");
+      say.innerHTML="<b>Token "+genCount+" — \""+TARGET[genCount-1]+".\"</b> Decoder ran masked self-attention on \""+made+"\" so far, producing a fresh Q — scored against the <em>same</em> K, V from the encoder, never recomputed."
+        + (genCount>=TARGET.length ? "<br><b>Done.</b> Encoder ran once; cross-attention ran "+TARGET.length+" times." : "");
+    }
+    tally.textContent="encoder passes: "+(encoded?"1":"0")+"   ·   cross-attention calls: "+genCount;
+  }
+  function flash(){
+    decBox.setAttribute("class","box2 on"); crossBox.setAttribute("class","box2 on");
+    qarr.setAttribute("class","edge on"); outArrow.setAttribute("class","edge on"); kv.setAttribute("class","edge on");
+    clearTimeout(flashTimer);
+    flashTimer=setTimeout(settle, REDUCED?0:500);
+  }
+  gid("cr-encode").onclick=function(){
+    if(encoded) return;
+    encoded=true; kv.setAttribute("class","edge on"); encBox.setAttribute("class","box2 on");
+    render();
+    clearTimeout(flashTimer);
+    flashTimer=setTimeout(function(){ encBox.setAttribute("class","box2 done"); kv.setAttribute("class","edge"); }, REDUCED?0:500);
+  };
+  gid("cr-gen").onclick=function(){
+    if(!encoded||genCount>=TARGET.length) return;
+    genCount++; flash(); render();
+  };
+  gid("cr-reset").onclick=function(){
+    clearTimeout(flashTimer); encoded=false; genCount=0;
+    [encBox,decBox,crossBox].forEach(function(b){ b.setAttribute("class","box2"); });
+    [kv,qarr,outArrow].forEach(function(e){ e.setAttribute("class","edge"); });
+    render();
+  };
+  render();
+})();
+
+/* ===== SAMPLING ===== */
+(function(){
+  var cv=gid("samp"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("samp-say"), sT=gid("sp-t"), sK=gid("sp-k");
+  var WORDS=["the","a","this","that","some","my","our","those","an","every"];
+  var LOGITS=[4.2,3.5,2.1,1.8,1.2,0.9,0.5,0.1,-0.4,-1.0];
+  function draw(){
+    var T=parseFloat(sT.value); gid("sp-tv").textContent=fmt(T,2);
+    var k=parseInt(sK.value,10); gid("sp-kv").textContent = k>=10 ? "10 (off)" : k;
+    var scaled=LOGITS.map(function(v){return v/T;});
+    var idx=scaled.map(function(v,i){return i;}).sort(function(a,b){return scaled[b]-scaled[a];});
+    var kept={}; idx.slice(0,k).forEach(function(i){ kept[i]=true; });
+    var m=Math.max.apply(null,idx.slice(0,k).map(function(i){return scaled[i];}));
+    var exps=scaled.map(function(v,i){ return kept[i] ? Math.exp(v-m) : 0; });
+    var sum=exps.reduce(function(a,b){return a+b;},0);
+    var probs=exps.map(function(v){return v/sum;});
+
+    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
+    var bw=64,gap=14,x0=40;
+    for(var i=0;i<WORDS.length;i++){
+      var bx=x0+i*(bw+gap);
+      var h=probs[i]*160;
+      ctx.fillStyle = kept[i] ? "#5A4A9F" : "#E2EAEF";
+      ctx.fillRect(bx,180-h,bw,h);
+      ctx.fillStyle="#8399A8"; ctx.font="10px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+      ctx.fillText(WORDS[i],bx+bw/2,198);
+      ctx.fillStyle="#15222E"; ctx.font="10px 'IBM Plex Mono',monospace";
+      ctx.fillText(fmt(probs[i],2),bx+bw/2,180-h-6);
+    }
+    say.innerHTML="T = "+fmt(T,2)+", top-k = "+(k>=10?"off":k)+" &nbsp;·&nbsp; top choice \""+WORDS[idx[0]]+"\" now carries <b>"+fmt(probs[idx[0]]*100,1)+"%</b> of the probability.";
+  }
+  sT.oninput=draw; sK.oninput=draw; draw();
+})();
+})();
+</script>
+</body>
+</html>
