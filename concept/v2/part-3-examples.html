@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SPR2FRFBQ1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SPR2FRFBQ1');
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLMs From Scratch v2 — Examples</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF2F5; --card:#FFFFFF; --ink:#15222E; --ink-2:#4B5F6E; --ink-3:#8399A8; --rule:#CBD8E0;
+  --fwd:#0B8B8B; --fwd-soft:#D3EDED;
+  --back:#D8811C; --back-soft:#F8E7CE;
+  --loss:#B31E55; --loss-soft:#F7DDE7;
+  --attn:#5A4A9F; --attn-soft:#E2DDF2;
+  --measure:34rem; --wide:52rem;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background-color:var(--paper);
+  background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);
+  background-size:28px 28px;background-position:-1px -1px;
+  color:var(--ink);font-family:"Spectral",Georgia,serif;font-size:17px;line-height:1.68}
+body::before{content:"";position:fixed;inset:0;background:var(--paper);opacity:.82;pointer-events:none;z-index:0}
+.shell{position:relative;z-index:1;max-width:var(--wide);margin:0 auto;padding:0 1.25rem 6rem}
+h1,h2,h3,.eyebrow,.ui,button,input,label,table{font-family:"Space Grotesk",system-ui,sans-serif}
+code,.mono,.eq{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+header.top{padding:4.5rem 0 2rem;max-width:var(--measure)}
+.kicker{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 1.4rem}
+h1{font-size:clamp(2rem,5.6vw,3.2rem);line-height:1.03;letter-spacing:-.03em;font-weight:700;margin:0 0 1.1rem}
+h1 em{font-style:normal;color:var(--fwd)}
+.standfirst{font-size:1.12rem;color:var(--ink-2);margin:0 0 2rem}
+.progress{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin:0 0 3rem;padding:.85rem .95rem;background:var(--card);border:1px solid var(--rule);font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.02em;max-width:var(--wide)}
+.progress a{color:var(--ink-2);text-decoration:none;padding:.28rem .6rem;border:1px solid var(--rule);border-radius:2px;white-space:nowrap;transition:border-color .15s,background .15s,color .15s}
+.progress a:hover{border-color:var(--ink);color:var(--ink)}
+.progress a.here{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+section{margin:4.5rem 0 0}
+.eyebrow{display:flex;align-items:baseline;gap:.85rem;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.5rem}
+.eyebrow .num{font-family:"IBM Plex Mono",monospace;color:var(--fwd);font-weight:600}
+.eyebrow .line{flex:1;height:1px;background:var(--rule)}
+h2{font-size:clamp(1.4rem,3.4vw,1.95rem);line-height:1.15;letter-spacing:-.02em;margin:.1rem 0 1.1rem;font-weight:700;max-width:var(--measure)}
+p{margin:0 0 1.1rem;max-width:var(--measure)}
+strong{font-weight:600}
+.eq{display:block;margin:1.4rem 0;padding:.9rem 1.1rem;background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--ink-3);font-size:.95rem;overflow-x:auto;max-width:var(--measure);white-space:nowrap}
+table{border-collapse:collapse;width:100%;max-width:var(--wide);margin:1.4rem 0;font-size:.86rem}
+th,td{text-align:left;padding:.55rem .7rem;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:600;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--ink-3)}
+figure.w{margin:2.5rem 0;background:var(--card);border:1px solid var(--rule);max-width:var(--wide)}
+figure.w .head{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.7rem 1.1rem;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+figure.w .title{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+figure.w .body{padding:1.2rem 1.1rem}
+figure.w figcaption{padding:.75rem 1.1rem 1rem;font-size:.85rem;color:var(--ink-2);border-top:1px dashed var(--rule)}
+figure.w figcaption b{color:var(--ink);font-weight:600}
+.ctrls{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+button{font-size:.78rem;font-weight:500;padding:.42rem .85rem;border:1px solid var(--ink);background:var(--card);color:var(--ink);cursor:pointer;border-radius:2px;transition:background .15s,color .15s}
+button:hover{background:var(--ink);color:var(--card)}
+button.fwd{border-color:var(--fwd);color:var(--fwd)} button.fwd:hover{background:var(--fwd);color:#fff}
+button.on{background:var(--ink);color:var(--card)}
+.slider-row{display:grid;grid-template-columns:auto 1fr auto;gap:.7rem;align-items:center;margin-bottom:.5rem;font-family:"IBM Plex Mono",monospace;font-size:.78rem}
+.slider-row label{color:var(--ink-2)}
+.slider-row .val{min-width:4.2rem;text-align:right;font-weight:500}
+input[type=range]{width:100%;accent-color:var(--fwd);height:1.5rem}
+canvas{display:block;max-width:100%}
+.readout{font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--ink-2);margin-top:.7rem;line-height:1.65}
+.readout b{color:var(--ink);font-weight:600}
+footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-size:.85rem;color:var(--ink-3);max-width:var(--measure)}
+@media (max-width:640px){body{font-size:16px}.shell{padding:0 1rem 4rem}figure.w .body{padding:1rem .8rem}}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms !important;animation-duration:.01ms !important}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<nav class="progress" aria-label="Course progress">
+  <a href="part-0-big-picture.html">0 · Big Picture</a>
+  <a href="part-1-foundations.html">1 · Foundations</a>
+  <a href="part-2-neural-network.html">2 · Neural Network</a>
+  <a href="part-3-examples.html" class="here">3 · Examples</a>
+  <a href="part-4-attention.html">4 · Attention</a>
+  <a href="part-5-transformer.html">5 · Transformer</a>
+  <a href="part-6-llm.html">6 · LLM</a>
+  <a href="part-7-illustrated.html">7 · Illustrated</a>
+</nav>
+
+<header class="top">
+  <p class="kicker">v2 · part three of seven</p>
+  <h1>The same machine, <em>four problems</em></h1>
+  <p class="standfirst">Nothing new gets built on this page — every formula is from Part 2. What changes is the problem: a decision boundary that isn't a line, an image instead of a table of numbers, and two flavors of "which of these matters right now" that quietly rehearse Part 4's attention before it has a name.</p>
+</header>
+
+<section>
+  <div class="eyebrow"><span class="num">01</span><span>Not a line</span><span class="line"></span></div>
+  <h2>A spiral, and why one straight cut can't solve it</h2>
+  <p>Two classes of points, arranged as interleaved spirals — no straight line separates them, no matter how it's angled. A network with a kink (Part 2 §1) can bend its decision boundary to match; a purely linear one is stuck guessing.</p>
+
+  <figure class="w" id="spiralfig">
+    <div class="head">
+      <span class="title">Decision boundary, training live</span>
+      <div class="ctrls"><button class="fwd" id="sp-train">Train 200 steps</button><button id="sp-reset">Reset</button></div>
+    </div>
+    <div class="body">
+      <canvas id="spiral" width="820" height="360" aria-label="Two interleaved spiral classes with a network's decision boundary shown as background shading"></canvas>
+      <div class="readout" id="sp-say"></div>
+    </div>
+    <figcaption>The shading is the network's current guess at every point in the plane — teal for one class, orange for the other. Watch it start as a fairly arbitrary blob and, step by step, bend itself around both spiral arms.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">02</span><span>Not a bag of pixels</span><span class="line"></span></div>
+  <h2>Why images want a filter, not a flatten</h2>
+  <p>Flatten an image into one long vector and a dense layer treats every pixel as unrelated to its neighbors — position (0,0) and position (1,0) are adjacent in the image but arbitrary strangers in the vector. A <strong>convolution</strong> keeps the 2D grid: one small filter slides over every position, computing the same dot product each time, so "detect an edge" is learned once and applies everywhere.</p>
+
+  <figure class="w" id="convfig">
+    <div class="head">
+      <span class="title">One 3×3 filter, slid over every position</span>
+      <div class="ctrls"><button class="fwd" id="conv-play">Slide it</button></div>
+    </div>
+    <div class="body">
+      <canvas id="conv" width="820" height="260" aria-label="A small edge-detecting filter sliding over a grid, with its dot product shown at each stop"></canvas>
+      <div class="readout" id="conv-say"></div>
+    </div>
+    <figcaption>The highlighted 3×3 patch and the fixed filter get dotted together, exactly like Part 1 §4 — the number lights up bright where there's a vertical edge under the patch, near zero on a flat region. Same 9 weights, every position, no separate weights per pixel.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">03</span><span>Which one matters</span><span class="line"></span></div>
+  <h2>Retrieval by similarity: a preview of attention</h2>
+  <p>Three stored (key, value) pairs and one query. Score the query against every key with a dot product, softmax the scores into weights, then return the <strong>weighted average</strong> of the values — not the single best match, a blend weighted by how well each key matched.</p>
+
+  <figure class="w" id="retfig">
+    <div class="head">
+      <span class="title">Query vs. three keys · drag the query</span>
+      <div class="ctrls"></div>
+    </div>
+    <div class="body">
+      <canvas id="ret" width="820" height="260" style="cursor:grab" aria-label="A query vector compared against three key vectors, with softmax weights and a resulting weighted-average value"></canvas>
+      <div class="readout" id="ret-say"></div>
+    </div>
+    <figcaption>Drag the query dot near a key and its weight climbs toward 1 while the others fall toward 0 — the output becomes almost exactly that key's value. Drag it equidistant from two keys and the output blends them. This <em>is</em> attention's arithmetic, one query at a time; Part 4 gives it Q, K, V matrices and does it for every position at once.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">04</span><span>Not allowed to peek</span><span class="line"></span></div>
+  <h2>Predicting the next character, without seeing the future</h2>
+  <p>Train a tiny model to predict the next character of <span class="mono">"ababab..."</span> from the characters before it. At training time, every position's prediction must depend only on positions before it — otherwise the "prediction" is just copying an answer it was handed. A <strong>causal mask</strong> enforces this: position <span class="mono">i</span> is blocked from attending to any position <span class="mono">j &gt; i</span>.</p>
+
+  <figure class="w" id="causalfig">
+    <div class="head">
+      <span class="title">What position 4 is allowed to see</span>
+      <div class="ctrls"><button id="ca-next">Advance one position</button><button id="ca-reset">Reset</button></div>
+    </div>
+    <div class="body">
+      <canvas id="causal" width="820" height="140" aria-label="A sequence of characters with a highlighted current position and a mask showing which earlier positions it may attend to"></canvas>
+      <div class="readout" id="ca-say"></div>
+    </div>
+    <figcaption>The greyed-out characters are masked — invisible to the current position's prediction, no matter how useful they'd be. Advance and watch the visible window grow by exactly one every step: more context, never a peek forward.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">05</span><span>Onward</span><span class="line"></span></div>
+  <h2>What Part 4 formalizes</h2>
+  <p>The spiral and the filter were Part 2's machinery on new shapes of data. The retrieval example and the causal mask were rehearsals — the exact arithmetic and the exact rule Part 4 is about to name properly, derive from scratch, and assemble into the mechanism every current LLM runs.</p>
+  <p><a href="part-4-attention.html">Continue to Part 4 — attention, derived →</a></p>
+</section>
+
+<footer>
+  <p>Reduced-motion preferences are respected throughout; every animation degrades to its final state.</p>
+</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+var REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function fmt(v,d){ return Number(v).toFixed(d===undefined?2:d); }
+function gid(i){ return document.getElementById(i); }
+
+/* ===== SPIRAL ===== */
+(function(){
+  var cv=gid("spiral"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("sp-say");
+  var N=60, pts=[];
+  function seedData(){
+    pts=[];
+    for(var c=0;c<2;c++){
+      for(var i=0;i<N;i++){
+        var t=i/N*4.2, r=t*0.9;
+        var ang=t*2.5 + (c===0?0:Math.PI);
+        pts.push({x:r*Math.cos(ang), y:r*Math.sin(ang), label:c});
+      }
+    }
+  }
+  var H=10, w1=[], b1=[], w2=[], b2=0;
+  function initNet(){
+    w1=[]; b1=[]; w2=[];
+    for(var i=0;i<H;i++){ w1.push([(Math.random()*2-1),(Math.random()*2-1)]); b1.push((Math.random()*2-1)*1.5); w2.push((Math.random()*2-1)*0.8); }
+    b2=(Math.random()*2-1)*0.3;
+  }
+  function forward(x,y){
+    var s=b2, hs=[];
+    for(var i=0;i<H;i++){ var z=w1[i][0]*x+w1[i][1]*y+b1[i]; var h=Math.max(0,z); hs.push(h); s+=w2[i]*h; }
+    return {y:1/(1+Math.exp(-s)), h:hs};
+  }
+  function trainStep(lr){
+    var gw1=w1.map(function(){return [0,0];}), gb1=new Array(H).fill(0), gw2=new Array(H).fill(0), gb2=0;
+    for(var k=0;k<pts.length;k++){
+      var p=pts[k], f=forward(p.x,p.y), diff=f.y-p.label, dz=diff;
+      gb2+=dz;
+      for(var i=0;i<H;i++){
+        gw2[i]+=dz*f.h[i];
+        var dh=dz*w2[i];
+        var dpre = f.h[i]>0 ? dh : 0;
+        gw1[i][0]+=dpre*p.x; gw1[i][1]+=dpre*p.y; gb1[i]+=dpre;
+      }
+    }
+    var n=pts.length;
+    for(var i=0;i<H;i++){ w1[i][0]-=lr*gw1[i][0]/n; w1[i][1]-=lr*gw1[i][1]/n; b1[i]-=lr*gb1[i]/n; w2[i]-=lr*gw2[i]/n; }
+    b2-=lr*gb2/n;
+  }
+  function accuracy(){
+    var correct=0;
+    pts.forEach(function(p){ var pred=forward(p.x,p.y).y>0.5?1:0; if(pred===p.label) correct++; });
+    return correct/pts.length;
+  }
+  var step=0;
+  function draw(){
+    var W=cv.width,Hh=cv.height; ctx.clearRect(0,0,W,Hh);
+    var x0=-4.5,x1=4.5,y0=-4.5,y1=4.5;
+    function px(v){ return (v-x0)/(x1-x0)*W; }
+    function py(v){ return Hh-(v-y0)/(y1-y0)*Hh; }
+    var res=18;
+    for(var i=0;i<W;i+=res){
+      for(var j=0;j<Hh;j+=res){
+        var xv=x0+(i/W)*(x1-x0), yv=y0+((Hh-j)/Hh)*(y1-y0);
+        var v=forward(xv,yv).y;
+        ctx.fillStyle = v>0.5 ? "rgba(11,139,139,"+(0.15+0.25*(v-0.5))+")" : "rgba(216,129,28,"+(0.15+0.25*(0.5-v))+")";
+        ctx.fillRect(i,j,res,res);
+      }
+    }
+    pts.forEach(function(p){
+      ctx.fillStyle = p.label===0 ? "#0B8B8B" : "#D8811C";
+      ctx.beginPath(); ctx.arc(px(p.x),py(p.y),4,0,Math.PI*2); ctx.fill();
+    });
+    say.innerHTML="step "+step+" &nbsp;·&nbsp; training accuracy = <b>"+fmt(accuracy()*100,1)+"%</b>";
+  }
+  gid("sp-train").onclick=function(){
+    if(REDUCED){ for(var i=0;i<200;i++){ trainStep(0.6); step++; } draw(); return; }
+    var n=0;
+    var t=setInterval(function(){
+      for(var s=0;s<4;s++){ trainStep(0.6); step++; }
+      n+=4; draw();
+      if(n>=200) clearInterval(t);
+    },30);
+  };
+  gid("sp-reset").onclick=function(){ initNet(); step=0; draw(); };
+  seedData(); initNet(); draw();
+})();
+
+/* ===== CONVOLUTION ===== */
+(function(){
+  var cv=gid("conv"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("conv-say");
+  var GRID = [
+    [0,0,1,1,1,1,0,0],
+    [0,0,1,1,1,1,0,0],
+    [0,0,1,1,1,1,0,0],
+    [0,0,1,1,1,1,0,0],
+    [0,0,1,1,1,1,0,0],
+    [0,0,1,1,1,1,0,0]
+  ];
+  var FILTER = [[-1,0,1],[-1,0,1],[-1,0,1]];
+  var pos={r:0,c:0}, playing=false, timer=null;
+  function conv(r,c){
+    var s=0;
+    for(var i=0;i<3;i++) for(var j=0;j<3;j++) s += (GRID[r+i][c+j]||0)*FILTER[i][j];
+    return s;
+  }
+  function draw(){
+    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
+    var cell=42, gx=40, gy=30;
+    for(var r=0;r<GRID.length;r++){
+      for(var c=0;c<GRID[0].length;c++){
+        ctx.fillStyle = GRID[r][c] ? "#15222E" : "#F4F7F9";
+        ctx.fillRect(gx+c*cell,gy+r*cell,cell-2,cell-2);
+      }
+    }
+    ctx.strokeStyle="#5A4A9F"; ctx.lineWidth=3;
+    ctx.strokeRect(gx+pos.c*cell,gy+pos.r*cell,cell*3-2,cell*3-2);
+
+    var outX = gx + GRID[0].length*cell + 60;
+    var val = conv(pos.r,pos.c);
+    var maxAbs=4;
+    var t=Math.max(-1,Math.min(1,val/maxAbs));
+    var col = t>=0 ? "rgba(11,139,139,"+(0.2+0.7*t)+")" : "rgba(179,30,85,"+(0.2+0.7*-t)+")";
+    ctx.fillStyle=col; ctx.fillRect(outX,gy+40,90,90);
+    ctx.strokeStyle="#CBD8E0"; ctx.strokeRect(outX,gy+40,90,90);
+    ctx.fillStyle="#15222E"; ctx.font="14px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+    ctx.fillText(val, outX+45, gy+90);
+    ctx.font="11px 'IBM Plex Mono',monospace"; ctx.fillStyle="#8399A8";
+    ctx.fillText("filter · patch", outX+45, gy+20);
+
+    say.innerHTML="Patch at row "+pos.r+", col "+pos.c+" · filter response = <b>"+val+"</b> — "+(Math.abs(val)>=3?"strong vertical edge under the patch":val===0?"flat region, no edge":"weak signal");
+  }
+  function nextPos(){
+    pos.c++;
+    if(pos.c > GRID[0].length-3){ pos.c=0; pos.r++; if(pos.r>GRID.length-3) pos.r=0; }
+  }
+  gid("conv-play").onclick=function(){
+    if(playing) return; playing=true;
+    if(REDUCED){ for(var i=0;i<10;i++) nextPos(); draw(); playing=false; return; }
+    var n=0;
+    timer=setInterval(function(){ nextPos(); draw(); n++; if(n>=14){ clearInterval(timer); playing=false; } },260);
+  };
+  draw();
+})();
+
+/* ===== RETRIEVAL ===== */
+(function(){
+  var cv=gid("ret"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("ret-say");
+  var keys=[{x:-2.2,y:1.2,v:2,col:"#0B8B8B",lab:"cat"},{x:1.8,y:1.6,v:8,col:"#D8811C",lab:"dog"},{x:0.2,y:-2.0,v:5,col:"#5A4A9F",lab:"fish"}];
+  var q={x:-2.0,y:1.0}, drag=false;
+  function px(x){ return cv.width/2+x*90; }
+  function py(y){ return cv.height/2-y*70; }
+  function inv(mx,my){ return {x:(mx-cv.width/2)/90,y:(cv.height/2-my)/70}; }
+  function draw(){
+    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
+    var scores=keys.map(function(k){ return q.x*k.x+q.y*k.y; });
+    var m=Math.max.apply(null,scores);
+    var exps=scores.map(function(s){return Math.exp(s-m);});
+    var sum=exps.reduce(function(a,b){return a+b;},0);
+    var weights=exps.map(function(e){return e/sum;});
+    var outVal = weights.reduce(function(acc,w,i){return acc+w*keys[i].v;},0);
+
+    keys.forEach(function(k,i){
+      ctx.strokeStyle=k.col; ctx.globalAlpha=0.25+0.75*weights[i]; ctx.lineWidth=2+weights[i]*6;
+      ctx.beginPath(); ctx.moveTo(px(q.x),py(q.y)); ctx.lineTo(px(k.x),py(k.y)); ctx.stroke();
+      ctx.globalAlpha=1;
+      ctx.fillStyle=k.col;
+      ctx.beginPath(); ctx.arc(px(k.x),py(k.y),9,0,Math.PI*2); ctx.fill();
+      ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+      ctx.fillText(k.lab+" (v="+k.v+")", px(k.x), py(k.y)-16);
+      ctx.fillText("w="+fmt(weights[i],2), px(k.x), py(k.y)+26);
+    });
+    ctx.fillStyle="#15222E";
+    ctx.beginPath(); ctx.arc(px(q.x),py(q.y),8,0,Math.PI*2); ctx.fill();
+    ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+    ctx.fillText("query", px(q.x), py(q.y)-14);
+
+    say.innerHTML="weights = ["+weights.map(function(w){return fmt(w,2);}).join(", ")+"] &nbsp;·&nbsp; output = Σ wᵢvᵢ = <b>"+fmt(outVal,2)+"</b>";
+  }
+  function pos(e){
+    var r=cv.getBoundingClientRect(), t=e.touches?e.touches[0]:e;
+    return { x:(t.clientX-r.left)*(cv.width/r.width), y:(t.clientY-r.top)*(cv.height/r.height) };
+  }
+  cv.addEventListener("mousedown",function(e){ drag=true; move(e); });
+  cv.addEventListener("touchstart",function(e){ drag=true; move(e); },{passive:false});
+  function move(e){
+    if(!drag) return;
+    e.preventDefault && e.preventDefault();
+    var p=pos(e), v=inv(p.x,p.y);
+    q.x=Math.max(-3.5,Math.min(3.5,v.x)); q.y=Math.max(-2.8,Math.min(2.8,v.y));
+    draw();
+  }
+  window.addEventListener("mousemove",move); window.addEventListener("touchmove",move,{passive:false});
+  window.addEventListener("mouseup",function(){drag=false;}); window.addEventListener("touchend",function(){drag=false;});
+  draw();
+})();
+
+/* ===== CAUSAL MASK ===== */
+(function(){
+  var cv=gid("causal"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("ca-say");
+  var SEQ = "a b a b a b a b a b".split(" ");
+  var cur=3;
+  function draw(){
+    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
+    var cell=68, x0=30, y=60;
+    SEQ.forEach(function(ch,i){
+      var visible = i<=cur;
+      var isCur = i===cur;
+      ctx.fillStyle = isCur ? "#5A4A9F" : visible ? "#D3EDED" : "#E2EAEF";
+      ctx.fillRect(x0+i*cell,y-24,cell-8,48);
+      ctx.fillStyle = isCur ? "#fff" : visible ? "#0B8B8B" : "#B7C2CC";
+      ctx.font="16px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+      ctx.fillText(ch, x0+i*cell+(cell-8)/2, y+6);
+    });
+    say.innerHTML="Predicting position <b>"+(cur+1)+"</b>: allowed to see positions <b>1–"+(cur+1)+"</b> (teal/purple), masked from positions <b>"+(cur+2)+"–"+SEQ.length+"</b> (grey) even though they exist in the training text.";
+  }
+  gid("ca-next").onclick=function(){ cur=Math.min(SEQ.length-1,cur+1); draw(); };
+  gid("ca-reset").onclick=function(){ cur=3; draw(); };
+  draw();
+})();
+})();
+</script>
+</body>
+</html>
