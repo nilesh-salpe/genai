@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SPR2FRFBQ1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SPR2FRFBQ1');
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLMs From Scratch v2 — Foundations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF2F5; --card:#FFFFFF; --ink:#15222E; --ink-2:#4B5F6E; --ink-3:#8399A8; --rule:#CBD8E0;
+  --fwd:#0B8B8B; --fwd-soft:#D3EDED;
+  --back:#D8811C; --back-soft:#F8E7CE;
+  --loss:#B31E55; --loss-soft:#F7DDE7;
+  --attn:#5A4A9F; --attn-soft:#E2DDF2;
+  --measure:34rem; --wide:52rem;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background-color:var(--paper);
+  background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);
+  background-size:28px 28px;background-position:-1px -1px;
+  color:var(--ink);font-family:"Spectral",Georgia,serif;font-size:17px;line-height:1.68}
+body::before{content:"";position:fixed;inset:0;background:var(--paper);opacity:.82;pointer-events:none;z-index:0}
+.shell{position:relative;z-index:1;max-width:var(--wide);margin:0 auto;padding:0 1.25rem 6rem}
+h1,h2,h3,.eyebrow,.ui,button,input,label,table{font-family:"Space Grotesk",system-ui,sans-serif}
+code,.mono,.eq{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+header.top{padding:4.5rem 0 2rem;max-width:var(--measure)}
+.kicker{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 1.4rem}
+h1{font-size:clamp(2rem,5.6vw,3.2rem);line-height:1.03;letter-spacing:-.03em;font-weight:700;margin:0 0 1.1rem}
+h1 em{font-style:normal;color:var(--fwd)}
+.standfirst{font-size:1.12rem;color:var(--ink-2);margin:0 0 2rem}
+.progress{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin:0 0 3rem;padding:.85rem .95rem;background:var(--card);border:1px solid var(--rule);font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.02em;max-width:var(--wide)}
+.progress a{color:var(--ink-2);text-decoration:none;padding:.28rem .6rem;border:1px solid var(--rule);border-radius:2px;white-space:nowrap;transition:border-color .15s,background .15s,color .15s}
+.progress a:hover{border-color:var(--ink);color:var(--ink)}
+.progress a.here{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+section{margin:4.5rem 0 0}
+.eyebrow{display:flex;align-items:baseline;gap:.85rem;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.5rem}
+.eyebrow .num{font-family:"IBM Plex Mono",monospace;color:var(--fwd);font-weight:600}
+.eyebrow .line{flex:1;height:1px;background:var(--rule)}
+h2{font-size:clamp(1.4rem,3.4vw,1.95rem);line-height:1.15;letter-spacing:-.02em;margin:.1rem 0 1.1rem;font-weight:700;max-width:var(--measure)}
+h3{font-size:1.05rem;letter-spacing:-.01em;margin:2.2rem 0 .6rem;font-weight:600}
+p{margin:0 0 1.1rem;max-width:var(--measure)}
+ul,ol{max-width:var(--measure);padding-left:1.15rem;margin:0 0 1.1rem}
+li{margin-bottom:.4rem}
+strong{font-weight:600}
+blockquote{margin:1.6rem 0;padding:.2rem 0 .2rem 1.3rem;border-left:3px solid var(--fwd);max-width:var(--measure);font-size:1.04rem}
+.eq{display:block;margin:1.4rem 0;padding:.9rem 1.1rem;background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--ink-3);font-size:.95rem;overflow-x:auto;max-width:var(--measure);white-space:nowrap}
+.eq.wide{max-width:100%}
+table{border-collapse:collapse;width:100%;max-width:var(--wide);margin:1.4rem 0;font-size:.86rem}
+th,td{text-align:left;padding:.55rem .7rem;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:600;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--ink-3)}
+td .shape{font-family:"IBM Plex Mono",monospace;font-size:.82rem}
+figure.w{margin:2.5rem 0;background:var(--card);border:1px solid var(--rule);max-width:var(--wide)}
+figure.w .head{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.7rem 1.1rem;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+figure.w .title{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+figure.w .body{padding:1.2rem 1.1rem}
+figure.w figcaption{padding:.75rem 1.1rem 1rem;font-size:.85rem;color:var(--ink-2);border-top:1px dashed var(--rule)}
+figure.w figcaption b{color:var(--ink);font-weight:600}
+.ctrls{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+button{font-size:.78rem;font-weight:500;padding:.42rem .85rem;border:1px solid var(--ink);background:var(--card);color:var(--ink);cursor:pointer;border-radius:2px;transition:background .15s,color .15s}
+button:hover{background:var(--ink);color:var(--card)}
+button.fwd{border-color:var(--fwd);color:var(--fwd)} button.fwd:hover{background:var(--fwd);color:#fff}
+button.on{background:var(--ink);color:var(--card)}
+button.fwd.on{background:var(--fwd);color:#fff}
+.slider-row{display:grid;grid-template-columns:auto 1fr auto;gap:.7rem;align-items:center;margin-bottom:.5rem;font-family:"IBM Plex Mono",monospace;font-size:.78rem}
+.slider-row label{color:var(--ink-2)}
+.slider-row .val{min-width:4.2rem;text-align:right;font-weight:500}
+input[type=range]{width:100%;accent-color:var(--fwd);height:1.5rem}
+canvas{display:block;max-width:100%}
+.readout{font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--ink-2);margin-top:.7rem;line-height:1.65}
+.readout b{color:var(--ink);font-weight:600}
+.box{max-width:var(--wide);margin:2rem 0;padding:1.3rem 1.4rem;background:var(--card);border:1px solid var(--rule);border-top:3px solid var(--fwd)}
+.box .h{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:.2rem}
+.box .sub{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.9rem}
+.box p{max-width:100%}
+footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-size:.85rem;color:var(--ink-3);max-width:var(--measure)}
+@media (max-width:640px){body{font-size:16px}.shell{padding:0 1rem 4rem}figure.w .body{padding:1rem .8rem}}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms !important;animation-duration:.01ms !important}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<nav class="progress" aria-label="Course progress">
+  <a href="part-0-big-picture.html">0 · Big Picture</a>
+  <a href="part-1-foundations.html" class="here">1 · Foundations</a>
+  <a href="part-2-neural-network.html">2 · Neural Network</a>
+  <a href="part-3-examples.html">3 · Examples</a>
+  <a href="part-4-attention.html">4 · Attention</a>
+  <a href="part-5-transformer.html">5 · Transformer</a>
+  <a href="part-6-llm.html">6 · LLM</a>
+  <a href="part-7-illustrated.html">7 · Illustrated</a>
+</nav>
+
+<header class="top">
+  <p class="kicker">v2 · part one of seven</p>
+  <h1>The plain <em>maths</em>, before any network</h1>
+  <p class="standfirst">Ten small tools, built from nothing but arithmetic: functions, sums, vectors, matrices, exponentials, derivatives, the chain rule, the gradient, and probability. No neural network appears anywhere on this page — Part 2 puts every one of these to work. If a tool below is already familiar, skim it; the goal is that nothing in Part 2 ever uses a symbol this page didn't first build.</p>
+</header>
+
+<section>
+  <div class="eyebrow"><span class="num">01</span><span>Machines with slots</span><span class="line"></span></div>
+  <h2>A function is an input, a rule, and an output</h2>
+  <p><span class="mono">f(x) = 2x + 1</span> is a machine: feed it 3, it applies "double, then add one," and hands back 7. The letter <span class="mono">x</span> is a placeholder — it's not a number until something is fed into the slot. Functions can take more than one input (<span class="mono">f(x,y) = x·y</span> is a two-slot machine), and the output of one can feed straight into another: <span class="mono">f(g(x))</span> means run <span class="mono">x</span> through <span class="mono">g</span> first, then feed that result into <span class="mono">f</span>. A neural network, eventually, is nothing but this — functions feeding functions, many layers deep.</p>
+
+  <figure class="w" id="compfig">
+    <div class="head">
+      <span class="title">Two machines, chained · drag x</span>
+      <div class="ctrls"></div>
+    </div>
+    <div class="body">
+      <div class="slider-row"><label for="cp-x">x</label><input type="range" id="cp-x" min="-3" max="3" step="0.1" value="1"><span class="val" id="cp-xv">1.0</span></div>
+      <canvas id="comp" width="820" height="150" aria-label="Flow diagram showing a value passing through function g, then the result passing through function f"></canvas>
+      <div class="readout" id="comp-say"></div>
+    </div>
+    <figcaption><span class="mono">g(x) = x + 2</span> feeds directly into <span class="mono">f(u) = u²</span>. Drag <b>x</b> and watch <span class="mono">g(x)</span> update first, then <span class="mono">f(g(x))</span> a beat later — the output of one machine is genuinely the input of the next, not two separate calculations.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">02</span><span>Adding many things</span><span class="line"></span></div>
+  <h2>Σ is a loop, not a new idea</h2>
+  <p><span class="mono">Σᵢ xᵢ</span> means "add up every <span class="mono">xᵢ</span>, one after another." If <span class="mono">x = [4, 1, 3]</span>, then <span class="mono">Σᵢ xᵢ = 4+1+3 = 8</span>. A rule is often attached: <span class="mono">Σᵢ xᵢ²</span> means square each one first, then add — <span class="mono">16+1+9 = 26</span>. Every dot product, every layer, every loss function in this course is a Σ wearing a costume: a rule applied to many things, then totalled into one number.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">03</span><span>Bundles of numbers</span><span class="line"></span></div>
+  <h2>A vector is a list — and a point</h2>
+  <p>Computers only do arithmetic, so anything a network reasons about — a photo, a word, a house — first becomes a list of numbers. <span class="mono">[34, 52000, 8]</span> could be age, income, years of schooling: a filled-in form. It's also, simultaneously, a point with three coordinates. That second reading is what lets geometric questions — "how far apart," "how aligned" — get asked about things that aren't obviously geometric at all.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">04</span><span>The core operation</span><span class="line"></span></div>
+  <h2>The dot product measures agreement</h2>
+  <p><span class="mono">w · x = Σᵢ wᵢxᵢ</span> — multiply matching entries, add the results. Multiplying, not adding, is what makes it measure agreement: care a lot (<span class="mono">wᵢ</span> large) but the feature is absent (<span class="mono">xᵢ</span> = 0)? Contributes nothing. Both large and the same sign? Contributes a lot. One number, summarising "how much do these two lists point the same way."</p>
+
+  <figure class="w" id="dotfig">
+    <div class="head">
+      <span class="title">Alignment · drag either arrow</span>
+      <div class="ctrls"><button id="dot-reset">Reset</button></div>
+    </div>
+    <div class="body">
+      <canvas id="dot" width="820" height="300" style="cursor:grab" aria-label="Two draggable vectors and their dot product"></canvas>
+      <div class="readout" id="dot-say"></div>
+    </div>
+    <figcaption>Swing the arrows together and the dot product grows; cross <b>90°</b> and it flips sign. Perpendicular means "unrelated" — exactly zero. This one number is the entire idea Part 4 builds attention out of: how much does this word agree with that one.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">05</span><span>Doing it in bulk</span><span class="line"></span></div>
+  <h2>A matrix is many dot products, asked at once</h2>
+  <p>Stack several "what I care about" vectors as rows of a grid, and one multiplication asks every question simultaneously: <span class="mono">(Wx)ᵢ = Σⱼ Wᵢⱼxⱼ</span> — row <span class="mono">i</span> of <span class="mono">W</span>, dotted with <span class="mono">x</span>. It's bookkeeping, not new machinery.</p>
+  <p><strong>Worked example.</strong> Let <span class="mono">W</span> be 2×3 and <span class="mono">x</span> be a 3-vector:</p>
+  <span class="eq wide">W = [[1, 0, 2], [−1, 3, 1]] &nbsp;&nbsp; x = [2, 1, 0]</span>
+  <p>Row 1 dotted with <span class="mono">x</span>: <span class="mono">1×2 + 0×1 + 2×0 = 2</span>. Row 2: <span class="mono">−1×2 + 3×1 + 1×0 = 1</span>. So <span class="mono">Wx = [2, 1]</span> — a 2×3 matrix times a 3-vector gives a 2-vector, exactly as many outputs as rows.</p>
+  <p><strong>The shape rule derives itself.</strong> Every output entry needs a row from the first matrix and a column from the second, and a dot product needs both the same length — so inner dimensions must match, and you get one output per (row, column) pair: <span class="mono">(m×n)(n×p) = (m×p)</span>, nothing to memorise.</p>
+
+  <figure class="w" id="matfig">
+    <div class="head">
+      <span class="title">Which row asks which question · click a row</span>
+      <div class="ctrls"></div>
+    </div>
+    <div class="body">
+      <canvas id="mat" width="820" height="220" aria-label="A matrix-vector multiply, with each row highlighted as its own dot product on click"></canvas>
+      <div class="readout" id="mat-say">Click a row of W to see its dot product with x computed, live.</div>
+    </div>
+    <figcaption>Same <span class="mono">W</span> and <span class="mono">x</span> as above. Click either row and watch the matching entries pair up and multiply — row 1 only ever talks to <span class="mono">x</span>, never to row 2. That independence is also why GPUs help: every row's dot product can run at the same time as every other row's.</figcaption>
+  </figure>
+  <p><strong>The constant term.</strong> <span class="mono">y = mx + c</span> needed <span class="mono">+c</span> so an input of zero isn't forced to output zero. The matrix version needs the same fix: <span class="mono">Wx + b</span>, a constant vector added after the multiply.</p>
+</section>
+
+<div class="box">
+  <div class="sub">Box A · refresher</div>
+  <div class="h">Exponentials and logarithms</div>
+  <p style="margin-top:.7rem"><strong>eˣ</strong> answers "what does multiplying e by itself this many times give?" — fractional and negative exponents fill in the curve smoothly (<span class="mono">e⁰·⁵ ≈ 1.65</span>, <span class="mono">e⁻¹ ≈ 0.37</span>). <strong>log x</strong> asks the reverse: "e to what power gives this number?" They undo each other, the same way squaring and square-rooting do.</p>
+  <table>
+    <tr><th>Property</th><th>Why it matters later</th></tr>
+    <tr><td class="shape">eˣ &gt; 0 always</td><td>A sum of positive numbers can become proportions</td></tr>
+    <tr><td class="shape">eᵃ·eᵇ = eᵃ⁺ᵇ</td><td>Shifting every input the same amount changes no ratio</td></tr>
+    <tr><td class="shape">log(ab) = log a + log b</td><td><b>The defining property</b> — turns multiplication into addition</td></tr>
+    <tr><td class="shape">d/dx log x = 1/x</td><td>Used directly in Part 2's loss-function gradient</td></tr>
+  </table>
+</div>
+
+<section>
+  <div class="eyebrow"><span class="num">07</span><span>Rates of change</span><span class="line"></span></div>
+  <h2>The derivative: how steep, right here</h2>
+  <p><span class="mono">f(x) = x²</span> barely moves near <span class="mono">x=0</span> and rockets upward near <span class="mono">x=10</span> — "the derivative" names the steepness at one exact point. Pick two nearby points, draw the line through them (a <strong>secant</strong>), and shrink the gap toward zero: the secant settles onto the <strong>tangent</strong>, and its slope is <span class="mono">f′(x)</span>.</p>
+
+  <figure class="w" id="tanfig">
+    <div class="head">
+      <span class="title">Secant sliding into tangent · f(x) = x²</span>
+      <div class="ctrls"></div>
+    </div>
+    <div class="body">
+      <div class="slider-row"><label for="tf-a">point a</label><input type="range" id="tf-a" min="-3" max="3" step="0.1" value="1.5"><span class="val" id="tf-av">1.5</span></div>
+      <div class="slider-row"><label for="tf-h">gap h</label><input type="range" id="tf-h" min="0.05" max="3" step="0.05" value="2"><span class="val" id="tf-hv">2.00</span></div>
+      <canvas id="tan" width="820" height="320" aria-label="Graph of x squared with a secant converging to the tangent as the gap shrinks"></canvas>
+      <div class="readout" id="tf-say"></div>
+    </div>
+    <figcaption>Drag <b>h</b> toward zero: the grey secant's slope, <span class="mono">2a+h</span>, converges to exactly <span class="mono">2a</span> — the fixed teal tangent. For any <span class="mono">f(x) = xⁿ</span>, the shortcut is the <strong>power rule</strong>: <span class="mono">f′(x) = n·xⁿ⁻¹</span>, no limit-taking required ever again.</figcaption>
+  </figure>
+
+  <h3>The chain rule: rates feeding rates</h3>
+  <p><span class="mono">h(x) = (2x+1)²</span> is an inner function <span class="mono">g(x)=2x+1</span> feeding an outer one <span class="mono">f(u)=u²</span>. Nudge <span class="mono">x</span>; that nudges <span class="mono">g</span> by rate <span class="mono">g′(x)</span>; that nudge in <span class="mono">g</span> then nudges <span class="mono">f</span> by a further rate <span class="mono">f′(g(x))</span>. Two rates back to back multiply:</p>
+  <span class="eq">d/dx f(g(x)) = f′(g(x)) · g′(x)</span>
+  <p>This is not a trick — it's bookkeeping for "one rate feeding into another" — and it is the entire idea behind backpropagation, just with thousands of layers of nesting instead of two.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">09</span><span>Many inputs at once</span><span class="line"></span></div>
+  <h2>The gradient: one derivative per input</h2>
+  <p>A loss function takes millions of inputs — one per weight. Freeze every input but one and take the ordinary derivative of just that one: a <strong>partial derivative</strong>, <span class="mono">∂f/∂x</span>. Collect one partial derivative per input, in order, and you have the <strong>gradient</strong> — a vector where entry <span class="mono">i</span> answers "nudge only input <span class="mono">i</span> — how fast does the output move?"</p>
+
+  <figure class="w" id="gradfig">
+    <div class="head">
+      <span class="title">The gradient points uphill · drag the point, then try a direction</span>
+      <div class="ctrls"></div>
+    </div>
+    <div class="body">
+      <canvas id="grad" width="820" height="360" style="cursor:grab" aria-label="Contour plot with a draggable point, its gradient, and a direction the reader can try"></canvas>
+      <div class="readout" id="grad-say"></div>
+    </div>
+    <figcaption>Rings are contours of <span class="mono">f(x,y)=x²+y²</span>. Drag the black dot, then drag the small handle around the dashed circle to propose a step direction <b>d</b>. The readout is <span class="mono">∇f·d</span>, live — it peaks exactly when <b>d</b> matches the purple gradient arrow, confirming "steepest increase" by trying every alternative and watching none of them win.</figcaption>
+  </figure>
+  <p style="margin-bottom:0">Training a network with millions of weights changes nothing about this picture — it just collects millions of partial derivatives into one gradient instead of two, and moves every weight a small step opposite it.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">10</span><span>Randomness</span><span class="line"></span></div>
+  <h2>Probability, conditional probability, and the average of "it depends"</h2>
+  <p><strong>What a probability is.</strong> An <strong>outcome</strong> is one thing that could happen; the <strong>sample space</strong> is the full list of possibilities. A <strong>probability</strong> <span class="mono">P(event)</span> is a number between 0 and 1 saying how likely that event is, and across every outcome in the sample space, the probabilities add up to exactly 1 — that full list of (outcome, probability) pairs is called a <strong>probability distribution</strong>. Roll a fair die: six outcomes, each <span class="mono">P = 1/6</span>, summing to 1.</p>
+
+  <h3>Conditional probability: does new information change the odds?</h3>
+  <p><span class="mono">P(A | B)</span> reads "the probability of A, given that B already happened" — restrict attention to only the cases where B is true, then ask how often A is also true inside that narrower world. <strong>Independence</strong> is the special case where B tells you nothing: <span class="mono">P(A|B) = P(A)</span>, knowing B changes nothing about A.</p>
+
+  <figure class="w" id="condfig">
+    <div class="head">
+      <span class="title">Does the previous word change the next one? · adjust the counts</span>
+      <div class="ctrls"><button id="cond-reset">Reset</button></div>
+    </div>
+    <div class="body">
+      <div id="cond-table"></div>
+      <canvas id="cond" width="820" height="140" aria-label="Bar chart comparing the unconditional probability of a next word to its probability conditioned on the previous word"></canvas>
+      <div class="readout" id="cond-say"></div>
+    </div>
+    <figcaption>Counts of what word follows "the" vs. what word follows "New" in a toy corpus. <span class="mono">P(York)</span> overall is small — but <span class="mono">P(York | New)</span> is large, because "New" changes the odds a lot. Adjust the counts with +/− and watch both bars move: when a row's counts become proportional to the overall totals, the conditional bar collapses onto the unconditional one — that <em>is</em> independence, made visible. <strong>This exact quantity — P(next word | everything so far) — is what a language model outputs, just with an enormous condition instead of one word.</strong></figcaption>
+  </figure>
+  <p class="note" style="font-size:.9rem;color:var(--ink-2)"><strong>Careful:</strong> <span class="mono">P(A|B)</span> is not <span class="mono">P(B|A)</span>. "Given it's raining, the ground is wet" is nearly certain; "given the ground is wet, it's raining" isn't — a sprinkler could have done it. Mixing the two up is the single most common probability mistake.</p>
+
+  <h3>Expected value and spread</h3>
+  <p><strong>E[X] = Σᵢ pᵢxᵢ</strong> — multiply each outcome by its probability and add: a probability-weighted average, the long-run balance point. <strong>Variance</strong>, <span class="mono">E[(X−E[X])²]</span>, is the expected squared distance from that balance point; its square root is the <strong>standard deviation</strong>, the typical size of a deviation.</p>
+  <p style="margin-bottom:0"><strong>One fact worth holding onto:</strong> for independent quantities, variances add — so summing <span class="mono">n</span> independent unit-variance things gives spread <span class="mono">√n</span>, not <span class="mono">n</span>, because the random signs partially cancel. Part 4 uses exactly this to explain why attention needs a <span class="mono">√d_k</span> scaling factor.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">11</span><span>Onward</span><span class="line"></span></div>
+  <h2>What Part 2 assumes from here</h2>
+  <p>A function as an input/output machine, Σ as an addition loop, vectors and matrices as bundles of numbers with a well-defined way to multiply, exp/log undoing each other, the derivative and chain rule computed without ever taking a limit by hand, the gradient as one partial derivative per input, and probability — including the conditional kind — as the language for "how sure, and does new information change that." Nothing in Part 2 is new machinery; it's these ten tools, pointed at a network for the first time.</p>
+  <p><a href="part-2-neural-network.html">Continue to Part 2 — build the network itself →</a></p>
+</section>
+
+<footer>
+  <p>Reduced-motion preferences are respected throughout; every animation degrades to its final state.</p>
+</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+var REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function fmt(v,d){ return Number(v).toFixed(d===undefined?2:d); }
+function gid(i){ return document.getElementById(i); }
+function grid(ctx,W,H,nx,ny,x0,x1,y0,y1,px,py){
+  ctx.strokeStyle="#E2EAEF"; ctx.lineWidth=1;
+  for(var i=0;i<=nx;i++){var x=x0+(x1-x0)*i/nx;ctx.beginPath();ctx.moveTo(px(x),py(y0));ctx.lineTo(px(x),py(y1));ctx.stroke();}
+  for(var j=0;j<=ny;j++){var y=y0+(y1-y0)*j/ny;ctx.beginPath();ctx.moveTo(px(x0),py(y));ctx.lineTo(px(x1),py(y));ctx.stroke();}
+}
+
+/* ===== COMPOSITION ===== */
+(function(){
+  var cv=gid("comp"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("comp-say"), sx=gid("cp-x");
+  function box(cx,cy,w,h,lines,col){
+    ctx.strokeStyle=col; ctx.lineWidth=1.6; ctx.strokeRect(cx-w/2,cy-h/2,w,h);
+    ctx.fillStyle=col; ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+    lines.forEach(function(l,i){ ctx.fillText(l, cx, cy - (lines.length-1)*8 + i*16 + 4); });
+  }
+  function arrow(x1,y1,x2,y2,col){
+    ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    var ang=Math.atan2(y2-y1,x2-x1);
+    ctx.beginPath(); ctx.moveTo(x2,y2);
+    ctx.lineTo(x2-9*Math.cos(ang-0.4),y2-9*Math.sin(ang-0.4));
+    ctx.lineTo(x2-9*Math.cos(ang+0.4),y2-9*Math.sin(ang+0.4));
+    ctx.closePath(); ctx.fill();
+  }
+  function draw(){
+    var x=parseFloat(sx.value); gid("cp-xv").textContent=fmt(x,1);
+    var g = x+2, f = g*g;
+    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
+    var y=H/2;
+    ctx.fillStyle="#15222E"; ctx.font="13px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+    ctx.fillText("x = "+fmt(x,1), 70, y+5);
+    arrow(110,y,220,y,"#8399A8");
+    box(300,y,130,54,["g(x) = x+2","= "+fmt(g,1)],"#0B8B8B");
+    arrow(365,y,470,y,"#8399A8");
+    box(560,y,150,54,["f(u) = u²","= "+fmt(f,1)],"#5A4A9F");
+    arrow(635,y,730,y,"#8399A8");
+    ctx.fillStyle="#15222E";
+    ctx.fillText("f(g(x)) = "+fmt(f,2), 780, y+5);
+    say.innerHTML="g("+fmt(x,1)+") = "+fmt(x,1)+"+2 = <b style='color:#0B8B8B'>"+fmt(g,2)+"</b> &nbsp;·&nbsp; f(g(x)) = ("+fmt(g,2)+")² = <b style='color:#5A4A9F'>"+fmt(f,2)+"</b>";
+  }
+  sx.oninput=draw; draw();
+})();
+
+/* ===== DOT PRODUCT ===== */
+(function(){
+  var cv=gid("dot"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("dot-say");
+  var a={x:2.4,y:1.4}, b={x:1.2,y:2.6}, drag=null;
+  function px(x){ return cv.width/2+x*52; }
+  function py(y){ return cv.height/2-y*52; }
+  function inv(mx,my){ return {x:(mx-cv.width/2)/52, y:(cv.height/2-my)/52}; }
+  function arrow(v,col,lab){
+    ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=2.6;
+    ctx.beginPath(); ctx.moveTo(px(0),py(0)); ctx.lineTo(px(v.x),py(v.y)); ctx.stroke();
+    var ang=Math.atan2(-(py(v.y)-py(0)),px(v.x)-px(0));
+    ctx.beginPath();
+    ctx.moveTo(px(v.x),py(v.y));
+    ctx.lineTo(px(v.x)-11*Math.cos(ang-0.4), py(v.y)+11*Math.sin(ang-0.4));
+    ctx.lineTo(px(v.x)-11*Math.cos(ang+0.4), py(v.y)+11*Math.sin(ang+0.4));
+    ctx.closePath(); ctx.fill();
+    ctx.font="13px 'IBM Plex Mono',monospace";
+    ctx.fillText(lab,px(v.x)+13,py(v.y)-6);
+  }
+  function draw(){
+    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle="#E2EAEF"; ctx.lineWidth=1;
+    for(var gx=-7;gx<=7;gx++){ ctx.beginPath(); ctx.moveTo(px(gx),0); ctx.lineTo(px(gx),H); ctx.stroke(); }
+    for(var gy=-3;gy<=3;gy++){ ctx.beginPath(); ctx.moveTo(0,py(gy)); ctx.lineTo(W,py(gy)); ctx.stroke(); }
+    ctx.strokeStyle="#8399A8";
+    ctx.beginPath(); ctx.moveTo(0,py(0)); ctx.lineTo(W,py(0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px(0),0); ctx.lineTo(px(0),H); ctx.stroke();
+    var dot=a.x*b.x+a.y*b.y;
+    var la=Math.hypot(a.x,a.y), lb=Math.hypot(b.x,b.y);
+    var cos=dot/(la*lb||1), ang=Math.acos(Math.max(-1,Math.min(1,cos)))*180/Math.PI;
+    arrow(a,"#0B8B8B","a"); arrow(b,"#5A4A9F","b");
+    var col=dot>=0?"#0B8B8B":"#B31E55";
+    say.innerHTML="a = ["+fmt(a.x,1)+", "+fmt(a.y,1)+"] &nbsp; b = ["+fmt(b.x,1)+", "+fmt(b.y,1)+"]<br>"+
+      "a · b = "+fmt(a.x,1)+"×"+fmt(b.x,1)+" + "+fmt(a.y,1)+"×"+fmt(b.y,1)+
+      " = <b style='color:"+col+"'>"+fmt(dot,2)+"</b> &nbsp; (angle "+fmt(ang,0)+"°)<br>"+
+      "<b style='color:"+col+"'>"+(ang<85?"aligned — they agree":ang<95?"perpendicular — unrelated, ≈ 0":"opposed — they disagree")+"</b>";
+  }
+  function pos(e){
+    var r=cv.getBoundingClientRect(), t=e.touches?e.touches[0]:e;
+    return { x:(t.clientX-r.left)*(cv.width/r.width), y:(t.clientY-r.top)*(cv.height/r.height) };
+  }
+  function down(e){
+    var p=pos(e), va=inv(p.x,p.y);
+    drag=(Math.hypot(va.x-a.x,va.y-a.y)<Math.hypot(va.x-b.x,va.y-b.y))?"a":"b";
+    move(e);
+  }
+  function move(e){
+    if(!drag) return;
+    e.preventDefault();
+    var p=pos(e), v=inv(p.x,p.y);
+    v.x=Math.max(-6.5,Math.min(6.5,v.x)); v.y=Math.max(-2.6,Math.min(2.6,v.y));
+    if(drag==="a") a=v; else b=v;
+    draw();
+  }
+  cv.addEventListener("mousedown",down); cv.addEventListener("touchstart",down,{passive:false});
+  window.addEventListener("mousemove",move); window.addEventListener("touchmove",move,{passive:false});
+  window.addEventListener("mouseup",function(){drag=null;}); window.addEventListener("touchend",function(){drag=null;});
+  gid("dot-reset").onclick=function(){ a={x:2.4,y:1.4}; b={x:1.2,y:2.6}; draw(); };
+  draw();
+})();
+
+/* ===== MATRIX MULTIPLY ===== */
+(function(){
+  var cv=gid("mat"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("mat-say");
+  var W=[[1,0,2],[-1,3,1]], x=[2,1,0];
+  var active=0;
+  function draw(){
+    var Wd=cv.width,Hd=cv.height; ctx.clearRect(0,0,Wd,Hd);
+    var cellW=54, cellH=40, mx=60, my=30;
+    ctx.font="14px 'IBM Plex Mono',monospace"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    for(var r=0;r<2;r++){
+      for(var c=0;c<3;c++){
+        var cx=mx+c*cellW, cy=my+r*cellH;
+        var hi = r===active;
+        ctx.fillStyle = hi ? "#E2DDF2" : "#F4F7F9";
+        ctx.fillRect(cx-cellW/2+3,cy-cellH/2+3,cellW-6,cellH-6);
+        ctx.fillStyle = hi ? "#5A4A9F" : "#15222E";
+        ctx.fillText(W[r][c], cx, cy);
+      }
+    }
+    ctx.fillStyle="#8399A8"; ctx.font="11px 'IBM Plex Mono',monospace";
+    ctx.fillText("W (2×3)", mx+cellW, my-28);
+
+    var vx=mx+3*cellW+50;
+    for(var i=0;i<3;i++){
+      var cy2=my+cellH/2+i*cellH*0.85 - cellH*0.4;
+      ctx.fillStyle="#F4F7F9"; ctx.fillRect(vx-cellW/2+3,my+i*36-15,cellW-6,32);
+      ctx.fillStyle="#0B8B8B"; ctx.font="14px 'IBM Plex Mono',monospace";
+      ctx.fillText(x[i], vx, my+i*36+1);
+    }
+    ctx.fillStyle="#8399A8"; ctx.font="11px 'IBM Plex Mono',monospace";
+    ctx.fillText("x (3×1)", vx, my-28);
+
+    var rx=vx+120;
+    var out=[0,0];
+    for(var r2=0;r2<2;r2++){ var s=0; for(var c2=0;c2<3;c2++) s+=W[r2][c2]*x[c2]; out[r2]=s; }
+    for(var r3=0;r3<2;r3++){
+      var cy3=my+r3*cellH;
+      ctx.fillStyle = r3===active ? "#D3EDED" : "#F4F7F9";
+      ctx.fillRect(rx-cellW/2+3,cy3-cellH/2+3,cellW-6,cellH-6);
+      ctx.fillStyle = r3===active ? "#0B8B8B" : "#15222E";
+      ctx.font="14px 'IBM Plex Mono',monospace";
+      ctx.fillText(out[r3], rx, cy3);
+    }
+    ctx.fillStyle="#8399A8"; ctx.font="11px 'IBM Plex Mono',monospace";
+    ctx.fillText("Wx", rx, my-28);
+
+    ctx.textAlign="left";
+    ctx.fillStyle="#15222E"; ctx.font="12px 'IBM Plex Mono',monospace";
+    var terms=[];
+    for(var c3=0;c3<3;c3++) terms.push(W[active][c3]+"×"+x[c3]);
+    ctx.fillText("row "+(active+1)+" · x  =  "+terms.join(" + ")+"  =  "+out[active], mx, Hd-40);
+
+    say.innerHTML="Row "+(active+1)+" of W is <b>["+W[active].join(", ")+"]</b>, dotted with x: "+terms.join(" + ")+" = <b>"+out[active]+"</b>. That's entry "+(active+1)+" of Wx.";
+  }
+  cv.addEventListener("click", function(e){
+    var r=cv.getBoundingClientRect();
+    var mx=(e.clientX-r.left)*(cv.width/r.width);
+    var my=(e.clientY-r.top)*(cv.height/r.height);
+    active = my < 50 ? 0 : 1;
+    draw();
+  });
+  draw();
+})();
+
+/* ===== TANGENT LINE ===== */
+(function(){
+  var cv=gid("tan"); if(!cv) return;
+  var ctx=cv.getContext("2d");
+  var sa=gid("tf-a"), sh=gid("tf-h"), say=gid("tf-say");
+  function draw(){
+    var a=parseFloat(sa.value); gid("tf-av").textContent=fmt(a,1);
+    var h=parseFloat(sh.value); gid("tf-hv").textContent=fmt(h,2);
+    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
+    var x0=-3.5,x1=3.5,y0=-1,y1=10.5;
+    function px(v){ return 46+(v-x0)/(x1-x0)*(W-66); }
+    function py(v){ return H-40-(v-y0)/(y1-y0)*(H-60); }
+    grid(ctx,W,H,14,10,x0,x1,y0,y1,px,py);
+    ctx.strokeStyle="#8399A8"; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(px(x0),py(0)); ctx.lineTo(px(x1),py(0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px(0),py(y0)); ctx.lineTo(px(0),py(y1)); ctx.stroke();
+
+    ctx.strokeStyle="#15222E"; ctx.lineWidth=2.4; ctx.beginPath();
+    var first=true;
+    for(var k=0;k<=300;k++){
+      var xv=x0+(x1-x0)*k/300, yv=xv*xv;
+      if(yv>y1+0.3){ first=true; continue; }
+      if(first){ ctx.moveTo(px(xv),py(yv)); first=false; } else ctx.lineTo(px(xv),py(yv));
+    }
+    ctx.stroke();
+
+    var a2=a+h, fa=a*a, fa2=a2*a2;
+    var secSlope=(fa2-fa)/h, tanSlope=2*a;
+
+    ctx.strokeStyle="#0B8B8B"; ctx.lineWidth=2;
+    var tx0=a-1.6, tx1=a+1.6;
+    ctx.beginPath(); ctx.moveTo(px(tx0),py(fa+tanSlope*(tx0-a))); ctx.lineTo(px(tx1),py(fa+tanSlope*(tx1-a))); ctx.stroke();
+
+    ctx.strokeStyle="#8399A8"; ctx.lineWidth=2; ctx.setLineDash([5,4]);
+    ctx.beginPath(); ctx.moveTo(px(x0),py(fa+secSlope*(x0-a))); ctx.lineTo(px(x1),py(fa+secSlope*(x1-a))); ctx.stroke();
+    ctx.setLineDash([]);
+
+    function dot(x,y,col){ ctx.fillStyle=col; ctx.beginPath(); ctx.arc(px(x),py(Math.min(y,y1)),5,0,Math.PI*2); ctx.fill(); }
+    dot(a,fa,"#15222E");
+    if(a2>=x0 && a2<=x1 && fa2<=y1) dot(a2,fa2,"#B31E55");
+
+    say.innerHTML="secant slope = (f(a+h)−f(a))/h = <b style='color:#B31E55'>"+fmt(secSlope,2)+"</b> &nbsp;·&nbsp; tangent slope (derivative) = 2a = <b style='color:#0B8B8B'>"+fmt(tanSlope,2)+"</b> &nbsp;·&nbsp; gap = <b>"+fmt(Math.abs(secSlope-tanSlope),2)+"</b>";
+  }
+  sa.oninput=draw; sh.oninput=draw; draw();
+})();
+
+/* ===== GRADIENT ===== */
+(function(){
+  var cv=gid("grad"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("grad-say");
+  var pt={x:2.5,y:-1.8}, probeAng=2.35, dragging=null, scale=35, probeR=58;
+  function px(x){ return cv.width/2+x*scale; }
+  function py(y){ return cv.height/2-y*scale; }
+  function inv(mx,my){ return {x:(mx-cv.width/2)/scale, y:(cv.height/2-my)/scale}; }
+  function arrow(x0,y0,x1,y1,col,w){
+    ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=w||2.6;
+    ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+    var ang=Math.atan2(y1-y0,x1-x0);
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.lineTo(x1-10*Math.cos(ang-0.4),y1-10*Math.sin(ang-0.4));
+    ctx.lineTo(x1-10*Math.cos(ang+0.4),y1-10*Math.sin(ang+0.4));
+    ctx.closePath(); ctx.fill();
+  }
+  function draw(){
+    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
+    var maxR=Math.hypot(W,H)/2;
+    var rg=ctx.createRadialGradient(px(0),py(0),0,px(0),py(0),maxR);
+    rg.addColorStop(0,"#EDF2F5"); rg.addColorStop(0.55,"#EAF4F2"); rg.addColorStop(1,"#F7DDE7");
+    ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+
+    ctx.strokeStyle="#E2EAEF"; ctx.lineWidth=1;
+    for(var gx=-6;gx<=6;gx++){ ctx.beginPath(); ctx.moveTo(px(gx),0); ctx.lineTo(px(gx),H); ctx.stroke(); }
+    for(var gy=-5;gy<=5;gy++){ ctx.beginPath(); ctx.moveTo(0,py(gy)); ctx.lineTo(W,py(gy)); ctx.stroke(); }
+    ctx.strokeStyle="#CBD8E0"; ctx.lineWidth=1.4;
+    [1,2,3,4,5].forEach(function(r){ ctx.beginPath(); ctx.arc(px(0),py(0),r*scale,0,Math.PI*2); ctx.stroke(); });
+
+    var fx=2*pt.x, fy=2*pt.y;
+    var mag=Math.hypot(fx,fy)||1e-6;
+    var ux=fx/mag, uy=fy/mag, arrLen=Math.min(70,20+mag*6);
+    var cx=px(pt.x), cy=py(pt.y);
+
+    ctx.strokeStyle="#CBD8E0"; ctx.setLineDash([3,3]); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(cx,cy,probeR,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+
+    var dx=Math.cos(probeAng), dy=Math.sin(probeAng);
+    var dirDeriv=fx*dx-fy*dy;
+    var angDiff=Math.acos(Math.max(-1,Math.min(1,(dx*ux+(-dy)*uy))))*180/Math.PI;
+    var probeCol = angDiff<8 ? "#0B8B8B" : angDiff>172 ? "#B31E55" : Math.abs(dirDeriv)<mag*0.12 ? "#8399A8" : "#D8811C";
+    arrow(cx,cy,cx+dx*probeR,cy+dy*probeR,probeCol,2.4);
+
+    ctx.fillStyle="#15222E";
+    ctx.beginPath(); ctx.arc(cx,cy,6,0,Math.PI*2); ctx.fill();
+    arrow(cx,cy,cx+ux*arrLen,cy-uy*arrLen,"#5A4A9F");
+
+    var verdict = angDiff<8 ? "<b style='color:#0B8B8B'>steepest increase — matches ∇f</b>"
+      : angDiff>172 ? "<b style='color:#B31E55'>steepest decrease</b>"
+      : Math.abs(dirDeriv)<mag*0.12 ? "<b style='color:#8399A8'>≈ 0 — tangent to the ring</b>"
+      : "<b style='color:#D8811C'>"+(dirDeriv>0?"increases":"decreases")+", not the fastest way</b>";
+    say.innerHTML="∇f = ("+fmt(fx,2)+", "+fmt(fy,2)+") &nbsp;·&nbsp; your direction d: ∇f·d = <b>"+fmt(dirDeriv,2)+"</b> — "+verdict;
+  }
+  function pos(e){
+    var r=cv.getBoundingClientRect(), t=e.touches?e.touches[0]:e;
+    return { x:(t.clientX-r.left)*(cv.width/r.width), y:(t.clientY-r.top)*(cv.height/r.height) };
+  }
+  function down(e){
+    var p=pos(e);
+    var cx=px(pt.x), cy=py(pt.y);
+    var probeX=cx+Math.cos(probeAng)*probeR, probeY=cy+Math.sin(probeAng)*probeR;
+    var dProbe=Math.hypot(p.x-probeX,p.y-probeY);
+    dragging = dProbe<16 ? "probe" : "point";
+    move(e);
+  }
+  function move(e){
+    if(!dragging) return;
+    e.preventDefault();
+    var p=pos(e);
+    if(dragging==="point"){
+      var v=inv(p.x,p.y);
+      pt.x=Math.max(-5.5,Math.min(5.5,v.x)); pt.y=Math.max(-4.5,Math.min(4.5,v.y));
+    } else {
+      var cx=px(pt.x), cy=py(pt.y);
+      probeAng=Math.atan2(p.y-cy,p.x-cx);
+    }
+    draw();
+  }
+  cv.addEventListener("mousedown",down); cv.addEventListener("touchstart",down,{passive:false});
+  window.addEventListener("mousemove",move); window.addEventListener("touchmove",move,{passive:false});
+  window.addEventListener("mouseup",function(){dragging=null;}); window.addEventListener("touchend",function(){dragging=null;});
+  draw();
+})();
+
+/* ===== CONDITIONAL PROBABILITY ===== */
+(function(){
+  var cv=gid("cond"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("cond-say"), tableEl=gid("cond-table");
+  var counts = { the: {cat:2, dog:2, York:0, is:6}, New: {cat:0, dog:0, York:8, is:1} };
+  var totalsAll = {};
+  function recompute(){
+    totalsAll = {cat:0,dog:0,York:0,is:0};
+    Object.keys(counts).forEach(function(row){
+      Object.keys(counts[row]).forEach(function(w){ totalsAll[w]+=counts[row][w]; });
+    });
+  }
+  function grandTotal(){ return Object.values(totalsAll).reduce(function(a,b){return a+b;},0); }
+  function buildTable(){
+    var html = '<table style="max-width:100%;font-size:.82rem"><tr><th></th>';
+    var words=["cat","dog","York","is"];
+    words.forEach(function(w){ html+="<th>"+w+"</th>"; });
+    html+="</tr>";
+    Object.keys(counts).forEach(function(row){
+      html += "<tr><td class='mono'>after \""+row+"\"</td>";
+      words.forEach(function(w){
+        html += "<td class='mono'><button data-row='"+row+"' data-w='"+w+"' data-d='-1' style='padding:.1rem .4rem'>−</button> "+counts[row][w]+" <button data-row='"+row+"' data-w='"+w+"' data-d='1' style='padding:.1rem .4rem'>+</button></td>";
+      });
+      html += "</tr>";
+    });
+    html += "</table>";
+    tableEl.innerHTML = html;
+    tableEl.querySelectorAll("button").forEach(function(btn){
+      btn.onclick = function(){
+        var row=btn.getAttribute("data-row"), w=btn.getAttribute("data-w"), d=parseInt(btn.getAttribute("data-d"),10);
+        counts[row][w] = Math.max(0, counts[row][w]+d);
+        recompute(); buildTable(); draw();
+      };
+    });
+  }
+  function draw(){
+    var W=cv.width,H=cv.height; ctx.clearRect(0,0,W,H);
+    var pUncond = totalsAll.York / (grandTotal()||1);
+    var rowTotal = Object.values(counts.New).reduce(function(a,b){return a+b;},0);
+    var pCond = counts.New.York / (rowTotal||1);
+    var bx=100, bw=560, y0=30, bh=36, gap=50;
+    function bar(y,label,val,col){
+      ctx.fillStyle="#8399A8"; ctx.font="12px 'IBM Plex Mono',monospace"; ctx.textAlign="left";
+      ctx.fillText(label, 10, y+bh/2+4);
+      ctx.fillStyle="#E2EAEF"; ctx.fillRect(bx,y,bw,bh);
+      ctx.fillStyle=col; ctx.fillRect(bx,y,bw*Math.min(1,val),bh);
+      ctx.fillStyle="#15222E"; ctx.font="13px 'IBM Plex Mono',monospace";
+      ctx.fillText(val.toFixed(2), bx+bw+10, y+bh/2+4);
+    }
+    bar(y0, 'P("York")', pUncond, "#8399A8");
+    bar(y0+gap, 'P("York" | "New")', pCond, "#5A4A9F");
+    say.innerHTML = 'P("York") overall = <b>'+pUncond.toFixed(2)+'</b> &nbsp;·&nbsp; P("York" | "New") = <b style="color:#5A4A9F">'+pCond.toFixed(2)+'</b> — knowing the previous word was "New" '+(Math.abs(pCond-pUncond)<0.03?'<b>barely changes</b> the odds — close to independent.':'changes the odds a lot — these are far from independent.');
+  }
+  gid("cond-reset").onclick = function(){
+    counts = { the: {cat:2, dog:2, York:0, is:6}, New: {cat:0, dog:0, York:8, is:1} };
+    recompute(); buildTable(); draw();
+  };
+  recompute(); buildTable(); draw();
+})();
+})();
+</script>
+</body>
+</html>
