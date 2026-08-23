@@ -239,7 +239,22 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     </div>
     <figcaption>Same word, same sentence, same underlying formula — but each head's Q/K/V projections are different learned matrices, so <b>Head 1</b> and <b>Head 2</b> genuinely disagree about what matters. Concatenating both gives the next layer access to both patterns at once.</figcaption>
   </figure>
-  <p style="margin-bottom:0">Total cost is roughly unchanged — you're <strong>partitioning</strong> capacity among specialists, not adding it. Output shape equals input shape, which is what lets attention operations stack into blocks, next.</p>
+  <p>Total cost is roughly unchanged — you're <strong>partitioning</strong> capacity among specialists, not adding it. Output shape equals input shape, which is what lets attention operations stack into blocks, next.</p>
+
+  <h3>Choosing h: why not 1, why not 1,000</h3>
+  <p><strong>Intuition.</strong> One head means one question asked per position — everything the layer notices about a word has to be blended into a single pattern. A thousand heads sounds strictly better, until you notice each head's slice of the vector, <span class="mono">d_head = d_model / h</span>, shrinks along with it — at some point a head's slice is too small to represent a meaningful pattern at all, whatever it was "trying" to specialize in.</p>
+  <p><strong>Core concept.</strong> <span class="mono">h</span> isn't chosen directly — it falls out of two other choices: the model's width <span class="mono">d_model</span> (fixed by how much capacity the whole network needs) and a target head size <span class="mono">d_head</span> (how large one attention pattern needs to be to mean anything):</p>
+  <span class="eq">h = d_model / d_head</span>
+  <p>In practice <span class="mono">d_head</span> is kept in a fairly narrow band — commonly 64 — and <span class="mono">h</span> is whatever that forces it to be for a given <span class="mono">d_model</span>. This course's toy model (Part 6) breaks that convention on purpose: <span class="mono">d_model = 32</span>, <span class="mono">h = 4</span>, so <span class="mono">d_head = 8</span> — small enough to be visualizable, nowhere near large enough to be a real model's choice.</p>
+  <p><strong>Why it lands where it does.</strong> Too few heads, and the layer can only learn one blended pattern per position — exactly the limitation this section opened with. Too many, and every individual head's <span class="mono">Q</span>/<span class="mono">K</span>/<span class="mono">V</span> vectors become so low-dimensional that a dot product between them can't distinguish much of anything — the attention scores start to look close to random. <span class="mono">d_head ≈ 64</span> is the empirically-found middle: large enough for a head's dot product to carry a real signal, small enough that many heads still fit inside a reasonable <span class="mono">d_model</span>.</p>
+  <table>
+    <tr><th>Model</th><th>d_model</th><th>h (heads)</th><th>d_head</th></tr>
+    <tr><td>This course's toy model (Part 6)</td><td>32</td><td>4</td><td>8</td></tr>
+    <tr><td>BERT-base</td><td>768</td><td>12</td><td>64</td></tr>
+    <tr><td>GPT-2 small</td><td>768</td><td>12</td><td>64</td></tr>
+    <tr><td>GPT-3</td><td>12,288</td><td>96</td><td>128</td></tr>
+  </table>
+  <p style="margin-bottom:0"><strong>More heads vs. fewer, at fixed <span class="mono">d_model</span>.</strong> More heads: more independent patterns learned in parallel, at the cost of each one being individually less expressive and a little more reshaping/concatenation overhead. Fewer, larger heads: each one can represent a richer pattern, at the cost of forcing more of them to share a slice — the same blending problem a single head has, just diluted rather than solved. Real models cluster tightly around <span class="mono">d_head ≈ 64</span> because that's the point neither cost dominates.</p>
 </section>
 
 <section>

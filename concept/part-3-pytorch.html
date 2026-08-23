@@ -232,6 +232,32 @@ optimizer.zero_grad()        <span class="c"># reset — clear .grad before the 
     <p class="h">Trap: the last call is the one people forget</p>
     <p><span class="mono">.backward()</span> <strong>adds</strong> new gradients onto whatever is already sitting in <span class="mono">.grad</span> — it does not overwrite. Skip <span class="mono">zero_grad()</span> and every batch's gradient piles on top of the last one, silently; training still runs, the loss curve just never makes sense.</p>
   </div>
+
+  <h3>What optimizer.step() is actually doing</h3>
+  <p>Part 2 §11's update rule was one line: <span class="mono">w ← w − η∇w</span> — same learning rate, same rule, for every parameter, every step. <span class="mono">optimizer.step()</span> above is not that rule. Swap in <span class="mono">torch.optim.SGD(model.parameters(), lr=...)</span> and it would be exactly that; every example in this course instead uses <span class="mono">torch.optim.AdamW</span>, which keeps two extra numbers per parameter and uses them to decide how far to move.</p>
+
+  <p><strong>Intuition.</strong> Picture the ball from Part 2 §11's loss-curve widget. Plain gradient descent asks one question every step — which way is downhill, right now? Adam asks two more: which way has this parameter been moving recently (so a consistently downhill direction picks up speed, like momentum), and how noisy has that direction been (so a jittery, inconsistent parameter gets smaller, more cautious steps, while a smooth, confident one gets to move faster)?</p>
+
+  <p><strong>Core concept.</strong> Two running averages, tracked per parameter, updated every step:</p>
+  <span class="eq">m ← β₁m + (1−β₁)∇w &nbsp;&nbsp;&nbsp; v ← β₂v + (1−β₂)∇w²</span>
+  <p><span class="mono">m</span> is a smoothed gradient — momentum, the recent direction. <span class="mono">v</span> is a smoothed squared gradient — how large and volatile this parameter's updates typically are. The step divides by <span class="mono">√v</span>, so a parameter with big, noisy gradients gets shrunk down, and one with small, steady gradients gets relatively amplified:</p>
+  <span class="eq">w ← w − η · m / (√v + ε)</span>
+  <p>(AdamW additionally subtracts a small multiple of <span class="mono">w</span> itself each step — weight decay, kept separate from the gradient-based update; that's the "W".)</p>
+
+  <p><strong>Why it matters here.</strong> Part 2 §11's widget: push η past 2.0 and the ball overshoots, bounces across the valley, and the loss climbs instead of falls. One shared learning rate is fragile — a Transformer has millions of parameters with wildly different gradient scales, and some would be happy at that η while others explode. Adam's per-parameter <span class="mono">√v</span> term is a direct, automatic fix for exactly that failure mode — which is why real training loops essentially never use plain gradient descent past toy examples like Part 2 §11's.</p>
+
+  <p><strong>Simple example.</strong> The swap costs one line, and nothing else in the loop above changes:</p>
+<pre><span class="c"># Part 2 §11's exact rule</span>
+optimizer = torch.optim.SGD(model.parameters(), lr=<span class="s">0.05</span>)
+<span class="c"># what every example in this course actually uses</span>
+optimizer = torch.optim.AdamW(model.parameters(), lr=<span class="s">0.001</span>)</pre>
+  <p>Notice the learning rates aren't the same order of magnitude — Adam's per-parameter scaling means it tolerates, and often needs, a smaller <span class="mono">η</span> than plain SGD's single shared step size.</p>
+
+  <table>
+    <tr><th>Optimizer</th><th>Pros</th><th>Cons</th></tr>
+    <tr><td><strong>AdamW</strong><br>(used throughout this course)</td><td>Adapts step size per parameter; far less learning-rate tuning; converges quickly and reliably on Transformers; the default for training LLMs</td><td>Two extra buffers per parameter — roughly 2–3× the memory of the weights alone, real at LLM scale; three more hyperparameters (β₁, β₂, ε), though the defaults (0.9, 0.999, 1e-8) rarely need changing</td></tr>
+    <tr><td><strong>Plain SGD</strong><br>(Part 2 §11's rule)</td><td>One number to tune; no extra memory; sometimes generalizes marginally better on some vision tasks when hand-tuned carefully</td><td>One learning rate for every parameter, so it's fragile exactly where Adam is robust; needs a manual schedule and careful tuning to match Adam's out-of-the-box behavior</td></tr>
+  </table>
 </section>
 
 <section>
@@ -352,7 +378,8 @@ model.eval()</pre>
     <tr><td class="mono">.grad</td><td>Where a tracked tensor's gradient is deposited after <span class="mono">.backward()</span> — <span class="mono">None</span> until then</td></tr>
     <tr><td>Autograd</td><td>PyTorch's system for recording operations and replaying them backward via the chain rule</td></tr>
     <tr><td class="mono">nn.Module</td><td>Base class for a model; separates architecture from data flow</td></tr>
-    <tr><td>Optimizer</td><td>Applies gradient descent using each parameter's <span class="mono">.grad</span></td></tr>
+    <tr><td>Optimizer</td><td>Applies an update rule using each parameter's <span class="mono">.grad</span> — plain gradient descent (Part 2 §11), or something adaptive like AdamW (§05)</td></tr>
+    <tr><td>AdamW</td><td>The optimizer used throughout this course — per-parameter momentum and adaptive step size, plus decoupled weight decay (§05)</td></tr>
     <tr><td class="mono">state_dict</td><td>A model's parameters alone, without its architecture</td></tr>
   </table>
 </section>
