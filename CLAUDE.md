@@ -8,7 +8,7 @@ This repo hosts **"Neural networks and transformers, built from scratch"** — a
 - `concept/part-0-big-picture.html` … `part-8-references.html` — the nine numbered parts, in order (0 Big Picture, 1 Foundations, 2 Neural Network, 3 PyTorch, 4 Build Neural Networks, 5 Transformer Architecture, 6 LLM, 7 Illustrated, 8 References).
 - `concept/code/`, `concept/examples/` — the Python/notebook implementations several parts link out to.
 - `concept/drafts/` — markdown drafts of course content, written and reviewed before conversion to HTML. When adding a new part or a substantial rewrite, draft it here first.
-- `concept/v1/` — the original seven-part single-track version of the course, archived but still deployed live at `/v1/` (not deleted — existing links to it must keep working). Cross-linked with the current course from both landing pages ("See v1" / "try v2"). Treat `v1/` as frozen: fix only broken links or build-breaking issues there, don't extend its content — new work goes into the numbered parts at `concept/` root.
+- `concept/bonus-curve-fitting.html`, `concept/bonus-transformer-illustrated.html` — standalone interactive sandboxes, cross-linked from Part 7 and from each other's nav. Not part of the numbered sequence.
 - `notebooks/` — unrelated reference notebooks (annotated Transformer, attention visualization), not part of the course flow.
 
 Every course page is a single self-contained HTML file: inline `<style>`, inline `<script>`, no dependencies beyond Google Fonts. Open any file directly in a browser or serve `concept/` with `python3 -m http.server`. New pages should follow the same pattern — copy the `<style>` block and canvas/SVG widget conventions from an existing part rather than introducing a new design system or a build step.

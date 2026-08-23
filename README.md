@@ -11,7 +11,7 @@ A free, self-contained interactive course. No calculus, linear algebra, or ML ba
   - `part-0-big-picture.html` … `part-8-references.html` — the nine numbered parts, in order
   - `code/`, `examples/` — the Python/notebook implementations several parts link out to
   - `drafts/` — markdown drafts for course content, written before conversion to HTML
-  - `v1/` — the original single-track version of the course (seven parts), archived but still live at `/v1/` for anyone with existing links; cross-linked with the current version from both landing pages
+  - `bonus-curve-fitting.html`, `bonus-transformer-illustrated.html` — standalone interactive sandboxes, linked from Part 7
 - **`notebooks/`** — unrelated reference notebooks (annotated Transformer, attention visualization), not part of the course flow
 
 ## Running locally
