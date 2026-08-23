@@ -138,7 +138,18 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     <tr><td>Training cost (reported)</td><td>~2 months for a comparable task, pre-2017</td><td>3.5 days, 8 GPUs</td></tr>
     <tr><td>Cost that grows with length</td><td>Linear, but sequential</td><td>Quadratic (§10) — the trade being made</td></tr>
   </table>
-  <p style="margin-bottom:0">Not a marginal result: <strong>28.4 BLEU</strong> on WMT 2014 English→German, <strong>41.8 BLEU</strong> on English→French — a new state of the art. A genuine quality jump <em>and</em> a training-time collapse from months to days is the kind of result a field reorganizes around.</p>
+  <p>Not a marginal result: <strong>28.4 BLEU</strong> on WMT 2014 English→German, <strong>41.8 BLEU</strong> on English→French — a new state of the art. A genuine quality jump <em>and</em> a training-time collapse from months to days is the kind of result a field reorganizes around.</p>
+
+  <h3>How the paper actually trained it</h3>
+  <p>Four optimization and regularization choices this course's toy models simplify away, for the record:</p>
+  <table>
+    <tr><th>Choice</th><th>The paper</th><th>This course's toy model</th></tr>
+    <tr><td>Optimizer</td><td>Adam, β1=0.9, β2=0.98, ε=1e-9 (Part 3 §05 covers what Adam itself does)</td><td>AdamW, PyTorch's defaults (β2=0.999, ε=1e-8)</td></tr>
+    <tr><td>Learning rate</td><td>Warm up linearly for 4,000 steps, then decay ∝ 1/√step: <span class="mono">lr = d_model^-0.5 · min(step^-0.5, step·warmup^-1.5)</span></td><td>Fixed <span class="mono">lr = 0.003</span>, no schedule</td></tr>
+    <tr><td>Dropout</td><td>Rate 0.1, applied after every sub-layer and to the embedding sums</td><td>None</td></tr>
+    <tr><td>Label smoothing</td><td>ε=0.1 — softens the training target so the model is penalized for being <em>too</em> confident, which costs some perplexity but improves the metric that matters (BLEU)</td><td>None</td></tr>
+  </table>
+  <p style="margin-bottom:0">None of these change what the model <em>is</em> — they're all about how reliably it trains. A few sentences of toy data don't overfit fast enough for dropout or label smoothing to matter, and a few hundred training steps don't need a learning-rate schedule to stay stable. At real scale, all four measurably help.</p>
 </section>
 
 <section>
@@ -339,13 +350,26 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     </div>
     <figcaption>Drag <b>temperature</b> toward 0.2 and one bar dominates; toward 2.5 and the distribution flattens. Pull <b>top-k</b> down and the tail bars vanish entirely — zero probability, not just small — before whatever's left gets renormalized and sampled.</figcaption>
   </figure>
+
+  <p style="margin-bottom:0"><strong>What the paper actually used.</strong> None of the three knobs above — the original paper decoded with <strong>beam search</strong> (beam width 4, length penalty 0.6): instead of sampling one token and moving on, keep the 4 best partial sequences at every step, extend each by every possible next token, and keep only the best 4 results. It reliably finds a high-probability sequence, but it's deterministic and costs 4× the forward passes per step. Modern LLMs default to sampling instead — cheaper, more varied, and better suited to open-ended generation than to translation's single "best" answer.</p>
 </section>
 
 <section>
   <div class="eyebrow"><span class="num">09</span><span>The cost</span><span class="line"></span></div>
   <h2>Attention is quadratic, and everyone cares</h2>
   <p>Attention computes a score for <strong>every pair</strong> of positions: <span class="mono">n</span> tokens → <span class="mono">n²</span> pairs, so attention costs <span class="mono">O(n²d)</span> against the feed-forward network's <span class="mono">O(nd²)</span>. The crossover sits at <span class="mono">n = d</span>: below it, the FFN is the bottleneck; above it, the quadratic term takes over and never lets go — double the context, attention quadruples.</p>
-  <p>That single fact drives an enormous amount of downstream engineering: FlashAttention (identical maths, tiled so the n×n matrix never touches slow memory), sliding-window and sparse attention, and state-space models like Mamba.</p>
+
+  <h3>The paper's actual argument: not just cost, but parallelism and reach</h3>
+  <p>§00 and §01 already made this qualitatively; here's the paper's formal version — three ways to compare a layer type, for a sequence of length <span class="mono">n</span> and model width <span class="mono">d</span>:</p>
+  <table>
+    <tr><th>Layer type</th><th>Compute per layer</th><th>Sequential steps needed</th><th>Path length, farthest two positions</th></tr>
+    <tr><td>Self-attention</td><td class="mono">O(n²d)</td><td class="mono">O(1)</td><td class="mono">O(1)</td></tr>
+    <tr><td>Recurrent (RNN)</td><td class="mono">O(nd²)</td><td class="mono">O(n)</td><td class="mono">O(n)</td></tr>
+    <tr><td>Convolutional</td><td class="mono">O(knd²)</td><td class="mono">O(1)</td><td class="mono">O(log_k n)</td></tr>
+  </table>
+  <p>Self-attention loses on the first column when <span class="mono">n &gt; d</span> — the trade-off this section opened with — but wins the other two outright. Every position is computed in one parallel step; an RNN needs <span class="mono">n</span> sequential steps, each one waiting on the last, which is what made the pre-2017 training times in §00's table so slow. And any two positions are one hop apart regardless of distance; an RNN's signal has to survive being carried through <span class="mono">n</span> steps, and a CNN needs to stack <span class="mono">log_k n</span> layers just to connect two far-apart positions — both are exactly the "fades over distance" problem §01 opened with. Trading a worse first column for a better second and third is the paper's actual bet, and it's the one that paid off.</p>
+
+  <p>That trade-off drives an enormous amount of downstream engineering aimed at the first column specifically: FlashAttention (identical maths, tiled so the n×n matrix never touches slow memory), sliding-window and sparse attention, and state-space models like Mamba.</p>
   <p style="margin-bottom:0"><strong>KV caching.</strong> When generating one token at a time, earlier tokens' keys and values never change — so cache them. Each new token then costs <span class="mono">O(nd)</span> rather than <span class="mono">O(n²d)</span>. This is a different mechanism from §07's encoder K/V reuse — this cache is for the decoder's <em>own</em> self-attention.</p>
 </section>
 
