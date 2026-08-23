@@ -236,6 +236,18 @@ footer{margin-top:6rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-
     <figcaption>The bars show the size of the nudge at each stage: <span class="mono">Δx</span> going in, <span class="mono">Δg = g′(x)·Δx</span> after the first machine, and <span class="mono">Δh</span> after the second — both the chain rule's estimate and the true change. Drag <b>Δx</b> down toward zero and the estimate bar converges onto the exact bar: the chain rule is a straight-line prediction of what a curved function does, exact only for an infinitesimal nudge — precisely the same "shrink the gap" idea as the secant above.</figcaption>
   </figure>
 
+  <figure class="w" id="geartrainfig">
+    <div class="head">
+      <span class="title">The same rates, as a gear train</span>
+      <div class="ctrls"><button class="fwd" id="gt-spin">▶ Spin</button><button id="gt-reset">Reset</button></div>
+    </div>
+    <div class="body">
+      <canvas id="geartrain" width="820" height="260" aria-label="Three connected gears turning at rates that compound multiplicatively, matching the chain rule's f-prime of g of x times g-prime of x"></canvas>
+      <div class="readout" id="gt-say"></div>
+    </div>
+    <figcaption>Same numbers as above, a different picture. Gear <b>x</b> turns at a fixed reference speed; gear <b>g</b> is geared to turn <span class="mono">g′(x)</span> times faster — here always <span class="mono">×2</span>, since a straight line has a constant slope; gear <b>h</b> is geared to <em>that</em> gear, turning <span class="mono">f′(g(x))</span> times faster still. Press <b>Spin</b> and watch gear <b>h</b>'s speed relative to gear <b>x</b> — that ratio is <span class="mono">f′(g(x))·g′(x)</span>, the chain rule, made visible as one gear literally spinning faster (or backward) than another. Drag <b>point x</b> in the figure above and only the second ratio moves: <span class="mono">g</span> is linear, so its gearing never changes, but <span class="mono">f′(g(x)) = 2u</span> depends on where <span class="mono">g</span> lands — exactly "evaluated at the point the previous one handed you," now turning a different gear.</figcaption>
+  </figure>
+
   <p>This is not a trick — it's bookkeeping for "one rate feeding into another" — and it is the entire idea behind backpropagation: a loss sits at the end of a hundred nested functions, and the chain rule is what lets you find how one early weight affects it without ever writing that hundred-function formula out.</p>
 </section>
 
@@ -591,6 +603,92 @@ function grid(ctx,W,H,nx,ny,x0,x1,y0,y1,px,py){
       "<b>"+(gapv<0.05?"shrink Δx enough and the two agree to three decimals — the chain rule nails it in the limit.":"shrink Δx toward zero and watch the gap close — the chain rule is a straight-line prediction, exact only for an infinitesimal nudge.")+"</b>";
   }
   sx.oninput=draw; sdx.oninput=draw; draw();
+})();
+
+/* ===== CHAIN RULE, AS A GEAR TRAIN ===== */
+(function(){
+  var cv=gid("geartrain"); if(!cv) return;
+  var ctx=cv.getContext("2d"), say=gid("gt-say"), sx=gid("cr-x");
+  if(!sx) return;
+  var W=cv.width,H=cv.height, cy=H/2-6, R=44;
+  var CX={a:150, b:410, c:670};
+  var COL={a:"#8399A8", b:"#0B8B8B", c:"#5A4A9F"};
+  var angle={a:0,b:0,c:0};
+  var OMEGA0=0.16; // rad/s, gear x's reference speed
+  var spinning=false, timer=null, elapsed=0, SPIN_MS=8000;
+
+  function rates(){
+    var x=parseFloat(sx.value);
+    var u=2*x+1, gp=2, fp=2*u;
+    return {x:x, u:u, gp:gp, fp:fp};
+  }
+
+  function gear(cx,teeth,r,ang,col,label,sub){
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(ang);
+    ctx.fillStyle=col; ctx.globalAlpha=.9;
+    for(var i=0;i<teeth;i++){
+      var a0=i/teeth*2*Math.PI;
+      ctx.save(); ctx.rotate(a0);
+      ctx.fillRect(-4,-r-7,8,10);
+      ctx.restore();
+    }
+    ctx.globalAlpha=1;
+    ctx.beginPath(); ctx.arc(0,0,r,0,2*Math.PI); ctx.fillStyle="#fff"; ctx.fill();
+    ctx.lineWidth=2; ctx.strokeStyle=col; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-r+3); ctx.strokeStyle=col; ctx.lineWidth=3; ctx.stroke();
+    ctx.beginPath(); ctx.arc(0,0,3,0,2*Math.PI); ctx.fillStyle=col; ctx.fill();
+    ctx.restore();
+    ctx.fillStyle="#15222E"; ctx.font="bold 13px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+    ctx.fillText(label,cx,cy+r+26);
+    if(sub){ ctx.fillStyle="#8399A8"; ctx.font="11px 'IBM Plex Mono',monospace"; ctx.fillText(sub,cx,cy+r+42); }
+  }
+
+  function arrowLabel(x1,x2,text,col){
+    var y=cy;
+    ctx.strokeStyle="#CBD8E0"; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(x1,y); ctx.lineTo(x2,y); ctx.stroke();
+    ctx.fillStyle=col; ctx.font="bold 12px 'IBM Plex Mono',monospace"; ctx.textAlign="center";
+    ctx.fillText(text,(x1+x2)/2,y-46);
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    var r=rates();
+    var rB=Math.max(0.15,Math.min(2.2,1/Math.max(Math.abs(r.gp),0.25)))*22+22;
+    var rC=Math.max(0.15,Math.min(2.2,1/Math.max(Math.abs(r.fp),0.25)))*22+22;
+
+    arrowLabel(CX.a+R,CX.b-rB,"× g′(x) = "+fmt(r.gp,2),COL.b);
+    arrowLabel(CX.b+rB,CX.c-rC,"× f′(g(x)) = "+fmt(r.fp,2),COL.c);
+
+    gear(CX.a,10,R,angle.a,COL.a,"x = "+fmt(r.x,2),"reference speed");
+    gear(CX.b,10,rB,angle.b,COL.b,"g(x) = "+fmt(r.u,2),"turns ×"+fmt(r.gp,2));
+    gear(CX.c,10,rC,angle.c,COL.c,"h(x) = "+fmt(r.u*r.u,2),"turns ×"+fmt(r.gp*r.fp,2));
+
+    var total=r.gp*r.fp;
+    say.innerHTML="Gear <b style='color:"+COL.a+"'>x</b> turns once → gear <b style='color:"+COL.b+"'>g</b> turns <b>"+fmt(r.gp,2)+"</b> times (constant — g is linear) → gear <b style='color:"+COL.c+"'>h</b> turns a further <b>"+fmt(r.fp,2)+"</b> times."+
+      " Relative to gear x, gear h turns <b>"+fmt(total,2)+"</b> times — exactly <span class='mono'>f′(g(x))·g′(x)</span>, the chain rule read off two meshed ratios."+
+      (total<0?" Negative ratio: gear h spins backward relative to gear x.":"");
+  }
+
+  function stopSpin(){ spinning=false; clearInterval(timer); elapsed=0; gid("gt-spin").textContent="▶ Spin"; }
+  gid("gt-spin").onclick=function(){
+    if(spinning){ stopSpin(); return; }
+    if(REDUCED){ var r=rates(); angle.a=1; angle.b=r.gp; angle.c=r.gp*r.fp; draw(); return; }
+    spinning=true; elapsed=0; this.textContent="⏸ Pause";
+    var last=Date.now();
+    timer=setInterval(function(){
+      var now=Date.now(), dt=(now-last)/1000; last=now; elapsed+=dt*1000;
+      var r=rates();
+      angle.a+=OMEGA0*dt;
+      angle.b+=OMEGA0*r.gp*dt;
+      angle.c+=OMEGA0*r.gp*r.fp*dt;
+      draw();
+      if(elapsed>=SPIN_MS) stopSpin();
+    },30);
+  };
+  gid("gt-reset").onclick=function(){ stopSpin(); angle={a:0,b:0,c:0}; draw(); };
+  sx.addEventListener("input",draw);
+  draw();
 })();
 
 /* ===== GRADIENT ===== */
